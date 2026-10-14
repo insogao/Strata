@@ -49,16 +49,16 @@ line.
 Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `build.ps1`):
 
 ```json
-{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"state_export":false,"disk_kv":false,"vision":false}
+{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"state_export":true,"disk_kv":false,"vision":false}
 ```
 
 | Field | Value | Source / evidence |
 |---|---|---|
-| `protocol` | `"strata-serve-v1"` | The serve line protocol: `READY` / `GEN` / `PP` / `T` / `DONE` / `STOP` / `QUIT` (task 362) plus this task's `CAPS` and `SCORE`. `src/program/qwen35_serve.cpp`, header comment. |
+| `protocol` | `"strata-serve-v1"` | The serve line protocol: `READY` / `GEN` / `PP` / `T` / `DONE` / `STOP` / `QUIT` (task 362), `CAPS` and `SCORE` (P2-1), `SAVE` / `LOAD` / `STATE` (P2-5). `src/program/qwen35_serve.cpp`, header comment. |
 | `continuous_requests` | `true` | One resident process serves any number of requests (tasks 363d/364c: same process, consecutive requests, no request-count limit). |
 | `cancel` | `true` | `STOP` ends an in-flight request at its next prefill chunk / decode token with engine-level `DONE ... cancel` (task 366). |
-| `state_isolation` | `true` | Every request begins with `llama_memory_clear(mem, true)` - KV cells plus the recurrent GDN planes; `reused` is always 0, no prefix is carried over (tasks 363d/364c). `reset_session()` in `qwen35_serve.cpp`. |
-| `prefix_cache` | `false` | No cross-request prefix reuse exists; every prompt is read from token 0 (`reuse=0` in every `DONE`). The conversation-cache keys (`ckpt`/`pin`/...) are skipped by `GEN` and have no effect. |
+| `state_isolation` | `true` | Every request begins with `llama_memory_clear(mem, true)` - KV cells plus the recurrent GDN planes; `reused` is 0, no prefix is carried over (tasks 363d/364c). `reset_session()` in `qwen35_serve.cpp`. P2-5 qualifier: this holds for request streams with no armed session; after an explicit `SAVE`/`LOAD` the next `GEN` continues the session at the cursor and `reused` reports the carried positions (see `docs/backends/qwen35_llama_session_state.md`). |
+| `prefix_cache` | `false` | No automatic cross-request prefix reuse exists; every prompt is read from token 0 (`reuse=0` in every `DONE`, except the explicit P2-5 session continuation). The conversation-cache keys (`ckpt`/`pin`/...) are skipped by `GEN` and have no effect. |
 | `batching` | `false` | No `INFO batch_slots` is ever printed and requests are FIFO-serialized (`qwen35_serve.cpp`); a server therefore stays on its single-request path. `BGEN` is answered `ERR`. |
 | `mtp.available` | bool | The model's declared MTP (NextN) layer count: GGUF key `qwen35moe.nextn_predict_layers` > 0 (declared `<arch>.nextn_predict_layers` at `vendor/llama.cpp/src/llama-arch.cpp:229`, loaded into `hparams.n_layer_nextn` at `llama-model.cpp:1341`). Measured here: the production `Qwen3.6-35B-A3B-UD-IQ3_S.gguf` has no such key (`false`); `models/experimental/mtp-qwen36-5bc3e238/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` declares `1` (`true`). Without a model path the CLI answers `false` (undetermined, not fabricated). |
 | `mtp.enabled` | bool | Exact env gate: `STRATA_QWEN35_MTP=1` (`src/core/qwen35_mtp.cpp:263-267`). `default` is always `false`. In a **serving** process this is `false` by construction: the STRATA_QWEN35_MTP* gates are refused before the model load (`qwen35_serve.cpp`), so a process that answers `CAPS` cannot have it set. |
@@ -67,8 +67,8 @@ Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `b
 | `expert_formats` | array | The compile-time grouped-expert kernel whitelist of the GPU native-expert path: the union of the gate/up and down role tables `STRATA_GU_FMTS` / `STRATA_D_FMTS` (`vendor`-independent source: `src/kernels/cuda/iq_kernels.cu:614-621`), exported by `kernels::iq_expert_role_format` (`iq_kernels.cu:2722`, declared `include/strata/kernels/iq_kernels.hpp:56`). A build without `STRATA_Q6K_EXPERTS` answers without `Q6_K`. This is the binding set: `qwen35_bridge_init` refuses a pack at startup unless every layer pair passes `kernels::native_expert_supported` (`src/core/qwen35_bridge.cpp:1848-1855`). See "expert_formats roles" below. |
 | `context_max` | int | CLI: the `--max-context` argv value (default 4096) - what this invocation would check requests against. serve: the live `llama_n_ctx` (identical to the `READY <ctx>` value). A request whose prompt exceeds it is answered `ERR` and the process keeps serving. |
 | `logits_read` | `true` | This task's `SCORE` command (see below); no other logits export exists. |
-| `state_export` | `false` | No export/import of session state (KV + GDN + ...). `SAVE`/`RESTORE` are answered `ERR` (serve protocol doc, "Not implemented"). |
-| `disk_kv` | `false` | No disk KV; nothing survives the process. |
+| `state_export` | `true` | P2-5: single-session state export/import exists - `SAVE <path>` / `LOAD <path>` / `STATE` (attention KV + GDN conv/SSM planes + positions, the raw `llama_state_seq` bytes). The official engine's own `RESTORE` command and its `SAVED <tokens> ...`/`SERR` grammar are **not** implemented; contract, boundaries (no cross-machine/cross-build guarantee; same-process parity is P2-6) and failure semantics: `docs/backends/qwen35_llama_session_state.md`. Value flipped from `false` in P2-5 (the P2-2 captures below still show the old value - they are verbatim history of that build). |
+| `disk_kv` | `false` | No disk KV; a session file is an explicit export, nothing is loaded, cached or reused implicitly, and nothing survives the process without `SAVE`. |
 | `vision` | `false` | The Qwen35 serve path implements no vision (`GENI` is answered `ERR`); the native engine's `--vision` is a different engine and not reachable from `--qwen35-model`. |
 
 ### expert_formats roles
@@ -167,10 +167,10 @@ arithmetic; the NaN guard rejects non-finite distributions instead of printing t
 
 | Not implemented | Field / behavior | Why |
 |---|---|---|
-| cross-request prefix reuse | `prefix_cache=false` | every prompt is read from token 0; correctness-first phase-1 contract (documented in `qwen35_llama_serve_protocol.md`) |
+| cross-request prefix reuse (automatic) | `prefix_cache=false` | every prompt is read from token 0; correctness-first phase-1 contract (documented in `qwen35_llama_serve_protocol.md`). The explicit P2-5 session continuation (`SAVE`/`LOAD` + `GEN`) is a separate, opt-in mechanism |
 | continuous batching | `batching=false` | no `INFO batch_slots`; requests are serialized one at a time; `BGEN` -> `ERR` |
-| session state export/import | `state_export=false` | no KV/GDN snapshot export; `SAVE`/`RESTORE` -> `ERR` |
-| disk KV | `disk_kv=false` | nothing persists across processes |
+| the official disk-session grammar (`RESTORE`, `SERR`) | - | not implemented; the backend's own single-session commands are `SAVE`/`LOAD`/`STATE` (P2-5, `state_export=true`) |
+| disk KV | `disk_kv=false` | no implicit disk cache; a session file only exists through an explicit `SAVE` |
 | vision | `vision=false` | `GENI`/image embeddings -> `ERR` |
 | MTP draft/verify/commit | `mtp.available` is only availability; the runtime is refused at startup when a `STRATA_QWEN35_MTP*` gate is set | the phase-1/2 decode path does not implement it; the probe is schema-only |
 
@@ -257,6 +257,12 @@ Results, checked against this document:
 5. **Resources/cleanup**: child exit 0, 18.11 s wall for all five lines; job `ActiveProcesses` confirmed 0;
    cleanup fence marker removed (clean path); RAM avail 17,094 -> 5,900 MiB during load, back to 17,217;
    GPU used 1,275 -> peak 7,694 -> 1,281 MiB (fallback after exit).
+
+P2-5 note: the two verbatim captures in this section (N1 `CAPS` and N2 `--capabilities`) show
+`"state_export":false` because they were taken from the P2-1/P2-2 build. P2-5 implemented `SAVE`/`LOAD`/`STATE`
+and flipped that field to `true`; every other field of the string is unchanged. The P2-5 build's GPU check of
+the new commands is P2-6 (the P2-2 checks above - `CAPS` schema, `SCORE`, state semantics (b), bad input - are
+the parts of this evidence that stay in force).
 
 ### N2 - CLI `--capabilities` (raw stdout, verbatim)
 
