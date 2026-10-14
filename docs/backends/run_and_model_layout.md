@@ -47,9 +47,10 @@ STRATA_QWEN35_EXPERT_ORDER=count_desc
 
 **产品仓库不含模型权重**（`git ls-files` 不含 `models/`；本仓只放源码与文档）。模型沿用既有部署路径、
 由用户自行放置。第一阶段的部署实测（355/358/359）是**把模型放在研究树 `D:/work/Strata魔改/models/`
-下、以该目录为 cwd 运行**——如实记录；**"产品树自包含（模型随产品目录走）"列为待办**，当前未实现。
+下、以该目录为 cwd 运行**——如实记录；**"产品树自包含（模型随产品目录走）"仍未实现**，但任务 365
+已把运行数据放到**中立位置** `D:/work/StrataUnified/`（不再依赖旧研究树；见 §2.1）。
 
-实测使用的两条线（研究树布局）：
+实测使用的两条线（研究树布局，历史实测）：
 
 | 线 | 模型路径（相对 cwd） | 大小 | SHA256 | pack |
 |---|---|---|---|---|
@@ -58,6 +59,36 @@ STRATA_QWEN35_EXPERT_ORDER=count_desc
 
 研究树其余相关目录（只读素材，非本后端产物）：`models/experts-requant/`（requant 素材）、
 `models/native_experts.txt`、`results/20261009-codex-b6d0bdef-capacity3700/`（profile 标定）等。
+
+### 2.1 中立放置（任务 365，2026-10-14；运行数据不再依赖旧研究树）
+
+任务 365 把运行所需数据以**同卷硬链接（D:）**落到中立位置；研究树原件只读、未改动：
+
+```text
+D:/work/StrataUnified/
+  models/
+    Qwen3.6-35B-A3B-UD-IQ3_S.gguf        （生产冻结 13,676,723,168 B，硬链接）
+    pack/native_experts.txt              （生产 pack 的唯一必要文件，硬链接）
+    experimental/mtp-qwen36-5bc3e238/
+      Qwen3.6-35B-A3B-UD-IQ3_S.gguf      （MTP 15,346,432,288 B，硬链接）
+      pack-main40/native_experts.txt     （MTP pack，硬链接）
+    qwen36-pack/tokenizer/               （364 生成，已在位）
+  profiles/                              （calibration-expanded + qwen35-cache-1800/2600/3450，硬链接）
+```
+
+- **中立启动命令**（cwd = `D:/work/StrataUnified`，engine 参数为 ASCII 相对路径）：
+  `--qwen35-model models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf --qwen35-pack models/pack ...`（其余同 §1）。
+  官方 server 配置模板：`backends/qwen35_llama/server-config.template.json`（cwd/args/tokenizer 全中立路径）。
+- **pack 说明（判定依据）**：`--qwen35-pack` 目录实际被读取的只有 `native_experts.txt`
+  （`src/kernels/cpu/expert_layout.cpp:381`；缺它 bridge 直接拒跑，`src/core/qwen35_bridge.cpp:1847`）。
+  两 pack 均无 `experts.bin`，专家权重按 `native_experts.txt` 的绝对偏移从 `--qwen35-model` 的 GGUF
+  本体读取（`src/core/expert_source.cpp:1035,5264`）；`manifest.json`/`index.txt` 为可选
+  （`expert_source.cpp:4907-4913,4974-4976`）。逐条源码/日志依据见
+  `results/opencode-execution/strata-unified-neutral-365/pack-necessity-365.md`。
+- **校验**：≤2 GB 文件源↔目标全量 SHA256 相等（pack、profiles）；两个 GGUF 不重算全量 hash，
+  用大小一致＋`fsutil hardlink list` 列出源/目标双路径证明同一 inode（`link-manifest-365.json`、
+  `fsutil-hardlink-365.txt`）。tokenizer 5 文件大小/SHA 与 364 记录逐项一致。
+- **边界**：本任务（365）**不运行** exe；"运行不依赖旧树"的实跑验证由 **365b** 从新路径执行。
 
 ## 3. 一次完整运行的落地做法（355/358/359 实际做法）
 
@@ -68,5 +99,7 @@ STRATA_QWEN35_EXPERT_ORDER=count_desc
 3. 多 native 严格串行、每 native 单独取 GPU 租约（生产协议口径每 native 1 请求；实验线 txn 门开时每 native 2 请求）。
 4. 收集 stdout 的 `summary`/`token`/`first_token` 事件与 exit code；输出文本从事件流读取。
 
-未测/未支持：serve/HTTP API、取消/STOP 语义、并发 Batching、多序列状态、磁盘 KV、通用
-Logits/Decisions 接口均**未实现/未接**（汇总见 `docs/backends/qwen35_llama_test_evidence.md`）。
+serve/HTTP 官方入口已接通（362 协议、363 直连冒烟、364 官方 server E2E；取消/隔离与证据边界见
+`docs/backends/qwen35_llama_serve_protocol.md`、`qwen35_llama_server_e2e.md`）。并发 Batching、
+多序列状态、磁盘 KV、通用 Logits/Decisions 接口仍以各自文档的边界为准（汇总见
+`docs/backends/qwen35_llama_test_evidence.md`）。

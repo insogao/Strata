@@ -36,7 +36,30 @@
 | 生产 IQ3_S（冻结） | `models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` | 13,676,723,168 B | `66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66` | 合同冻结 GGUF；359 只用（不重复全量 hash） |
 | MTP 实验 IQ3_S | `models/experimental/mtp-qwen36-5bc3e238/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` | 15,346,432,288 B | `ab639a7f330f96c47d3e6c2dd2d6445182e7b763e17e6048dc850a71bbc9f27f` | 需 `pack-main40`（355/358 实测用；完整 SHA 已复验） |
 
-模型权重**不进仓库**；放置约定见 `docs/backends/run_and_model_layout.md`（产品树自包含为待办）。
+模型权重**不进仓库**；放置约定见 `docs/backends/run_and_model_layout.md`。
+
+### 4.1 中立放置（任务 365，2026-10-14）
+
+运行数据已放到中立位置 `D:/work/StrataUnified/`（同卷硬链接；研究树原件只读）。逐项：
+
+| 项 | 中立路径 | 大小 | 方式/校验证据 |
+|---|---|---|---|
+| 生产 GGUF | `models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` | 13,676,723,168 B | hardlink；`fsutil hardlink list` 列出源/目标双路径（同一 inode）；未重算全量 hash |
+| 生产 pack | `models/pack/native_experts.txt` | 2,672 B | hardlink；源↔目标全量 SHA256 `91224828e55ccdf519a81cb2af5b9ca7df3178b25f7ffaa0782db731b2bbd6da` |
+| MTP GGUF | `models/experimental/mtp-qwen36-5bc3e238/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` | 15,346,432,288 B | hardlink；`fsutil hardlink list` 双路径（同一 inode）；未重算全量 hash |
+| MTP pack | `models/experimental/mtp-qwen36-5bc3e238/pack-main40/native_experts.txt` | 2,717 B | hardlink；全量 SHA256 `79d1735431deb7d3f8507860f7cf8802c84c01d02148b85dec6fd69273df7a7f` |
+| profile | `profiles/calibration-expanded.profile` | 40,984 B | hardlink；全量 SHA256 `fab192ff3821d7ae4d3384ae57b4fe475153d22604dbe7eccf2b8bbc97ce754e` |
+| profile | `profiles/qwen35-cache-1800.profile` | 7,224 B | hardlink；全量 SHA256 `ebc25a5d5be8f1df4b859e8b7d3723025ec924158a5b0c31f9e2c341730b8431` |
+| profile | `profiles/qwen35-cache-2600.profile` | 10,424 B | hardlink；全量 SHA256 `4838909ea72e3771f74e10a1174b161cf2e6b042d480dc1ad2bc9912b7525b76` |
+| profile | `profiles/qwen35-cache-3450.profile` | 13,824 B | hardlink；全量 SHA256 `714ff9420e7096b4fb3be3c6eb58aef79640c7e1205741fa7c46beb96cf54147` |
+
+- tokenizer 包（364 生成，保持原位）：`models/qwen36-pack/tokenizer/`；5 文件大小与 SHA256 与
+  364 `pre-run-evidence-364c.json` 逐项一致（vocab.json `4ba64f0332…`、merges.txt `080cf95432…`、
+  token_type.json `5088c8c298…`、chat_template.jinja `55d4931433…`、tokenizer.json `2971ee07b7…`）。
+- 官方 server 配置模板（中立路径）：`backends/qwen35_llama/server-config.template.json`。
+- **边界**：以上为放置＋校验事实；"运行不依赖旧树"的实跑验证由任务 **365b** 执行（365 未运行 exe）。
+- 证据：`results/opencode-execution/strata-unified-neutral-365/`（`link-manifest-365.json`、
+  `fsutil-hardlink-365.txt`、`config-diff-365.txt`、`pack-necessity-365.md`）。
 
 ## 5. 对照 exe、工具、CUDA
 

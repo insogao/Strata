@@ -65,6 +65,12 @@ configure 旗标（354 实测所用，`build.ps1` 内固定）：
   **ASCII 相对路径**，中文绝对路径只出现在 CreateProcessW 的宽字符 cwd；先把
   `STRATA_*`/`GGML_*`/`LLAMA_GRAPH*`/`CUDA_LAUNCH_BLOCKING` 清干净，再按用例逐项设置 env。
   （355/358/359 的实际 argv/env 见 `docs/backends/run_and_model_layout.md` 与各回归报告。）
+- **中立运行布局（任务 365 就绪，2026-10-14）**：运行数据已硬链接到中立位置
+  `D:/work/StrataUnified/models/`（含 `pack/native_experts.txt`）与 `D:/work/StrataUnified/profiles/`；
+  `cwd` 可用 `D:/work/StrataUnified`，engine argv 用 `--qwen35-pack models/pack`
+  （官方 server 模板 `backends/qwen35_llama/server-config.template.json`）。布局与校验详见
+  `docs/backends/run_and_model_layout.md` §2.1、`versions_and_hashes.md` §4.1；从新路径的**实跑验证属
+  任务 365b**，本条目为放置事实。
 - 运行 exe 需要模型与 pack（见 `docs/backends/run_and_model_layout.md`）；模型权重不在本仓库内。
 
 ## 5. 依赖与 pin（不可用归档补丁从纯 pin 重建）
