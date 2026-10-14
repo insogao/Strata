@@ -27,8 +27,11 @@
   - `c653bef1` ABAB 配对回归报告（task 358）
   - `b5e43917` 生产线同口径对照报告（task 359）
   - `0c118899` 第一阶段文档集（install/run/selection/versions/test-evidence）
-  - （进行中）精简发布源码树＋被移除材料索引（task 361）
-- 开发产物（未入库，`.gitignore`）：`backends/qwen35_llama/build/strata.exe`
+  - `7386180d` PROJECT_STATUS（本文件首次建立）
+  - `6d9543a8` **精简发布源码树**（task 361）：删 2,019 文件/29,888,754 B（旧项目历史材料），树 6,146→**4,128** 文件（vendor 3,697 占大头）；`docs/backends/qwen35_llama_excluded_material.md`（2,161 行逐文件 SHA 索引，可 `git show 27c987ca:<path>` 取回）；CMake 仅加 SYCL 守卫；**clean 全量重建 749 s / 383 目标 / exit 0** → 新 exe `8c2df0a7040224ccd3c7e960d84efcf9d741a6eb57bb93bf54bd07d71772cc07`（139,195,904 B）
+  - （进行中）M2：官方 Server 行协议（task 362）
+- 开发产物（未入库，`.gitignore`）：`backends/qwen35_llama/build/strata.exe`（当前 `8c2df0a7…`）
+- PR #1 规模：变更文件 6,158 → **4,140**（其中 vendor/llama.cpp 3,697 为必需依赖）
 
 ## 3. 已完成的里程碑 M1（阶段 1 内部里程碑）
 
