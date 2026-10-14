@@ -70,8 +70,10 @@
 | P2-2 CAPS/SCORE 的 GPU 验证 | 完成 | commit `e01e4feb`（零 `T` 行＝不生成 token；`pos=3868`；CLI 0.141 s 不加载模型） |
 | P2-3 `/v1/score`＋`/v1/capabilities`＋最小 `/v1/decisions` 薄层服务 | 完成 | commit `7f5392ce`（4 新文件/1424 行；**19 单测全绿**；官方/引擎零改动；SGLang 子集边界文档） |
 | P2-4 服务的 GPU 端到端 | 完成（带数值告警） | commit `228796f6`（与引擎 stdout **4dp 全等**；**冷↔热最大 |Δ|=0.0111**，精度告警入档；根因仅假设） |
-| P2-5 `SAVE`/`LOAD`/`STATE` 单会话状态（含 GDN） | 进行中 | 0 GPU；parity 属 P2-6 |
-| P2-6 SAVE/LOAD 的 GPU parity / P2-7 双 Backend 同接口适配器 | 排队 | — |
+| P2-5 `SAVE`/`LOAD`/`STATE` 单会话状态（含 GDN） | 完成 | commit `f6e7d048`（exe `6dee0c66…`；先导临时对象不半恢复；path gate） |
+| P2-6 `SAVE`/`LOAD` GPU parity | 完成 | commit `596e936f`（同进程/跨进程逐 id 全等；失败不半恢复；可重入字节相等；`state_export` 保持 true） |
+| P2-7 双 Backend 适配器＋Batching 契约 | 完成 | commit `17c9ea1f`（官方后端能力表如实 false；不支持端点 501；契约 v1；既有 19＋新 13 单测全绿） |
+| 阶段 2 交付汇总 | 完成 | `docs/PHASE2_DELIVERY.md` |
 
 ### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
 
