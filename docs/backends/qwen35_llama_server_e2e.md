@@ -175,3 +175,85 @@ D:/work/StrataUnified/runtime/python/python.exe serve/server.py --engine strata 
 
 结论（一行）：**官方服务入口 E2E 成立**——普通聊天（200/文本/EOS，修正口径）、连续 ≥3 请求、同 prompt 热重复字节一致、
 两 prompt 输出不同、取消后下一请求正常且无污染；**取消的引擎字面证据未触达**（server 内部 drain 不落盘），其余如实登记。
+
+## 8. 365b 诊断行后的重跑（task 366）
+
+2026-10-14 21:40–21:42 +08:00。目的：用 365b 的**带 stderr 诊断行的新 exe**、从**中立路径**重跑官方 server 取消
+用例，取得**引擎级 `finish=cancel`**（server 把引擎 stderr 落到 config 的 `log` ⇒ 诊断行可直接落盘）。
+
+### 8.1 被测对象（全部中立路径）
+
+- 引擎 exe：`D:/work/StrataUnified/strata/backends/qwen35_llama/build/strata.exe`
+  - sha256 `f9f4485c40f7d419387a3aabf4f311684ac0407f9a33436854336052ee5a33a5`，139,215,872 B（365b 诊断重建）。
+  - **跑前任务自复算并比对通过**（`pre-run-evidence-366.json`）；本任务**未构建**。
+- 模型：`models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf`（中立树内硬链接，13,676,723,168 B；完整 SHA 66a3ca88… 见 §0）。
+- pack：`models/pack/native_experts.txt` 2,672 B `91224828e55ccdf519a81cb2af5b9ca7df3178b25f7ffaa0782db731b2bbd6da`。
+- tokenizer：`D:/work/StrataUnified/models/qwen36-pack/tokenizer/`（5 文件 SHA 与 §0 完全一致）。
+- server config（`server-config-neutral-new.json` 全文；`log` = 任务目录内引擎日志）：
+
+```json
+{
+  "exe": "D:/work/StrataUnified/strata/backends/qwen35_llama/build/strata.exe",
+  "cwd": "D:/work/StrataUnified",
+  "args": ["--qwen35-model", "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf", "--qwen35-pack", "models/pack", "--serve",
+           "--max-context", "4096", "--qwen35-threads", "8", "--qwen35-cache-slots", "3200", "--qwen35-ubatch", "4096"],
+  "tokenizer": "D:/work/StrataUnified/models/qwen36-pack/tokenizer",
+  "model_name": "qwen36-35b-a3b-ud-iq3_s",
+  "env": {"STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1", "STRATA_QWEN35_PACKED_IDS": "1", "STRATA_QWEN35_EXPERT_ORDER": "count_desc"},
+  "log": ".../strata-unified-cancel-evidence-366/engine-serve-366.log"
+}
+```
+
+- server：沙箱 python `f77193cf…` 起 `serve/server.py`（cwd=`D:/work/StrataUnified/strata`），port 8096；
+  进程 env 清 `STRATA_*/GGML*/LLAMA_GRAPH*/CUDA_LAUNCH_BLOCKING` 后仅设 364c 同款 `STRATA_BATCH_TRACE=1`（本证据
+  不依赖它），PATH 前置 `runtime/cuda-12.8.1/bin`（`server-spawn-366.json`）。`ready:` 行落 `server-366-stdout.log`。
+- 引擎启动行（`engine-serve-366.log` 第 1 行，cwd 中立）：`engine started: D:/work/StrataUnified/...strata.exe --serve
+  --qwen35-model models/Qwen3.6-...gguf --qwen35-pack models/pack --serve --max-context 4096 ...`（重复 `--serve` 同 §0 注）。
+
+### 8.2 用例与结果
+
+| 用例 | 请求 | HTTP | 结果 | 引擎 stderr 对应行 |
+|---|---|---|---|---|
+| C1（字面） | 非流式 16 tok, temp 0 | 200 | thinking 前缀（`content=null`，finish=length）——与 364 §6.2 同一字面口径偏离 | `req 1 finish=length produced=16` |
+| C1b（修正） | `enable_thinking=false`, 64 tok | 200 | 完整答案 + EOS（finish=**stop**，44 tok） | `req 2 finish=stop produced=44` |
+| C2（取消） | 流式 128 tok，6 chunk 后客户端 abort（363.7 ms） | `HTTP/1.0 200 OK` | abort 于生成中（`aborted_mid_stream=true`） | **`req 3 finish=cancel produced=8`** |
+| C3（污染检查） | 非流式 16 tok（C1 同参数），abort 后 2 s | 200 | 正常返回（finish=length） | `req 4 finish=length produced=16` |
+
+### 8.3 引擎 stderr 的 `serve: req` 行（照录，`engine-serve-366.log`）
+
+```
+serve: req 1 finish=length produced=16 prompt_ms=1632.2 decode_ms=815.0
+serve: req 2 finish=stop produced=44 prompt_ms=183.2 decode_ms=1269.1
+serve: req 3 finish=cancel produced=8 prompt_ms=211.2 decode_ms=183.2
+serve: req 4 finish=length produced=16 prompt_ms=233.3 decode_ms=323.3
+```
+
+**`req 3 finish=cancel` 即 364 未触达的引擎级取消行，本次由 365b 诊断行在官方 server 实时 STOP 路径上取得。**
+server 侧一致：stdout `[strata] done: 8 tokens in 0 s (44.0 tok/s) (disconnect, cancel=True)`；
+`metrics-after-366.json` 该请求 `finish="disconnect", output_tokens=8, engine_generated=8`（引擎 DONE 段）。
+取消路径的专家 prompt-loan 回填照常（`engine-serve-366.log` 该请求后 `slot 3171 read back byte-equal`），C3 200。
+
+### 8.4 租约形态与补偿证据（hold）
+
+- `tools/gpu-lock.py`（`337426d6…`）`hold --hold-seconds 900 --wait-seconds 60`，pid `31100`，
+  `acquired_at 2026-10-14T21:40:29.309`；批末 `taskkill /T /F` 记录后返回（**未到期即杀 ⇒ `hold-result.json` 未写，
+  登记**）。形态与 §1 相同（引擎是 server 孙进程，python 在 `DENY_BASENAMES`）。
+- 补偿证据：跑前引擎 exe SHA 复算 `f9f4485c…` 通过；引擎 `engine started` 行落引擎日志；server `ready:` 行落定；
+  批末：无 `strata.exe` 残留、锁释放探测首试即得（`lock-probe-366-result.json`，`wait.attempts=1, exit_code 0`）、
+  `gpu.lock` 内容 SHA `6e340b9c…` 未变、无 `.cleanup-required.json`、GPU 回 `1233 MiB / 0%`（`state-post-366.json`）。
+
+### 8.5 登记（不放大）
+
+1. C1/C3 采用任务书字面 16-token 口径 ⇒ 输出为 thinking 前缀、`content=null`（364 §6.2 同一已知偏离）；文本+EOS 由
+   C1b 修正口径验证。
+2. `STRATA_BATCH_TRACE=1` 在 364 §4 已证无效，本次仅为 364c 同款登记项，不贡献证据。
+3. hold 未自然到期（批末即杀；形态、pid、audit 全落盘）。
+
+证据目录：`D:/work/Strata魔改/results/opencode-execution/strata-unified-cancel-evidence-366/`
+（config、`engine-serve-366.log` 14,495 B `16413c9d…`、`server-366-stdout.log` `e1d9070e…`、`server-366-stderr.log` 空、
+`request-evidence-366.jsonl` `36a4d898…`、`client-summary-366.json` `920b1dfa…`、`metrics-after-366.json` `795af8af…`、
+`status-after-366.json`、`pre/state-post-366.json`、hold audit/ready/spawn、`server-spawn-366.json`、
+`lock-probe-366-result.json` `656879cc…`、`raw-366/`、客户端脚本 `client-366.py`）。
+
+结论（一行）：**365b 诊断行在官方 server 实时取消路径上取得引擎级 `serve: req 3 finish=cancel produced=8`**；取消后
+下一请求正常、专家回填字节相等、锁释放且无 fence/残留——364 §4 的“引擎字面取消证据未触达”缺口由本任务闭合。
