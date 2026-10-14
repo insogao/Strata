@@ -200,9 +200,11 @@ D:/work/StrataUnified/runtime/python/python.exe serve/server.py --engine strata 
   "tokenizer": "D:/work/StrataUnified/models/qwen36-pack/tokenizer",
   "model_name": "qwen36-35b-a3b-ud-iq3_s",
   "env": {"STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1", "STRATA_QWEN35_PACKED_IDS": "1", "STRATA_QWEN35_EXPERT_ORDER": "count_desc"},
-  "log": ".../strata-unified-cancel-evidence-366/engine-serve-366.log"
+  "log": "D:/work/Strata魔改/results/opencode-execution/strata-unified-cancel-evidence-366/engine-serve-366.log"
 }
 ```
+
+（`server-config-neutral-new.json` 落盘 SHA256 `bee103dc…`，710 B；上为逐字节全文。）
 
 - server：沙箱 python `f77193cf…` 起 `serve/server.py`（cwd=`D:/work/StrataUnified/strata`），port 8096；
   进程 env 清 `STRATA_*/GGML*/LLAMA_GRAPH*/CUDA_LAUNCH_BLOCKING` 后仅设 364c 同款 `STRATA_BATCH_TRACE=1`（本证据
