@@ -11,7 +11,7 @@
   - sha256 `2f47b88a9969d04ed5a6fafed6a561b80f51c2945d054e0828e9d9c4a297ebd1`，139,216,384 B。
   - **跑前任务自复算并逐一比对通过**（`pre-run-evidence-364c.json`）；本任务**未重新构建** exe。
 - 模型（只读）：`D:/work/Strata魔改/models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf`，13,676,723,168 B，
-  已登记完整 SHA `ab639a7f330f96c47d3e6c2dd2d6445182e7b763e17e6048dc850a71bbc9f27f`（按合同不重复全文件 hash）。
+  已登记完整 SHA `66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66`（生产冻结值；主管 2026-10-14 复算全文件确认）。
 - tokenizer 包（中立位置，任务目录内清单+逐文件 SHA 见 `pre-run-evidence-364c.json`）：
   `D:/work/StrataUnified/models/qwen36-pack/tokenizer/`
   - `vocab.json` 5,737,005 B `4ba64f0332abcfb0b600b7df1537d1e836e68009d5fb7cdb77339738dc6365c4`
