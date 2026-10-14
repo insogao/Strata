@@ -47,6 +47,12 @@
 
 ## 4. 进行中 / 下一步
 
+### 4.0 M2/M3 进度（2026-10-14 21:0x）
+
+- **M2 官方 Server 集成**：`--serve` 行协议已实现（task 362，commit `131953d7`；exe `2f47b88a…`）；直连协议冒烟通过（task 363d，连续 3 请求＋**状态隔离** req1==req3 序列同 SHA `12699c3c…`；生产模型短答 `stop`@2 属正确行为）；文档 `docs/backends/qwen35_llama_serve_protocol.md`、`docs/backends/qwen35_llama_serve_smoke.md`。
+- **M3 官方服务入口 E2E**：**已达成**（task 364c，commit `1e7a0bda`，主管修正模型 SHA → `4e32aae2`）：E1 聊天 HTTP 200＋文本＋EOS；E2 常驻连续 8+ 请求全 200；E4 隔离（同 prompt 热重复 4/4 逐字节一致、不同 prompt 不同）；**E3 取消**＝流式中止后 server 记 `disconnect,cancel=True`、引擎**只产出 7 个 token（<128）**、下一请求正常；**引擎字面 `DONE … cancel` 未落盘（官方 server 内部 drain）⇒ 登记为未取得**，将由 365b 的诊断行补齐。租约形态：`gpu-lock hold`（`DENY_BASENAMES` 禁解释器作 declared binary）＋补偿证据（跑前 exe SHA 复算、引擎 READY、收尾锁释放无残留）。
+- **M3 中立放置**：task 365 进行中（模型/pack/profiles → `D:/work/StrataUnified/models*` 硬链接；配置模板重指）⇒ 随后 **365b**（serve 路径加一行 stderr 诊断并重建，从中立路径实跑并补引擎级取消证据）→ **366** 用最终 exe 对生产冻结 `0e00af8a` 做同口径配对回归 → **367** 阶段交付汇总＋PR #1 正文。
+
 ### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
 
 | 序 | 任务 | 入口条件 | 交付与自测判据 |
