@@ -4,7 +4,9 @@
 **resident engine for the official server** (`serve/server.py`, `StrataEngine`): the model is loaded once,
 `READY <ctx> stop` is printed, and the process then serves any number of requests from stdin until `QUIT` or
 EOF. The line protocol is the official engine's own - `serve/server.py` parses exactly these lines and needs no
-changes.
+changes. **P2-1** adds two commands the current server does not send yet: `CAPS` (the capability table) and
+`SCORE` (read-only candidate logits); their contract is
+`docs/backends/qwen35_llama_capabilities_and_score.md`.
 
 Implementation: `src/program/qwen35_serve.cpp` (wired from `src/program/generate.cpp`; the one-shot CLI path
 without `--serve` is untouched). This is a **phase-1 protocol shell**: it is the substrate for the later
@@ -56,15 +58,19 @@ Notes:
 | `READY <ctx> stop` | printed once after the model + context + expert service are up; `<ctx>` is the actual context requests are checked against; `stop` declares this engine honours `STOP` |
 | `PP <done> <total> <ms> <tok/s>` | once per prefill chunk: tokens read so far, total prompt tokens, ms since the prompt read started, this chunk's fresh tokens/s |
 | `T <id>` | one generated token; an EOS token is printed too, then the request ends (official EOS counting) |
+| `LOGPROBS <pos> <k> <id>:<logprob> <id>:<logprob> ...` | **P2-1**: `SCORE`'s answer - the top-k of the full-vocabulary log-softmax of the last prompt position (`pos` = 0-based last prompt position, `logprob = logit - logsumexp(all logits)` at `%.4f`). One line per `SCORE`, always followed by its `DONE ... score` |
 | `DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused> <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>` | one per completed request; field order is the official engine's (`serve/server.py::_parse_done`) |
+| `CAPS <json>` | **P2-1**: the answer to `CAPS` - the backend capability table, the same one-line JSON `--capabilities` prints (see `docs/backends/qwen35_llama_capabilities_and_score.md`) |
 | `ERR <message>` | request-level refusal or failure; **no `DONE` follows**, the process keeps serving |
 
 Values in `DONE` for this phase: `accepted/offered/reused/hits/lookups/ram_blobs/file_blobs/offloaded` are `0`
 and `file_mb` is `0.0` (no MTP, no prefix reuse, no cache accounting); `prompt_read` is the number of prompt
-tokens actually read - fewer than `prompt_tokens` when a `STOP` ended the read part-way.
+tokens actually read - fewer than `prompt_tokens` when a `STOP` ended the read part-way. A `SCORE` request
+prints `produced=0` and `finish=score` (and no `T` line).
 
 `finish` values: `stop` (EOS hit), `length` (max_new reached), `cancel` (`STOP`), `nonfinite` (a NaN in the
-head logits - the request ends before emitting that token, same as the official `#879` behavior).
+head logits - the request ends before emitting that token, same as the official `#879` behavior), `score`
+(the P2-1 `SCORE` request completed; its answer is the `LOGPROBS` line before the `DONE`).
 
 ### Engine diagnostics on stderr (outside the line protocol)
 
@@ -72,26 +78,29 @@ After every completed request - the same point the `DONE` line is printed on std
 line to **stderr**:
 
 ```text
-serve: req <i> finish=<stop|length|cancel|nonfinite> produced=<n> prompt_ms=<..> decode_ms=<..>
+serve: req <i> finish=<stop|length|cancel|nonfinite|score> produced=<n> prompt_ms=<..> decode_ms=<..>
 ```
 
 `<i>` is the 1-based index of completed requests of this process, in the same order as the `DONE` lines; the
-other fields repeat the `DONE` values. The official server does not read engine stderr, so this line survives
-server-side stdout handling - it is the engine's own statement of why each request ended (`cancel` = a live
-`STOP` ended the request; a `STOP` read before the request started stays stale and never reaches this line).
-Added by task 365b; stdout protocol and every judgement are unchanged.
+other fields repeat the `DONE` values. A `SCORE` line appends its actual `k` as `topk=<k>`. The official
+server does not read engine stderr, so this line survives server-side stdout handling - it is the engine's own
+statement of why each request ended (`cancel` = a live `STOP` ended the request; a `STOP` read before the
+request started stays stale and never reaches this line). Added by task 365b; stdout protocol and every
+judgement are unchanged (P2-1 added `score`/`topk=<k>` for the new command).
 
 ### Client -> engine
 
 | Line | Meaning |
 |---|---|
 | `GEN <max_new> [key=value ...] <id,id,...>` | one request. Keys implemented: `temperature`, `top_p`, `top_k`, `min_p`, `seed`. `temperature` absent/0 = greedy. **A non-default `penalty_*` or a `logit_bias` is REFUSED with `ERR`** (`penalty_last_n`/`penalty_repeat`/`penalty_freq`/`penalty_present`), never silently ignored. Unknown keys are skipped like the official engine skips them (the conversation-cache keys `ckpt`/`pin`/`cvec`/`pcie_frac`/`spec_min_p`/`aux_cpus`/`img_keys` have no effect here). |
-| `STOP` | cancel the running request: the decode loop checks the flag before every token (and between prefill chunks); the engine answers `DONE ... cancel` and keeps serving. A `STOP` that arrives between requests is stale and is dropped at the next request's start. |
+| `SCORE <id,id,...> [topk=N]` | **P2-1**: read-only candidate logits. The prompt is read through the same prefill path as `GEN` (PP lines included) and **no token is generated**; the answer is one `LOGPROBS <pos> <k> <id>:<logprob> ...` line (full-vocabulary log-softmax, default `topk` 5) followed by `DONE ... score` with `produced=0`. Every key other than `topk` is REFUSED with `ERR`. State semantics **(b) independent**: the session is reset before the request and again after it, so the next request starts fresh. Full contract: `docs/backends/qwen35_llama_capabilities_and_score.md`. |
+| `CAPS` | **P2-1**: answer the capability table as `CAPS <json>` (the `--capabilities` JSON) and keep serving. |
+| `STOP` | cancel the running request: the decode loop checks the flag before every token (and between prefill chunks); the engine answers `DONE ... cancel` and keeps serving (a `SCORE` cancelled during the read answers `DONE ... cancel` with no `LOGPROBS`). A `STOP` that arrives between requests is stale and is dropped at the next request's start. |
 | `QUIT` | exit 0 (the server's shutdown path; stdin EOF also exits 0) |
 
 Empty lines are ignored. Any other line (e.g. `BGEN`, `SAVE`, `RESTORE`, `VRAM`, `ENC`, `GENI`) answers
-`ERR expected: GEN <max_new> [key=value ...] <id,id,...>` and the loop continues - unknown input never exits or
-crashes the engine.
+`ERR expected: CAPS | SCORE <id,id,...> [topk=N] | GEN <max_new> [key=value ...] <id,id,...>` and the loop
+continues - unknown input never exits or crashes the engine.
 
 ## Request lifecycle and state isolation
 

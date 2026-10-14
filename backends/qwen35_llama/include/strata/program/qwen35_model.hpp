@@ -42,6 +42,15 @@ int qwen35_run(const Qwen35RunOptions& o);
 /// subset and docs/backends/qwen35_llama_serve_protocol.md for the full contract and the not-implemented list.
 int qwen35_serve(const Qwen35RunOptions& o);
 
+/// P2-1: the backend's capability table as one line of JSON (protocol / continuous_requests / cancel /
+/// state_isolation / prefix_cache / batching / mtp / expert_formats / context_max / logits_read /
+/// state_export / disk_kv / vision).  A pure query: no model is loaded.  `nextn_layers` is the loaded model's
+/// qwen35moe.nextn_predict_layers when the caller knows it (>= 0); with -1 the GGUF metadata header of
+/// `o.model` is read instead (tensor payload never touched; unreadable -> mtp.available stays false).
+/// `context_max` is the context this engine would run with (`--max-context` before a model load, or the
+/// actual llama_n_ctx when one is up).  Sources and limits: docs/backends/qwen35_llama_capabilities_and_score.md.
+std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_max, int64_t nextn_layers);
+
 /// Task 52 diagnostic replay (default off; STRATA_QWEN35_LAYER_REPLAY=<capture dir>): replays one captured
 /// prompt layer through the SAME `qwen_prefill_experts` interface with a standalone 256-slot expert cache.
 /// No llama context and no dense model are loaded: only the pack layout and the GGUF's expert slices are

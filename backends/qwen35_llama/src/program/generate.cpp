@@ -599,6 +599,10 @@ struct Options {
     bool split_skip_if_fits = false;
     /// Plan v0.3 P8: stay resident and take requests on stdin (see the --serve block in main).
     bool serve = false;
+    /// P2-1: `--capabilities` prints the Qwen35 backend's capability table (one JSON line) and exits 0.  It is
+    /// a pure query: no model is loaded, no GPU is touched; with --qwen35-model the GGUF metadata header is
+    /// read only for mtp.available.  With --serve, the same JSON is available from the CAPS command.
+    bool capabilities = false;
     /// The vision path: keep a per-cell (t, h, w) rotary position table so --serve can take GENI requests.
     bool vision = false;
     int adapt_swaps = 96;
@@ -726,8 +730,12 @@ void usage() {
                  "  --qwen35-ubatch N    Qwen35 POC (with --qwen35-model): llama prompt micro-batch n_ubatch\n"
                  "                       (default 128; positive decimal integer up to 4294967295; larger values\n"
                  "                       mean fewer, longer prompt batches)\n"
+                 "  --capabilities       Qwen35 POC (needs -DSTRATA_QWEN35=ON; --qwen35-model optional): print the\n"
+                 "                       backend capability table as one JSON line and exit 0; loads no model and\n"
+                 "                       touches no GPU (only the GGUF metadata header for mtp.available)\n"
                  "  --qwen35-model ... --serve  Qwen35 POC: the official server line protocol (READY/GEN/PP/T/\n"
-                 "                       DONE/STOP) for serve/server.py instead of the one-shot runner\n"
+                 "                       DONE/STOP; P2-1 adds CAPS and SCORE) for serve/server.py instead of the\n"
+                 "                       one-shot runner\n"
                  "  --rope-scaling T     extend the context past the trained one: none, linear\n"
                  "                       (position interpolation) or yarn - llama.cpp's types and names.\n"
                  "                       Default: the model file's rope keys, else none. Fixed at startup:\n"
@@ -1861,6 +1869,7 @@ int main(int argc, char** argv) {
         else if (a == "--split-skip-if-fits") o.split_skip_if_fits = true;
         else if (a == "--pcie-mode") o.pcie_mode = next("--pcie-mode");
         else if (a == "--serve") o.serve = true;
+        else if (a == "--capabilities") o.capabilities = true;
         else if (a == "--vision") o.vision = true;
         else if (a == "--prompt-cache") o.prompt_cache = std::max(0, std::atoi(next("--prompt-cache")));
         else if (a == "--conversation-cache-mib" || a == "--conversation-cache-slots" ||
@@ -1999,6 +2008,21 @@ int main(int argc, char** argv) {
         }
         }
     }
+    // P2-1: --capabilities is a pure query: print the Qwen35 backend's capability table and exit 0.  It runs
+    // before the Qwen35 route and loads nothing (with --qwen35-model only the GGUF metadata header is read, for
+    // mtp.available); --qwen35-model is optional and an unknown model file leaves mtp.available false.
+    if (o.capabilities) {
+#if defined(STRATA_QWEN35)
+        strata::program::Qwen35RunOptions q;
+        q.model = o.qwen35_model;
+        q.max_context = o.max_context;
+        std::printf("%s\n", strata::program::qwen35_capabilities_json(q, q.max_context, -1).c_str());
+        return 0;
+#else
+        std::fprintf(stderr, "strata generate: --capabilities needs a build configured with -DSTRATA_QWEN35=ON\n");
+        return 2;
+#endif
+    }
     // The Qwen35 POC route: the same entry point, the internal Qwen module.  It runs before every native-engine
     // check below, so nothing about the Flash-Next path changes.
     if (!o.qwen35_model.empty()) {
@@ -2031,8 +2055,8 @@ int main(int argc, char** argv) {
         // as the Flash-Next engine's --pool-workers does.
         q.pool_workers = (int) (o.qwen35_pool_workers > 0 ? o.qwen35_pool_workers
                                                           : (o.qwen35_threads > 1 ? o.qwen35_threads - 1 : 1));
-        // M2 serve mode: --serve + --qwen35-model = the official server line protocol (READY/GEN/PP/T/DONE/STOP)
-        // instead of the one-shot runner (see src/program/qwen35_serve.cpp).
+        // M2 serve mode: --serve + --qwen35-model = the official server line protocol (READY/GEN/PP/T/DONE/STOP,
+        // plus P2-1's CAPS and SCORE) instead of the one-shot runner (see src/program/qwen35_serve.cpp).
         if (o.serve) return strata::program::qwen35_serve(q);
         return strata::program::qwen35_run(q);
 #else

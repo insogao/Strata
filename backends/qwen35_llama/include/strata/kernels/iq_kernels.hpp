@@ -50,6 +50,11 @@ NativeExpertLayout native_expert_layout(int gu_type, int d_type, int64_t n_embd,
 /// prompt path's dequantizer takes both (checked for every layer at startup, before anything is allocated).
 bool native_expert_supported(int gu_type, int d_type, int64_t n_embd, int64_t n_ff) noexcept;
 
+/// Whether either expert role has a kernel for this type: the compile-time role tables (STRATA_GU_FMTS /
+/// STRATA_D_FMTS above `gu_qk` / `d_qk`), so a build without STRATA_Q6K_EXPERTS answers false for Q6_K.
+/// This is the whitelist the P2-1 capabilities table exports; it is not a CPU/ISA probe.
+bool iq_expert_role_format(int ggml_type) noexcept;
+
 /// Bytes of scratch `native_expert_grouped` needs for `cap_entries` entries.
 size_t native_expert_scratch_bytes(int64_t cap_entries, int64_t n_ff);
 

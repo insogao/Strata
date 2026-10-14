@@ -7,14 +7,27 @@
 //
 //   client -> engine:
 //     GEN <max_new> [key=value ...] <id,id,...>   one request, sampled greedy unless temperature>0
+//     SCORE <id,id,...> [topk=N]                  read-only candidate logits: prefill, generate nothing
+//     CAPS                                        print the capability table (one JSON line), keep serving
 //     STOP                                        cancel the running request; the process keeps serving
 //     QUIT                                        exit 0
 //   engine -> client:
 //     PP <done> <total> <ms> <fresh tok/s>        once per prefill chunk (ubatch-sized)
 //     T <id>                                      one generated token, EOS included
+//     LOGPROBS <pos> <k> <id>:<logprob> ...       SCORE's answer: top-k of the FULL-vocabulary log-softmax
 //     DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused>
 //          <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>
+//     CAPS <json>                                 the --capabilities JSON (P2-1)
 //     ERR <message>                               request-level refusal; the engine keeps serving
+//
+// SCORE (P2-1) reads a prompt through the SAME prefill path as GEN (ubatch chunks, PP lines) and then takes
+// the last position's logits: it emits no token.  It answers `LOGPROBS <pos> <k> <id>:<logprob> ...` where
+// pos is the 0-based last prompt position and logprob is the log-softmax over EVERY logit of the vocabulary
+// (no top-k normalization), followed by `DONE ... score` with produced=0.  State semantics are (b)
+// independent, by construction: SCORE starts from `llama_memory_clear` like GEN and resets the session again
+// after printing, so the next request - GEN or SCORE - always starts fresh (reuse stays 0).
+// CAPS answers the same JSON as `--capabilities` (see qwen35_capabilities_json and
+// docs/backends/qwen35_llama_capabilities_and_score.md).
 //
 // Sampling keys implemented: temperature / top_p / top_k / min_p / seed.  A non-default `penalty_*` (or a
 // `logit_bias`) is REFUSED with ERR instead of being ignored - the phase-1 engine has no such sampler, and a
@@ -34,9 +47,11 @@
 // exits or crashes on input it does not know.
 #include "strata/program/qwen35_model.hpp"
 
+#include "strata/artifact/gguf_reader.hpp"
 #include "strata/core/qwen35_bridge.hpp"
 #include "strata/core/qwen35_mtp.hpp"
 #include "strata/core/qwen35_mtp_txn.hpp"
+#include "strata/kernels/iq_kernels.hpp"
 
 #include "llama.h"
 #include "ggml-backend.h"
@@ -55,6 +70,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <string>
 #include <thread>
 #include <vector>
@@ -110,10 +126,33 @@ bool parse_scalar(const std::string& val, char*& end) {
     return !val.empty() && end != nullptr && *end == '\0';
 }
 
+/// `<id,id,...>` (no spaces inside; see the callers) appended to `out`.  Every part must be a decimal id in
+/// [0, llama_token max].  Returns false with `err` set.  GEN and SCORE share this so both refuse id lists the
+/// same way.
+bool parse_id_list(const char* ids, const char* ids_end, std::vector<llama_token>& out, std::string& err) {
+    if (ids_end == ids) { err = "bad request: no token ids"; return false; }
+    for (const char* q = ids; q != ids_end; ++q) {
+        if (*q == ' ') { err = "bad request: token ids"; return false; }
+    }
+    const std::string ids_txt(ids, (size_t) (ids_end - ids));
+    const int64_t n_vocab_max = std::numeric_limits<llama_token>::max();
+    for (size_t q = 0;;) {
+        const char* at = ids_txt.c_str() + q;
+        char* ie = nullptr;
+        const long long v = std::strtoll(at, &ie, 10);
+        if (ie == at || v < 0 || v > n_vocab_max) { err = "bad request: token ids"; return false; }
+        out.push_back((llama_token) v);
+        const size_t adv = (size_t) (ie - ids_txt.c_str());
+        if (adv == ids_txt.size()) break;
+        if (ids_txt[adv] != ',' || adv + 1 == ids_txt.size()) { err = "bad request: token ids"; return false; }
+        q = adv + 1;
+    }
+    return true;
+}
+
 /// `GEN <max_new> [key=value ...] <id,id,...>`; the ids start at the first whitespace token without '=' and run
 /// to the end of the line (same split rule as the official engine's parser).  Returns false with `err` set.
 bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) {
-    const int64_t n_vocab_max = std::numeric_limits<llama_token>::max();
     const char* p = line.c_str() + 4;   // past "GEN "
     while (*p == ' ') ++p;
     if (*p < '0' || *p > '9') { err = "bad request: max_new"; return false; }
@@ -170,23 +209,48 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     const char* ids = p;
     const char* ids_end = ids + std::strlen(ids);
     while (ids_end > ids && ids_end[-1] == ' ') --ids_end;   // a trailing space is noise, not an id list
-    if (ids_end == ids) { err = "bad request: no token ids"; return false; }
-    for (const char* q = ids; q != ids_end; ++q) {
-        if (*q == ' ') { err = "bad request: token ids"; return false; }
+    return parse_id_list(ids, ids_end, req.ids, err);
+}
+
+/// One parsed SCORE request (P2-1): a prompt and the number of candidate logits to report (default 5).
+struct ScoreRequest {
+    std::vector<llama_token> ids;
+    int32_t topk = 5;
+};
+
+/// `SCORE <id,id,...> [topk=N]`: the only non-key token is the id list (it may come before or after the keys).
+/// `topk` is the only key; any other key is refused - a silently ignored `topk` typo would answer a different
+/// question than the one asked.  `topk` must be a positive integer (the run clamps it to the vocabulary size).
+bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& err) {
+    const char* p = line.c_str() + 5;   // past "SCORE"
+    const char* ids = nullptr;
+    const char* ids_end = nullptr;
+    for (;;) {
+        while (*p == ' ') ++p;
+        if (*p == '\0') break;
+        const char* start = p;
+        while (*p != '\0' && *p != ' ') ++p;
+        const std::string tok(start, (size_t) (p - start));
+        const size_t eq = tok.find('=');
+        if (eq == std::string::npos) {
+            if (ids != nullptr) { err = "bad request: token ids"; return false; }   // one id list, not two
+            ids = start;
+            ids_end = p;
+            continue;
+        }
+        const std::string key = tok.substr(0, eq);
+        const std::string val = tok.substr(eq + 1);
+        if (key != "topk") { err = "bad request: unknown key " + key; return false; }
+        char* ve = nullptr;
+        const long long v = std::strtoll(val.c_str(), &ve, 10);
+        if (!parse_scalar(val, ve) || v < 1 || v > std::numeric_limits<int32_t>::max()) {
+            err = "bad request: topk";
+            return false;
+        }
+        req.topk = (int32_t) v;
     }
-    const std::string ids_txt(ids, (size_t) (ids_end - ids));
-    for (size_t q = 0;;) {
-        const char* at = ids_txt.c_str() + q;
-        char* ie = nullptr;
-        const long long v = std::strtoll(at, &ie, 10);
-        if (ie == at || v < 0 || v > n_vocab_max) { err = "bad request: token ids"; return false; }
-        req.ids.push_back((llama_token) v);
-        const size_t adv = (size_t) (ie - ids_txt.c_str());
-        if (adv == ids_txt.size()) break;
-        if (ids_txt[adv] != ',' || adv + 1 == ids_txt.size()) { err = "bad request: token ids"; return false; }
-        q = adv + 1;
-    }
-    return true;
+    if (ids == nullptr) { err = "bad request: no token ids"; return false; }
+    return parse_id_list(ids, ids_end, req.ids, err);
 }
 
 /// temperature > 0: the standard chain top_k -> top_p -> min_p -> temp -> dist(seed).  temperature <= 0
@@ -227,7 +291,98 @@ struct StdinQueue {
     bool eof = false;
 };
 
+/// The prompt read GEN and SCORE share (P2-1): ubatch-sized chunks with one PP line after each, then the
+/// prompt -> decode transition.  `prompt_ms` is measured after the transition, like phase 1.  A false
+/// `loan_returned` is a real failure; `cancelled` means a STOP ended the read part-way.
+struct PrefillRun {
+    int64_t read_n = 0;
+    bool failed = false;
+    bool cancelled = false;
+    bool loan_returned = false;
+    double prompt_ms = 0.0;
+};
+
+PrefillRun run_prefill(llama_context* ctx, llama_batch_ext* batch, const std::vector<llama_token>& ids,
+                       int64_t chunk_max, const std::shared_ptr<StdinQueue>& stdin_shared) {
+    PrefillRun r;
+    const auto prefill_begin = Clock::now();
+    const int64_t total = (int64_t) ids.size();
+    for (int64_t at = 0; at < total; at += chunk_max) {
+        if (stdin_shared->stop.load()) { r.cancelled = true; break; }
+        const int count = (int) std::min<int64_t>(chunk_max, total - at);
+        if (!fill_batch(batch, ids.data() + at, count, (int) at)) { r.failed = true; break; }
+        const double chunk_begin_ms = ms_since(prefill_begin);
+        if (llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, batch) != 0) {
+            r.failed = true;
+            break;
+        }
+        r.read_n = at + count;
+        const double now_ms = ms_since(prefill_begin);
+        const double chunk_ms = now_ms - chunk_begin_ms;
+        std::printf("PP %lld %lld %.0f %.1f\n", (long long) r.read_n, (long long) total, now_ms,
+                    chunk_ms > 0.0 ? 1000.0 * (double) count / chunk_ms : 0.0);
+        std::fflush(stdout);
+    }
+    r.loan_returned = core::qwen35_bridge_finish_prompt();
+    r.prompt_ms = ms_since(prefill_begin);
+    return r;
+}
+
+/// The state reset every request starts with (GEN and SCORE): cell metadata + KV cells and the recurrent
+/// (GDN conv/SSM/rollback) planes - the proven reset the two-request diagnostic trusts.
+void reset_session(llama_context* ctx) {
+    if (llama_memory_t mem = llama_get_memory(ctx)) {
+        llama_memory_clear(mem, true);
+    }
+}
+
 }  // namespace
+
+std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_max, int64_t nextn_layers) {
+    // mtp.available: the model's declared MTP (NextN) layer count - qwen35moe.nextn_predict_layers, the same
+    // key the llama loader reads into hparams.n_layer_nextn.  With a loaded model the caller passes the value;
+    // otherwise only the GGUF metadata header is read (never a tensor payload), and an open/parse error leaves
+    // availability false.  The production UD-IQ3_S file has no such key (false); the MTP experiment has 1.
+    bool mtp_available = false;
+    if (nextn_layers >= 0) {
+        mtp_available = nextn_layers > 0;
+    } else if (!o.model.empty()) {
+        try {
+            const strata::GgufModel m({o.model});
+            const strata::MetaValue* v = m.meta().get("qwen35moe.nextn_predict_layers");
+            if (v != nullptr && v->is_num()) mtp_available = (int64_t) v->num() > 0;
+        } catch (...) {
+            // Documented in the capabilities doc: unreadable metadata leaves mtp.available false.
+        }
+    }
+    // expert_formats: the compile-time grouped-expert kernel whitelist (the GPU native-expert path; see
+    // kernels::iq_expert_role_format / iq_kernels.cu's STRATA_GU_FMTS and STRATA_D_FMTS).  A pack whose layer
+    // pair fails kernels::native_expert_supported is refused at startup, so these are the formats a model can
+    // actually carry.  The array is the union of the two roles; the roles' own split is in the doc.
+    static const struct { int id; const char* name; } kExpertFormats[] = {
+        {2, "Q4_0"}, {3, "Q4_1"}, {6, "Q5_0"}, {7, "Q5_1"}, {8, "Q8_0"}, {12, "Q4_K"}, {13, "Q5_K"},
+        {14, "Q6_K"}, {16, "IQ2_XXS"}, {17, "IQ2_XS"}, {18, "IQ3_XXS"}, {20, "IQ4_NL"}, {21, "IQ3_S"},
+        {22, "IQ2_S"}, {23, "IQ4_XS"}, {29, "IQ1_M"}, {42, "Q2_0"},
+    };
+    std::string fmts;
+    for (const auto& f : kExpertFormats) {
+        if (!strata::kernels::iq_expert_role_format(f.id)) continue;
+        if (!fmts.empty()) fmts += ',';
+        fmts += '"';
+        fmts += f.name;
+        fmts += '"';
+    }
+    char buf[1024];
+    std::snprintf(buf, sizeof buf,
+                  "{\"protocol\":\"strata-serve-v1\",\"continuous_requests\":true,\"cancel\":true,"
+                  "\"state_isolation\":true,\"prefix_cache\":false,\"batching\":false,"
+                  "\"mtp\":{\"available\":%s,\"enabled\":%s,\"default\":false,\"k\":null},"
+                  "\"expert_formats\":[%s],\"context_max\":%lld,\"logits_read\":true,"
+                  "\"state_export\":false,\"disk_kv\":false,\"vision\":false}",
+                  mtp_available ? "true" : "false", env_is_exactly_one("STRATA_QWEN35_MTP") ? "true" : "false",
+                  fmts.c_str(), (long long) context_max);
+    return std::string(buf);
+}
 
 int qwen35_serve(const Qwen35RunOptions& o) {
     if (o.model.empty() || o.pack_dir.empty()) {
@@ -357,6 +512,10 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     // Past graph reservation: decode-graph nodes are the external producer from here on (the same seam the
     // CLI runner arms, with the same escape hatch).
     if (std::getenv("STRATA_QWEN35_NO_SEAM") == nullptr) core::qwen35_arm_decode_seam(true);
+    // P2-1: the capability table this process answers for CAPS - the loaded model's actual context and MTP
+    // layer count, not the argv defaults (the CLI --capabilities path computes it without a load).
+    const std::string caps_json = qwen35_capabilities_json(
+        o, (int64_t) llama_n_ctx(ctx.get()), meta_int(model.get(), "qwen35moe.nextn_predict_layers", 0));
     // READY advertises the context requests are actually checked against.
     std::printf("READY %lld stop\n", (long long) llama_n_ctx(ctx.get()));
     std::fflush(stdout);
@@ -407,6 +566,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     // The ACTUAL micro-batch the context reports (never a re-print of the request): PP chunks track it.
     const int64_t chunk_max = std::max<int64_t>(1, (int64_t) llama_n_ubatch(ctx.get()));
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(nullptr, llama_sampler_free);
+    std::vector<int32_t> score_idx;   // SCORE's top-k scratch, reused across requests
     std::string line;
     long long serve_reqs = 0;
     for (;;) {
@@ -421,8 +581,110 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         if (line == "QUIT") break;
         // A literal STOP here is an idle one (the reader consumes STOP lines itself).
         if (line == "STOP") continue;
+        if (line == "CAPS") {   // P2-1: the capability table, the same JSON --capabilities prints
+            std::printf("CAPS %s\n", caps_json.c_str());
+            std::fflush(stdout);
+            continue;
+        }
+        if (line.rfind("SCORE ", 0) == 0) {
+            // P2-1: read-only candidate logits.  Same prefill as GEN, no token generated, and the session is
+            // reset again after the answer (semantics (b): the next request always starts fresh).
+            ScoreRequest sreq;
+            std::string serr;
+            if (!parse_score_line(line, sreq, serr)) {
+                std::printf("ERR %s\n", serr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            bool bad_id = false;
+            for (size_t i = 0; i < sreq.ids.size() && !bad_id; ++i) {
+                if (sreq.ids[i] < 0 || (int64_t) sreq.ids[i] >= n_vocab) bad_id = true;
+            }
+            if (bad_id) {
+                std::printf("ERR a token id is outside the vocabulary\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if ((int64_t) sreq.ids.size() > total_ctx) {
+                std::printf("ERR prompt (%lld tokens) exceeds the context (%lld)\n",
+                            (long long) sreq.ids.size(), (long long) total_ctx);
+                std::fflush(stdout);
+                continue;
+            }
+            stdin_shared->stop.store(false);   // a STOP between requests is stale (the GEN rule)
+            reset_session(ctx.get());
+            const int64_t total = (int64_t) sreq.ids.size();
+            const PrefillRun pre = run_prefill(ctx.get(), batch.get(), sreq.ids, chunk_max, stdin_shared);
+            if (pre.failed) {
+                std::printf("ERR prefill failed\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (!pre.loan_returned) {
+                std::printf("ERR the prompt workspace loan was not returned\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (pre.cancelled) {
+                // A STOP ended the read part-way: there is no complete last-position row to score.
+                std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
+                            0LL, (long long) total, pre.prompt_ms, 0.0, "cancel", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
+                            0LL, 0.0, (long long) pre.read_n, 0LL);
+                std::fflush(stdout);
+                std::fprintf(stderr, "serve: req %lld finish=cancel produced=0 prompt_ms=%.1f decode_ms=0.0 score\n",
+                             ++serve_reqs, pre.prompt_ms);
+                reset_session(ctx.get());
+                continue;
+            }
+            const float* logits = llama_get_logits_ith(ctx.get(), -1);
+            if (logits == nullptr) {
+                std::printf("ERR score produced no logits\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (logits_have_nan(logits, n_vocab)) {
+                std::fprintf(stderr, "strata qwen35 serve: the head logits are not all finite; answering ERR "
+                                     "(score)\n");
+                std::printf("ERR score: the head logits are not all finite\n");
+                std::fflush(stdout);
+                reset_session(ctx.get());
+                continue;
+            }
+            // log_softmax over the FULL vocabulary: logprob = logit - (max + log(sum exp(logit - max))).  The
+            // denominator is all n_vocab logits; the top-k below selects from it, it does not renormalize.
+            float mx = logits[0];
+            for (int64_t i = 1; i < n_vocab; ++i) {
+                if (logits[i] > mx) mx = logits[i];
+            }
+            double sum = 0.0;
+            for (int64_t i = 0; i < n_vocab; ++i) sum += std::exp((double) logits[i] - (double) mx);
+            const double lse = (double) mx + std::log(sum);
+            const int64_t k = std::min<int64_t>(sreq.topk, n_vocab);
+            // Top-k by (logit desc, id asc): an exact tie answers the same order every run.
+            score_idx.resize((size_t) n_vocab);
+            std::iota(score_idx.begin(), score_idx.end(), 0);
+            std::partial_sort(score_idx.begin(), score_idx.begin() + (size_t) k, score_idx.end(),
+                              [logits](int32_t a, int32_t b) {
+                                  return logits[a] != logits[b] ? logits[a] > logits[b] : a < b;
+                              });
+            std::printf("LOGPROBS %lld %lld", (long long) (total - 1), (long long) k);
+            for (int64_t j = 0; j < k; ++j) {
+                const int32_t id = score_idx[(size_t) j];
+                std::printf(" %d:%.4f", (int) id, (double) logits[id] - lse);
+            }
+            std::printf("\n");
+            std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
+                        0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
+                        0.0, (long long) pre.read_n, 0LL);
+            std::fflush(stdout);
+            std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 topk=%lld\n",
+                         ++serve_reqs, pre.prompt_ms, (long long) k);
+            reset_session(ctx.get());
+            continue;
+        }
         if (line.rfind("GEN ", 0) != 0) {
-            std::printf("ERR expected: GEN <max_new> [key=value ...] <id,id,...>\n");
+            std::printf("ERR expected: CAPS | SCORE <id,id,...> [topk=N] | GEN <max_new> [key=value ...] "
+                        "<id,id,...>\n");
             std::fflush(stdout);
             continue;
         }
@@ -456,43 +718,18 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         }
         // A STOP that arrived between requests is stale (the official engine's rule).
         stdin_shared->stop.store(false);
-        // Fresh request state: cell metadata + KV cells and the recurrent r/s/p buffers (GDN conv + SSM +
-        // rollback planes), exactly the reset the two-request diagnostic trusts.
-        if (llama_memory_t mem = llama_get_memory(ctx.get())) {
-            llama_memory_clear(mem, true);
-        }
+        // Fresh request state (KV cells + the recurrent GDN planes), the same reset SCORE and the two-request
+        // diagnostic use.
+        reset_session(ctx.get());
         // Prefill, one ubatch-sized chunk at a time; PP after every chunk (the server's progress lines).
-        const auto prefill_begin = Clock::now();
         const int64_t total = (int64_t) req.ids.size();
-        int64_t read_n = 0;
-        bool prefill_failed = false;
-        bool prefill_cancelled = false;
-        for (int64_t at = 0; at < total; at += chunk_max) {
-            if (stdin_shared->stop.load()) { prefill_cancelled = true; break; }
-            const int count = (int) std::min<int64_t>(chunk_max, total - at);
-            if (!fill_batch(batch.get(), req.ids.data() + at, count, (int) at)) { prefill_failed = true; break; }
-            const double chunk_begin_ms = ms_since(prefill_begin);
-            if (llama_process(ctx.get(), LLAMA_PROCESS_TYPE_DECODE, batch.get()) != 0) {
-                prefill_failed = true;
-                break;
-            }
-            read_n = at + count;
-            const double now_ms = ms_since(prefill_begin);
-            const double chunk_ms = now_ms - chunk_begin_ms;
-            std::printf("PP %lld %lld %.0f %.1f\n", (long long) read_n, (long long) total, now_ms,
-                        chunk_ms > 0.0 ? 1000.0 * (double) count / chunk_ms : 0.0);
-            std::fflush(stdout);
-        }
-        // The prompt -> decode transition must run even after a failed or cancelled prompt read: the lent
-        // cache slots are refilled and the decode tier sees them again (a false return is a real failure).
-        const bool loan_returned = core::qwen35_bridge_finish_prompt();
-        const double prompt_ms = ms_since(prefill_begin);
-        if (prefill_failed) {
+        const PrefillRun pre = run_prefill(ctx.get(), batch.get(), req.ids, chunk_max, stdin_shared);
+        if (pre.failed) {
             std::printf("ERR prefill failed\n");
             std::fflush(stdout);
             continue;
         }
-        if (!loan_returned) {
+        if (!pre.loan_returned) {
             std::printf("ERR the prompt workspace loan was not returned\n");
             std::fflush(stdout);
             continue;
@@ -500,7 +737,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         long long produced = 0;
         double decode_ms = 0.0;
         const char* finish = "length";
-        if (prefill_cancelled) {
+        if (pre.cancelled) {
             finish = "cancel";
         } else {
             const auto decode_begin = Clock::now();
@@ -541,13 +778,13 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             // tier counters are 0 because phase 1 carries nothing across requests; prompt_read is how much of
             // the prompt was actually read (fewer than <prompt_tokens> when a STOP ended the read part-way).
             std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
-                        produced, (long long) total, prompt_ms, decode_ms, finish,
+                        produced, (long long) total, pre.prompt_ms, decode_ms, finish,
                         0LL /* accepted */, 0LL /* offered */, 0LL /* reused */, 0LL /* hits */, 0LL /* lookups */,
-                        0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) read_n,
+                        0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) pre.read_n,
                         0LL /* offloaded */);
             std::fflush(stdout);
             std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f\n",
-                         ++serve_reqs, finish, produced, prompt_ms, decode_ms);
+                         ++serve_reqs, finish, produced, pre.prompt_ms, decode_ms);
         }
     }
     core::qwen35_bridge_shutdown();
