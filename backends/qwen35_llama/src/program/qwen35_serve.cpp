@@ -408,6 +408,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     const int64_t chunk_max = std::max<int64_t>(1, (int64_t) llama_n_ubatch(ctx.get()));
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(nullptr, llama_sampler_free);
     std::string line;
+    long long serve_reqs = 0;
     for (;;) {
         {
             std::unique_lock<std::mutex> lk(stdin_shared->mu);
@@ -545,6 +546,8 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                         0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) read_n,
                         0LL /* offloaded */);
             std::fflush(stdout);
+            std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f\n",
+                         ++serve_reqs, finish, produced, prompt_ms, decode_ms);
         }
     }
     core::qwen35_bridge_shutdown();

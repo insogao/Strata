@@ -7,7 +7,9 @@
 
 | 项 | 值 | 来源 |
 |---|---|---|
-| `qwen35_llama` exe | `backends/qwen35_llama/build/strata.exe`，**139,208,192 B**，SHA256 `6062a714c38744a6adc1cb052f3242c304a3ff32d158545933834455544dc9b4` | 354 clean 构建（`results/opencode-execution/strata-unified-import-354/build-354-clean.log`） |
+| `qwen35_llama` exe（现行） | `backends/qwen35_llama/build/strata.exe`，**139,215,872 B**，SHA256 `f9f4485c40f7d419387a3aabf4f311684ac0407f9a33436854336052ee5a33a5` | 365b clean 全量构建（`results/opencode-execution/strata-unified-neutral-run-365b/build-365b-clean.log`，384 目标，exit 0，504 s；新增 serve stderr 诊断行） |
+| 上一任 exe（362–364 所用） | 同路径，**139,216,384 B**，SHA256 `2f47b88a9969d04ed5a6fafed6a561b80f51c2945d054e0828e9d9c4a297ebd1` | 362 构建；363/364 冒烟与官方 server E2E；`qwen35_llama_serve_smoke.md`/`qwen35_llama_server_e2e.md` |
+| 首建 exe（354） | 同路径，**139,208,192 B**，SHA256 `6062a714c38744a6adc1cb052f3242c304a3ff32d158545933834455544dc9b4` | 354 clean 构建（`results/opencode-execution/strata-unified-import-354/build-354-clean.log`） |
 | 导入提交链（当前 `integration/qwen35-llama`） | base `296b59d2f73c8f04a805df29c2fa97655adace78`（v0.1.44.1）→ import `27c987ca1ba3bbc691aea12306129e5846379b28` → smoke 文档 `e0fd2dea82117dc5b41dc76980de648de6b735d5` → 计时回归文档 `c653bef1eba47fbc7dd1b286a2707e470d00c319` → 生产线对照文档 `b5e439176ae2f462d399b52b2c2ebdbf58ea6fce` | `git log`（360 复核） |
 | 提交历史备注 | 2026-10-14（355 之后）对提交链做过一次 `filter-branch`（修正 import 提交的作者），import 与其后继提交随之重写：旧 `22c31c5c`→现 `27c987ca`、旧 `d7d65eec`→现 `e0fd2dea`（两组各自树内容/提交信息相同）。354 报告写于重写前，故其正文仍引用旧 SHA。 | `git reflog`（360 复核） |
 

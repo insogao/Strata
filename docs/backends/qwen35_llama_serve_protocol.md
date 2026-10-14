@@ -66,6 +66,21 @@ tokens actually read - fewer than `prompt_tokens` when a `STOP` ended the read p
 `finish` values: `stop` (EOS hit), `length` (max_new reached), `cancel` (`STOP`), `nonfinite` (a NaN in the
 head logits - the request ends before emitting that token, same as the official `#879` behavior).
 
+### Engine diagnostics on stderr (outside the line protocol)
+
+After every completed request - the same point the `DONE` line is printed on stdout - the engine writes one
+line to **stderr**:
+
+```text
+serve: req <i> finish=<stop|length|cancel|nonfinite> produced=<n> prompt_ms=<..> decode_ms=<..>
+```
+
+`<i>` is the 1-based index of completed requests of this process, in the same order as the `DONE` lines; the
+other fields repeat the `DONE` values. The official server does not read engine stderr, so this line survives
+server-side stdout handling - it is the engine's own statement of why each request ended (`cancel` = a live
+`STOP` ended the request; a `STOP` read before the request started stays stale and never reaches this line).
+Added by task 365b; stdout protocol and every judgement are unchanged.
+
 ### Client -> engine
 
 | Line | Meaning |
