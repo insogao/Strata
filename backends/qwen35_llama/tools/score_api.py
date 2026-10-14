@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
-"""score_api.py - thin HTTP scoring service over the qwen35_llama serve line protocol.
+"""score_api.py - thin HTTP scoring service over a serve line protocol engine.
 
 This is a *subset* service, not a fully protocol-compatible server. It drives one existing
-engine process through the documented stdin/stdout protocol (`CAPS` / `SCORE`, see
-docs/backends/qwen35_llama_serve_protocol.md) and exposes:
+engine process through a documented stdin/stdout protocol and exposes:
 
-    GET  /v1/capabilities   engine CAPS passthrough + this service's own fields
+    GET  /v1/capabilities   the backend's capability table (engine CAPS passthrough for
+                            qwen35_llama; framework-synthesized for official_q36) + service fields
     POST /v1/score          read-only top-k log-softmax of one prompt
     POST /v1/decisions      minimal choice / score / yes_no candidate scoring
+
+Two backends are selectable with --backend (or the config field "backend"; P2-7, see
+tools/backend_adapters.py): `qwen35_llama` (the in-repo backend: CAPS/SCORE/GEN/SAVE/LOAD/
+STATE/STOP/QUIT, docs/backends/qwen35_llama_serve_protocol.md) and `official_q36` (the
+official q36 engine's own --serve protocol: READY/GEN/PP/T/DONE/STOP). The official protocol
+has no CAPS/SCORE/SAVE/LOAD, so its capability table is synthesized (logits_read and
+state_export are false) and /v1/score + /v1/decisions answer an explicit 501 there - never a
+silent fallback to generation. Design and protocol differences:
+docs/backends/qwen35_llama_backend_adapters.md.
 
 One engine, one in-flight request: a concurrent request is answered 503 (no queue). There is
 no chat/completions, no streaming, no batching, and the engine source is untouched. String
 `prompt` input needs an optional tokenizer (--tokenizer-model); without it the request is
 refused with an explanation instead of being guessed at.
 
-Tests (0 GPU, stub engine): tools/test_score_api.py; test-only stub: tools/stub_engine.py.
+Tests (0 GPU, stub engines): tools/test_score_api.py (qwen35 protocol) and
+tools/test_backend_adapters.py (both backends); test-only stubs: tools/stub_engine.py,
+tools/stub_engine_official_q36.py.
 """
 from __future__ import annotations
 
@@ -32,6 +43,9 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
+
+from backend_adapters import (DEFAULT_BACKEND, SUPPORTED_BACKENDS, UnsupportedBackendOperation,
+                              get_adapter)
 
 SERVICE_NAME = "score_api"
 DEFAULT_HOST = "127.0.0.1"
@@ -190,6 +204,10 @@ class EngineLink:
         if not line.startswith("READY "):
             raise EngineProtocolError("expected a READY line from the engine, got %r" % line)
         return line
+
+    def read_line(self, timeout: float) -> str:
+        deadline = time.monotonic() + timeout
+        return self._take_until(deadline, timeout)
 
     def caps(self, timeout: float) -> dict:
         self.send("CAPS")
@@ -350,12 +368,17 @@ def _usage(done: dict) -> dict:
 
 class ScoreService:
     def __init__(self, link: EngineLink, engine_path=None, timeout=DEFAULT_TIMEOUT,
-                 drain_timeout=DEFAULT_DRAIN_TIMEOUT, tokenizer_model=None):
+                 drain_timeout=DEFAULT_DRAIN_TIMEOUT, tokenizer_model=None, backend=None):
         self.link = link
         self.engine_path = Path(engine_path) if engine_path else None
         self.timeout = float(timeout)
         self.drain_timeout = float(drain_timeout)
         self.tokenizer_model = tokenizer_model
+        if backend is None:
+            backend = get_adapter(DEFAULT_BACKEND)
+        elif isinstance(backend, str):
+            backend = get_adapter(backend)
+        self.backend = backend
         self._busy = threading.Lock()
         self._dead = False
         self._sha = None
@@ -411,8 +434,15 @@ class ScoreService:
                                         % self._tokenizer_error)
         return self._tokenizer
 
+    def _require_backend_score(self, endpoint):
+        try:
+            self.backend.require_score(endpoint)
+        except UnsupportedBackendOperation as exc:
+            raise NotImplementedFeature(str(exc))
+
     def score_request(self, body):
         body = _require_object(body)
+        self._require_backend_score("/v1/score")
         _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk"})
         if ("prompt_ids" in body) == ("prompt" in body):
             raise BadRequest("exactly one of prompt_ids or prompt is required")
@@ -426,19 +456,19 @@ class ScoreService:
                 raise Unprocessable("the prompt encoded to zero tokens")
         else:
             ids = _parse_prompt_ids(body["prompt_ids"])
-        result = self._engine_call(lambda: self.link.score(ids, topk, self.timeout))
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout))
         return 200, {"logprobs": result.pairs, "pos": result.pos, "full_vocab_softmax": True,
                      "generated_tokens": 0, "usage": _usage(result.done)}
 
     def capabilities_request(self):
-        caps = self._engine_call(lambda: self.link.caps(self.timeout))
-        payload = dict(caps)
+        payload = dict(self._engine_call(lambda: self.backend.capabilities(self.link, self.timeout)))
         payload["service"] = SERVICE_NAME
         payload["engine_sha256"] = self._engine_sha256()
         return 200, payload
 
     def decisions_request(self, body):
         body = _require_object(body)
+        self._require_backend_score("/v1/decisions")
         _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk"})
         kind = body.get("kind")
         if kind not in DECISION_KINDS:
@@ -456,7 +486,7 @@ class ScoreService:
             if topk < len(flat):
                 raise Unprocessable("topk=%d cannot cover all %d candidates" % (topk, len(flat)))
         engine_topk = max(DEFAULT_TOPK, len(flat), topk or 0)
-        result = self._engine_call(lambda: self.link.score(ids, engine_topk, self.timeout))
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, engine_topk, self.timeout))
         by_id = {pair["id"]: pair["logprob"] for pair in result.pairs}
         missing = [token_id for token_id in flat if token_id not in by_id]
         if missing:
@@ -562,6 +592,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="thin /v1/score + /v1/capabilities + /v1/decisions service over the serve line protocol",
         epilog="service options must come before --argv; everything after --argv goes to the engine")
+    parser.add_argument("--backend", choices=SUPPORTED_BACKENDS, default=None,
+                        help="engine backend/protocol to drive (default: %s; the config field "
+                             "'backend' is also accepted). official_q36 drives the official serve "
+                             "protocol (READY/GEN/PP/T/DONE/STOP): its capability table is "
+                             "synthesized and /v1/score + /v1/decisions answer an explicit 501"
+                             % DEFAULT_BACKEND)
     parser.add_argument("--engine", metavar="EXE",
                         help="engine executable (default: backends/qwen35_llama/build/strata.exe)")
     parser.add_argument("--config", metavar="JSON", help="official server config (exe/cwd/args/env)")
@@ -586,15 +622,27 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _resolve_start_command(args):
-    config = {}
-    if args.config:
-        try:
-            config = json.loads(Path(args.config).read_bytes().decode("utf-8"))
-        except (OSError, ValueError) as exc:
-            raise SystemExit("score_api: cannot read --config %r: %s" % (args.config, exc))
-        if not isinstance(config, dict):
-            raise SystemExit("score_api: --config must contain a JSON object")
+def _load_config(path):
+    if not path:
+        return {}
+    try:
+        config = json.loads(Path(path).read_bytes().decode("utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit("score_api: cannot read --config %r: %s" % (path, exc))
+    if not isinstance(config, dict):
+        raise SystemExit("score_api: --config must contain a JSON object")
+    return config
+
+
+def resolve_backend(cli_value, config):
+    name = cli_value or config.get("backend") or DEFAULT_BACKEND
+    if name not in SUPPORTED_BACKENDS:
+        raise SystemExit("score_api: unknown backend %r; supported backends: %s"
+                         % (name, ", ".join(SUPPORTED_BACKENDS)))
+    return get_adapter(name)
+
+
+def _resolve_start_command(args, config):
     exe = args.engine or config.get("exe") or str(_default_engine_path())
     cwd = args.cwd or config.get("cwd") or None
     engine_argv = list(args.argv) if args.argv else list(config.get("args") or [])
@@ -625,9 +673,11 @@ def main(argv=None) -> int:
         raise SystemExit("score_api: choose exactly one of --start-engine or --attach-stdin/--attach-stdout")
     if attach and not (args.attach_stdin and args.attach_stdout):
         raise SystemExit("score_api: attach mode needs both --attach-stdin and --attach-stdout")
+    config = _load_config(args.config)
+    backend = resolve_backend(args.backend, config)
     proc = None
     if args.start_engine:
-        exe, engine_argv, cwd, env = _resolve_start_command(args)
+        exe, engine_argv, cwd, env = _resolve_start_command(args, config)
         stderr = open(args.engine_log, "ab") if args.engine_log else None
         try:
             proc = subprocess.Popen([exe] + engine_argv, cwd=cwd, env=env,
@@ -636,6 +686,7 @@ def main(argv=None) -> int:
             raise SystemExit("score_api: cannot start %r: %s" % (exe, exc))
         link = EngineLink(proc.stdin, proc.stdout, proc=proc)
         ready = link.wait_ready(args.start_timeout)
+        backend.note_ready(ready)
         engine_path = exe
         sys.stdout.write("score_api engine ready: %s\n" % ready)
     else:
@@ -645,11 +696,15 @@ def main(argv=None) -> int:
         except OSError as exc:
             raise SystemExit("score_api: cannot open the attach pipes: %s" % exc)
         link = EngineLink(writer, reader)
-        caps = link.caps(args.start_timeout)
+        if backend.caps_handshake:
+            caps = link.caps(args.start_timeout)
+            sys.stdout.write("score_api attached to engine (protocol %s)\n" % caps.get("protocol", "?"))
+        else:
+            sys.stdout.write("score_api attached to engine (backend %s: this protocol has no CAPS "
+                             "handshake)\n" % backend.name)
         engine_path = args.engine
-        sys.stdout.write("score_api attached to engine (protocol %s)\n" % caps.get("protocol", "?"))
     service = ScoreService(link, engine_path=engine_path, timeout=args.timeout,
-                           tokenizer_model=args.tokenizer_model)
+                           tokenizer_model=args.tokenizer_model, backend=backend)
     httpd = start_http(service, args.host, args.port)
     host, port = httpd.server_address[:2]
     sys.stdout.write("score_api listening on http://%s:%d\n" % (host, port))
