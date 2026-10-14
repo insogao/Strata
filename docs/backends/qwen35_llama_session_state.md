@@ -3,12 +3,12 @@
 **Status**: implemented in `src/program/qwen35_serve.cpp` (P2-5, 0-GPU task). This is the **single-session
 state boundary** for the serve engine: one explicit export/import of the CURRENT session state, reusing
 llama's own sequence-state serialization (`llama_state_seq_get_size/get_data/set_data`) - **no new
-serialization format**. Functional/GPU verification (parity) is **P2-6**; this doc states what is implemented
-and what is deliberately not claimed.
+serialization format**. Functional/GPU verification (parity) ran as **P2-6** on 2026-10-15 and passed on this
+machine/build (same-process and cross-process continuations byte-identical; failure legs left the live
+session untouched) - results, raw lines and limits: section 11.
 
-Scope rules this doc obeys: nothing here claims cross-process or cross-machine recovery; the only thing
-verified at the code level is the mechanism and its failure behavior (build + review), GPU byte-parity is
-P2-6.
+Scope rules this doc obeys: nothing here claims cross-machine portability; cross-process continuation
+restores are verified for the same machine and build only (P2-6 N1/N2, section 11).
 
 ## 1. Commands
 
@@ -158,9 +158,9 @@ Anything answered `ERR` keeps the engine serving - the same request-level contra
 - **No cross-machine guarantee**: nothing here promises that a file written on one GPU/machine restores
   identically on another. Numerical identity of a continuation is only expected within the same build and
   hardware; the actual parity check is P2-6 on this machine.
-- **No cross-process claim yet**: the mechanism is used same-process in P2-5's design and the file format is
-  llama's own; whether a fresh process that `LOAD`s a file continues byte-identically is exactly what P2-6
-  verifies on GPU. Until that evidence exists, treat cross-process continuation as **unverified**.
+- **Cross-process continuation (same machine, same build)**: verified by P2-6 N2 on 2026-10-15 - a fresh
+  process that `LOAD`s the file continued byte-identically to the uninterrupted session (section 11).
+  Cross-machine portability remains unverified and is not claimed.
 - Position limits: the continuation check `cursor + prompt + max_new <= context_max` uses the live context;
   importing a state whose cells exceed this context is rejected by llama's reader (`ERR`).
 - File cap: 1 GiB (a size gate, not a measurement; chosen well above the expected state size for this model
@@ -208,8 +208,8 @@ it never affects a request unless the caller `LOAD`s it.
 `SAVE -> LOAD -> SAVE` (and repeated cycles) is a supported operation sequence: `LOAD` swaps in a fresh
 context built from the same model/parameters, so the following `SAVE` serializes that context. On the same
 build the second `SAVE` is expected to produce a byte-identical file (same cells, same positions, same
-tensor rows; the import packs cells from head 0). This expectation is **code-level reasoning in P2-5** and
-gets its empirical check in P2-6 (it is not claimed as verified here).
+tensor rows; the import packs cells from head 0). This expectation got its empirical check in P2-6: the two
+files were byte-identical (`sha256 7d34f3b9…368414`, section 11).
 
 ## 9. Not implemented / not claimed
 
@@ -224,6 +224,12 @@ gets its empirical check in P2-6 (it is not claimed as verified here).
 - GPU parity (section 10).
 
 ## 10. P2-6 plan (GPU parity: SAVE -> continuation vs LOAD -> continuation, byte-identical)
+
+**Executed 2026-10-15: PASS** - outcome, raw lines, table and limits in section 11. The actual run used the
+standard GPU discipline (gpu-lock leases, production gates, same model/pack as P2-2/P2-4) with context
+**8192** (not 4096), a fixed 4-id continuation prompt `P2` preregistered in every leg, and one failure leg
+each of missing/truncated `LOAD`; section 11 lists these deviations from the plan text below. The plan text
+is kept as the preregistered design:
 
 P2-6 runs on the real engine under the standard GPU discipline (gpu-lock lease, production gates, context
 4096, the same model/pack as P2-2/P2-4) and checks, in order:
@@ -250,7 +256,38 @@ Pass criteria: step 1-3 token streams byte-equal; step 4 all `ERR` + service con
 from the recorded runs. Evidence (raw transcripts, state file SHAs and sizes, STATE lines, lease audit) goes
 to the P2-6 task directory in the research repo; this document is updated with the outcome.
 
-## 11. Implementation pointers
+## 11. Parity - P2-6 result (executed 2026-10-15, this machine)
+
+**PASS.** Exe `6dee0c66c3e87c3020c6ddde3c9ebaa40bed3369745e8e1dbfb0a7ac963ad90a` (139,253,760 B), context 8192,
+neutral model + pack; three strictly serial `gpu-lock` leases (one process each, `--stdin-file`, all exit 0,
+no cleanup fence left). State blob: 145,215,172 B at cursor `pos = 3870` (saved after a 4-token `GEN` on the
+3869-id neutral prompt; the last sampled token - EOS - is not fed into the state, so the continuation prompt
+starts the next inputs at the cursor). Evidence (raw transcripts, state files, lease audit):
+`results/opencode-execution/strata-unified-p2-6-save-load-parity/`.
+
+| leg | sequence | ids (per-id compare) | result |
+|---|---|---|---|
+| N1 same-process | `GEN 4 P1` -> `SAVE s1` -> `GEN 8 P2` (A1) -> `LOAD s1` -> `SAVE s1b` -> `GEN 8 P2` (B1) | A1 `[18,248046]` vs B1 `[18,248046]` | equal; first divergence none |
+| N2 cross-process | fresh process: `LOAD s1` -> `GEN 8 P2` (C1) | C1 vs A1 | equal |
+| N3 no half-restore | `LOAD s1` -> `GEN 8 P2` (D0); `LOAD <missing path>` -> `ERR` -> `GEN` (D1); `LOAD <truncated file>` -> `ERR` -> `GEN` (D2) | D1/D2 vs D0 | equal; the `STATE` line is character-identical across each failed `LOAD` |
+| reentrancy | `SAVE s1` -> `LOAD s1` -> `SAVE s1b` | s1.bin vs s1b.bin, sha256 `7d34f3b933d6a92cce9d45d254c832c84e7a03a79a6107923a6bd65844c368414` | byte-identical (145,215,172 B each) |
+
+Raw lines (originals in the evidence directory, `nativeN/protocol-lines.txt`):
+`SAVED 145215172 3870 116.7` / `LOADED 145215172 3870 709.8` /
+`DONE 2 4 102.3 54.2 stop 0 0 3870 …` (A1) / `DONE 2 4 105.0 49.2 stop 0 0 3870 …` (B1) /
+`DONE 2 4 807.0 118.1 stop 0 0 3870 …` (C1) / `ERR session: cannot open '…' for reading` /
+`ERR session: the import failed (incompatible model/context or corrupt state); the live session is unchanged`.
+Every continuation's `DONE` reports `reused = 3870` (the carried cursor) and `finish = stop`; `18` = "2",
+`248046` = EOS.
+
+Unexplained items / limits (as executed): every continuation ended at EOS after 2 tokens (the neutral
+prompt's recorded behavior), so each parity leg compares the same 2 ids (added bit-exact evidence: the
+reentrancy file equality above and the identical `reused` bookkeeping); P2 was a fixed 4-id prompt because a
+preregistered `--stdin-file` cannot carry a runtime-dependent "last generated token"; verification covers
+this build, this machine and context 8192 only - **no cross-machine guarantee**; long-run stability (many
+save/load cycles, long sequences, repeated continuations) is not measured here. `state_export` remains `true`.
+
+## 12. Implementation pointers
 
 - Commands and session bookkeeping: `backends/qwen35_llama/src/program/qwen35_serve.cpp` (`SESSION` helpers:
   `SessionBook`, `state_cursor`, `state_blob_size`, `session_path_allowed`, `read_file_bytes`,
