@@ -199,3 +199,77 @@ No HTTP server is implemented in P2-1. The intended mapping for the documented s
 - Artifact: `backends/qwen35_llama/build/strata.exe`, **139,226,624 B**,
   `sha256=66a48ad1366a122ea166ce557e23db85d62332bd62a2b017c2117e1c7cb27745`.
 - Functional verification on GPU/cancellation/quality is **P2-2**, not this task (P2-1 is 0 GPU: no exe run).
+
+## GPU verification (P2-2)
+
+Functional verification of the two additions above on the target GPU, executed 2026-10-14 23:21-23:22 (+08:00)
+from the neutral build/run root (`cwd=D:/work/StrataUnified`), under `tools/gpu-lock.py run` (one lease per
+case, cleanup fence written before launch and removed only on the fully clean path).
+
+Harness facts:
+
+- exe (declared == actual, `argv[0]` == binary): `backends/qwen35_llama/build/strata.exe`,
+  `sha256=66a48ad1366a122ea166ce557e23db85d62332bd62a2b017c2117e1c7cb27745`, 139,226,624 B.
+- Serve argv: `--qwen35-model models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf --qwen35-pack models/pack --serve
+  --max-context 4096 --qwen35-threads 8 --qwen35-cache-slots 3200 --qwen35-ubatch 4096`. Env: only the three
+  production gates (`STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE=1`, `STRATA_QWEN35_PACKED_IDS=1`,
+  `STRATA_QWEN35_EXPERT_ORDER=count_desc`); every other `STRATA_*`/`GGML_*`/`LLAMA_GRAPH*` and
+  `CUDA_LAUNCH_BLOCKING` cleared; CUDA runtime DLLs front-loaded on `PATH` (`runtime/cuda-12.8.1/bin`).
+- stdin (supervisor-staged, byte-unchanged): 5 lines,
+  `sha256=978eb95ad5ef868467d46c6ee523ee61e79eda4603b0a42d6a7d058f9fc29094` -
+  `CAPS` / `SCORE <P1: 3869 ids> topk=5` / `GEN 16 temperature=0 <P1>` / `SCORE 999999999,1` / `GEN 16 <P1>`
+  (P1 is the same 3869-id prompt as phase-1 task 365b N1).
+
+### N1 - serve path (raw transcript, verbatim; child log lines 189-211)
+
+```text
+READY 4096 stop
+CAPS {"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"state_export":false,"disk_kv":false,"vision":false}
+PP 3869 3869 4150 932.6
+LOGPROBS 3868 5 18:-0.8937 15:-1.2617 17:-1.2855 16:-3.5211 19:-8.3055
+DONE 0 3869 4152.4 0.0 score 0 0 0 0 0 0 0 0.0 3869 0
+serve: req 1 finish=score produced=0 prompt_ms=4152.4 decode_ms=0.0 topk=5
+PP 3869 3869 2717 1424.7
+T 18
+T 248046
+DONE 2 3869 2718.9 177.0 stop 0 0 0 0 0 0 0 0.0 3869 0
+serve: req 2 finish=stop produced=2 prompt_ms=2718.9 decode_ms=177.0
+ERR a token id is outside the vocabulary
+PP 3869 3869 2760 1402.1
+T 18
+T 248046
+DONE 2 3869 2762.5 31.4 stop 0 0 0 0 0 0 0 0.0 3869 0
+serve: req 3 finish=stop produced=2 prompt_ms=2762.5 decode_ms=31.4
+```
+
+Results, checked against this document:
+
+1. **CAPS**: one JSON line; parsed field-by-field equal to the table above (mismatch list empty): the `false`
+   items are `false`, `mtp.available` is derived (`false` for this production GGUF), `expert_formats` is the
+   compile-time 17-format whitelist, `context_max=4096` equals the live `READY` context.
+2. **SCORE, no token generated (hard criterion)**: between its `PP` and its `DONE` there is **no `T` line**
+   (nothing between `LOGPROBS` and `DONE ... score` either); `produced=0`, `finish=score`; `pos=3868 =
+   3869-1`, `k=5` negative full-vocabulary log-softmax values; `prompt_read=3869`.
+3. **State semantics (b) holds**: the next `GEN 16` ran normally (2 tokens, EOS id `248046`, `finish=stop`,
+   `reused=0`), and after the `ERR` the last `GEN 16` also ran normally - each request independent.
+4. **Bad input**: `SCORE 999999999,1` answered `ERR a token id is outside the vocabulary`, no `DONE`, and the
+   service kept serving.
+5. **Resources/cleanup**: child exit 0, 18.11 s wall for all five lines; job `ActiveProcesses` confirmed 0;
+   cleanup fence marker removed (clean path); RAM avail 17,094 -> 5,900 MiB during load, back to 17,217;
+   GPU used 1,275 -> peak 7,694 -> 1,281 MiB (fallback after exit).
+
+### N2 - CLI `--capabilities` (raw stdout, verbatim)
+
+```text
+{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"state_export":false,"disk_kv":false,"vision":false}
+```
+
+exit 0 in 0.141 s, one line, no `READY`, no model load, no GPU work; the string is identical to the serve
+`CAPS` JSON above (one builder). Plain `--capabilities` (no `--qwen35-model`) answers `mtp.available=false` as
+documented ("not determined").
+
+### Evidence
+
+Research repo `results/opencode-execution/strata-unified-p2-2-caps-score-gpu/`: `job/`, `audit/`, `result/`
+(gpu-lock results, digests `digest-N1.json`/`digest-N2.json` with per-check verdicts), `raw/raw-N1/child_00.log`
+(full transcript), `batch/samples-N1.jsonl` (10 s RAM/GPU sampling), `pre-env/`, `batch/state-*`.
