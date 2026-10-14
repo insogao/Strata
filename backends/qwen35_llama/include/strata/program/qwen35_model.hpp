@@ -35,6 +35,13 @@ struct Qwen35RunOptions {
 /// only when the model ran and the bridge's service was actually used.
 int qwen35_run(const Qwen35RunOptions& o);
 
+/// The official server line protocol (M2): `--qwen35-model ... --serve` loads the model once, prints
+/// `READY <ctx> stop` and then serves `GEN` / `STOP` lines from stdin with the official engine's PP / T /
+/// DONE answers (serve/server.py parses them).  Requests are serialized; every request starts from a cleared
+/// session state and nothing is reused across requests.  See src/program/qwen35_serve.cpp for the protocol
+/// subset and docs/backends/qwen35_llama_serve_protocol.md for the full contract and the not-implemented list.
+int qwen35_serve(const Qwen35RunOptions& o);
+
 /// Task 52 diagnostic replay (default off; STRATA_QWEN35_LAYER_REPLAY=<capture dir>): replays one captured
 /// prompt layer through the SAME `qwen_prefill_experts` interface with a standalone 256-slot expert cache.
 /// No llama context and no dense model are loaded: only the pack layout and the GGUF's expert slices are

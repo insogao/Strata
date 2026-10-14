@@ -726,6 +726,8 @@ void usage() {
                  "  --qwen35-ubatch N    Qwen35 POC (with --qwen35-model): llama prompt micro-batch n_ubatch\n"
                  "                       (default 128; positive decimal integer up to 4294967295; larger values\n"
                  "                       mean fewer, longer prompt batches)\n"
+                 "  --qwen35-model ... --serve  Qwen35 POC: the official server line protocol (READY/GEN/PP/T/\n"
+                 "                       DONE/STOP) for serve/server.py instead of the one-shot runner\n"
                  "  --rope-scaling T     extend the context past the trained one: none, linear\n"
                  "                       (position interpolation) or yarn - llama.cpp's types and names.\n"
                  "                       Default: the model file's rope keys, else none. Fixed at startup:\n"
@@ -2029,6 +2031,9 @@ int main(int argc, char** argv) {
         // as the Flash-Next engine's --pool-workers does.
         q.pool_workers = (int) (o.qwen35_pool_workers > 0 ? o.qwen35_pool_workers
                                                           : (o.qwen35_threads > 1 ? o.qwen35_threads - 1 : 1));
+        // M2 serve mode: --serve + --qwen35-model = the official server line protocol (READY/GEN/PP/T/DONE/STOP)
+        // instead of the one-shot runner (see src/program/qwen35_serve.cpp).
+        if (o.serve) return strata::program::qwen35_serve(q);
         return strata::program::qwen35_run(q);
 #else
         std::fprintf(stderr, "strata generate: --qwen35-model needs a build configured with -DSTRATA_QWEN35=ON\n");

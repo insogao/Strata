@@ -1512,7 +1512,7 @@ if(STRATA_QWEN35)
   # The bridge + runner.  `strata_qwen35` links the shared expert service (`strata_engine`, which carries
   # expert_source/expert_cache and the CPU pool) and the GPU expert kernels (`strata_kernels`); `llama` links
   # it so the patched graph hooks (LLAMA_STRATA_QWEN35) resolve, and the `strata` executable links both.
-  add_library(strata_qwen35 STATIC src/core/qwen35_bridge.cpp src/core/qwen35_mtp.cpp src/core/qwen35_mtp_txn.cpp src/core/qwen35_prefill.cu src/program/qwen35_model.cpp)
+  add_library(strata_qwen35 STATIC src/core/qwen35_bridge.cpp src/core/qwen35_mtp.cpp src/core/qwen35_mtp_txn.cpp src/core/qwen35_prefill.cu src/program/qwen35_model.cpp src/program/qwen35_serve.cpp)
   target_include_directories(strata_qwen35 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
                                   PRIVATE ${_strata_gpu_include_directories} ${STRATA_GGML_DIR}/include
                                           ${STRATA_GGML_DIR}/src ${STRATA_GGML_DIR}/ggml/include ${STRATA_GGML_DIR}/ggml/src)
