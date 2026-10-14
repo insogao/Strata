@@ -62,6 +62,19 @@
 - **M3 官方服务入口 E2E**：**已达成**（task 364c，commit `1e7a0bda`，主管修正模型 SHA → `4e32aae2`）：E1 聊天 HTTP 200＋文本＋EOS；E2 常驻连续 8+ 请求全 200；E4 隔离（同 prompt 热重复 4/4 逐字节一致、不同 prompt 不同）；**E3 取消**＝流式中止后 server 记 `disconnect,cancel=True`、引擎**只产出 7 个 token（<128）**、下一请求正常；**引擎字面 `DONE … cancel` 未落盘（官方 server 内部 drain）⇒ 登记为未取得**，将由 365b 的诊断行补齐。租约形态：`gpu-lock hold`（`DENY_BASENAMES` 禁解释器作 declared binary）＋补偿证据（跑前 exe SHA 复算、引擎 READY、收尾锁释放无残留）。
 - **M3 中立放置**：task 365 进行中（模型/pack/profiles → `D:/work/StrataUnified/models*` 硬链接；配置模板重指）⇒ 随后 **365b**（serve 路径加一行 stderr 诊断并重建，从中立路径实跑并补引擎级取消证据）→ **366** 用最终 exe 对生产冻结 `0e00af8a` 做同口径配对回归 → **367** 阶段交付汇总＋PR #1 正文。
 
+### 4.0b 阶段 2 进度（2026-10-15 00:3x）
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| P2-1 能力表 ＋ 只读 `SCORE` | 完成 | commit `cf134310`（exe `66a48ad1…`；能力字段与实现一致，无虚报） |
+| P2-2 CAPS/SCORE 的 GPU 验证 | 完成 | commit `e01e4feb`（零 `T` 行＝不生成 token；`pos=3868`；CLI 0.141 s 不加载模型） |
+| P2-3 `/v1/score`＋`/v1/capabilities`＋最小 `/v1/decisions` 薄层服务 | 完成 | commit `7f5392ce`（4 新文件/1424 行；**19 单测全绿**；官方/引擎零改动；SGLang 子集边界文档） |
+| P2-4 服务的 GPU 端到端 | 完成（带数值告警） | commit `228796f6`（与引擎 stdout **4dp 全等**；**冷↔热最大 |Δ|=0.0111**，精度告警入档；根因仅假设） |
+| P2-5 `SAVE`/`LOAD`/`STATE` 单会话状态（含 GDN） | 完成 | commit `f6e7d048`（exe `6dee0c66…`；先导临时对象不半恢复；path gate） |
+| P2-6 `SAVE`/`LOAD` GPU parity | 完成 | commit `596e936f`（同进程/跨进程逐 id 全等；失败不半恢复；可重入字节相等；`state_export` 保持 true） |
+| P2-7 双 Backend 适配器＋Batching 契约 | 完成 | commit `17c9ea1f`（官方后端能力表如实 false；不支持端点 501；契约 v1；既有 19＋新 13 单测全绿） |
+| 阶段 2 交付汇总 | 完成 | `docs/PHASE2_DELIVERY.md` |
+
 ### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
 
 | 序 | 任务 | 入口条件 | 交付与自测判据 |

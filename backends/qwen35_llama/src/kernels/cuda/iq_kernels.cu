@@ -2718,6 +2718,8 @@ bool iq_old_kernels() { return g_old_kernels; }
 
 bool iq_supported(int t) noexcept { return is_iq(t); }
 bool embed_type_supported(int t) noexcept { return is_iq(t) || t == 30; }
+// The role tables' union (P2-1 capabilities export): a type with a gate/up or a down kernel, no matter the pair.
+bool iq_expert_role_format(int t) noexcept { return gu_qk(t) > 0 || d_qk(t) > 0; }
 
 size_t iq_row_bytes(int t, int64_t n) noexcept {
     switch (t) {

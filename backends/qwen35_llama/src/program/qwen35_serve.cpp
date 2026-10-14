@@ -7,14 +7,43 @@
 //
 //   client -> engine:
 //     GEN <max_new> [key=value ...] <id,id,...>   one request, sampled greedy unless temperature>0
+//     SCORE <id,id,...> [topk=N]                  read-only candidate logits: prefill, generate nothing
+//     CAPS                                        print the capability table (one JSON line), keep serving
+//     SAVE <path>                                 P2-5: export the current session state to a file
+//     LOAD <path>                                 P2-5: import a session state; GEN then continues it
+//     STATE                                       P2-5: one JSON line of session bookkeeping
 //     STOP                                        cancel the running request; the process keeps serving
 //     QUIT                                        exit 0
 //   engine -> client:
 //     PP <done> <total> <ms> <fresh tok/s>        once per prefill chunk (ubatch-sized)
 //     T <id>                                      one generated token, EOS included
+//     LOGPROBS <pos> <k> <id>:<logprob> ...       SCORE's answer: top-k of the FULL-vocabulary log-softmax
 //     DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused>
 //          <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>
+//     CAPS <json>                                 the --capabilities JSON (P2-1)
+//     SAVED <bytes> <pos> <ms>                    SAVE's answer (state blob size, cursor, elapsed)
+//     LOADED <bytes> <pos> <ms>                   LOAD's answer (same fields, after the import)
+//     STATE <json>                                the session summary (one line)
 //     ERR <message>                               request-level refusal; the engine keeps serving
+//
+// SCORE (P2-1) reads a prompt through the SAME prefill path as GEN (ubatch chunks, PP lines) and then takes
+// the last position's logits: it emits no token.  It answers `LOGPROBS <pos> <k> <id>:<logprob> ...` where
+// pos is the 0-based last prompt position and logprob is the log-softmax over EVERY logit of the vocabulary
+// (no top-k normalization), followed by `DONE ... score` with produced=0.  State semantics are (b)
+// independent, by construction: SCORE starts from `llama_memory_clear` like GEN and resets the session again
+// after printing, so the next request - GEN or SCORE - always starts fresh (reuse stays 0).
+// CAPS answers the same JSON as `--capabilities` (see qwen35_capabilities_json and
+// docs/backends/qwen35_llama_capabilities_and_score.md).
+//
+// SAVE / LOAD / STATE (P2-5) are the single-session state boundary: SAVE writes the CURRENT sequence-0 state
+// as the raw bytes `llama_state_seq_get_data` produces (attention KV + GDN conv/SSM planes + cell
+// positions - no new serialization format), LOAD imports such a file, STATE prints one JSON line about the
+// session.  A successful SAVE or LOAD arms session continuation: the next GEN appends its prompt at the
+// current cursor instead of resetting first (`reused` reports the carried positions), which is how a
+// restored session "continues".  Without SAVE/LOAD the per-request reset below is untouched.  LOAD imports
+// into a TEMPORARY context and swaps only after the import fully succeeded, so a bad path/file leaves the
+// live session untouched; SCORE's semantics (b) reset clears the session (documented in
+// docs/backends/qwen35_llama_session_state.md - the full contract, boundaries and P2-6 plan).
 //
 // Sampling keys implemented: temperature / top_p / top_k / min_p / seed.  A non-default `penalty_*` (or a
 // `logit_bias`) is REFUSED with ERR instead of being ignored - the phase-1 engine has no such sampler, and a
@@ -30,19 +59,22 @@
 //
 // Scope of phase 1 (deliberately unimplemented, all documented in docs/backends/qwen35_llama_serve_protocol.md):
 // penalties/logit_bias, prefix reuse, continuous batching (INFO batch_slots is never printed), vision (GENI),
-// disk sessions (SAVE/RESTORE), MTP.  Unknown directives answer `ERR ...` and the loop continues - it never
-// exits or crashes on input it does not know.
+// the official engine's SAVE/RESTORE disk-session grammar, MTP.  Unknown directives answer `ERR ...` and the
+// loop continues - it never exits or crashes on input it does not know.
 #include "strata/program/qwen35_model.hpp"
 
+#include "strata/artifact/gguf_reader.hpp"
 #include "strata/core/qwen35_bridge.hpp"
 #include "strata/core/qwen35_mtp.hpp"
 #include "strata/core/qwen35_mtp_txn.hpp"
+#include "strata/kernels/iq_kernels.hpp"
 
 #include "llama.h"
 #include "ggml-backend.h"
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -55,12 +87,14 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <string>
 #include <thread>
 #include <vector>
 
 #if defined(_WIN32)
 #  include <io.h>
+#  include <windows.h>   // MoveFileExA: replace-on-save for the session file
 #else
 #  include <unistd.h>
 #endif
@@ -110,10 +144,33 @@ bool parse_scalar(const std::string& val, char*& end) {
     return !val.empty() && end != nullptr && *end == '\0';
 }
 
+/// `<id,id,...>` (no spaces inside; see the callers) appended to `out`.  Every part must be a decimal id in
+/// [0, llama_token max].  Returns false with `err` set.  GEN and SCORE share this so both refuse id lists the
+/// same way.
+bool parse_id_list(const char* ids, const char* ids_end, std::vector<llama_token>& out, std::string& err) {
+    if (ids_end == ids) { err = "bad request: no token ids"; return false; }
+    for (const char* q = ids; q != ids_end; ++q) {
+        if (*q == ' ') { err = "bad request: token ids"; return false; }
+    }
+    const std::string ids_txt(ids, (size_t) (ids_end - ids));
+    const int64_t n_vocab_max = std::numeric_limits<llama_token>::max();
+    for (size_t q = 0;;) {
+        const char* at = ids_txt.c_str() + q;
+        char* ie = nullptr;
+        const long long v = std::strtoll(at, &ie, 10);
+        if (ie == at || v < 0 || v > n_vocab_max) { err = "bad request: token ids"; return false; }
+        out.push_back((llama_token) v);
+        const size_t adv = (size_t) (ie - ids_txt.c_str());
+        if (adv == ids_txt.size()) break;
+        if (ids_txt[adv] != ',' || adv + 1 == ids_txt.size()) { err = "bad request: token ids"; return false; }
+        q = adv + 1;
+    }
+    return true;
+}
+
 /// `GEN <max_new> [key=value ...] <id,id,...>`; the ids start at the first whitespace token without '=' and run
 /// to the end of the line (same split rule as the official engine's parser).  Returns false with `err` set.
 bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) {
-    const int64_t n_vocab_max = std::numeric_limits<llama_token>::max();
     const char* p = line.c_str() + 4;   // past "GEN "
     while (*p == ' ') ++p;
     if (*p < '0' || *p > '9') { err = "bad request: max_new"; return false; }
@@ -170,23 +227,48 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     const char* ids = p;
     const char* ids_end = ids + std::strlen(ids);
     while (ids_end > ids && ids_end[-1] == ' ') --ids_end;   // a trailing space is noise, not an id list
-    if (ids_end == ids) { err = "bad request: no token ids"; return false; }
-    for (const char* q = ids; q != ids_end; ++q) {
-        if (*q == ' ') { err = "bad request: token ids"; return false; }
+    return parse_id_list(ids, ids_end, req.ids, err);
+}
+
+/// One parsed SCORE request (P2-1): a prompt and the number of candidate logits to report (default 5).
+struct ScoreRequest {
+    std::vector<llama_token> ids;
+    int32_t topk = 5;
+};
+
+/// `SCORE <id,id,...> [topk=N]`: the only non-key token is the id list (it may come before or after the keys).
+/// `topk` is the only key; any other key is refused - a silently ignored `topk` typo would answer a different
+/// question than the one asked.  `topk` must be a positive integer (the run clamps it to the vocabulary size).
+bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& err) {
+    const char* p = line.c_str() + 5;   // past "SCORE"
+    const char* ids = nullptr;
+    const char* ids_end = nullptr;
+    for (;;) {
+        while (*p == ' ') ++p;
+        if (*p == '\0') break;
+        const char* start = p;
+        while (*p != '\0' && *p != ' ') ++p;
+        const std::string tok(start, (size_t) (p - start));
+        const size_t eq = tok.find('=');
+        if (eq == std::string::npos) {
+            if (ids != nullptr) { err = "bad request: token ids"; return false; }   // one id list, not two
+            ids = start;
+            ids_end = p;
+            continue;
+        }
+        const std::string key = tok.substr(0, eq);
+        const std::string val = tok.substr(eq + 1);
+        if (key != "topk") { err = "bad request: unknown key " + key; return false; }
+        char* ve = nullptr;
+        const long long v = std::strtoll(val.c_str(), &ve, 10);
+        if (!parse_scalar(val, ve) || v < 1 || v > std::numeric_limits<int32_t>::max()) {
+            err = "bad request: topk";
+            return false;
+        }
+        req.topk = (int32_t) v;
     }
-    const std::string ids_txt(ids, (size_t) (ids_end - ids));
-    for (size_t q = 0;;) {
-        const char* at = ids_txt.c_str() + q;
-        char* ie = nullptr;
-        const long long v = std::strtoll(at, &ie, 10);
-        if (ie == at || v < 0 || v > n_vocab_max) { err = "bad request: token ids"; return false; }
-        req.ids.push_back((llama_token) v);
-        const size_t adv = (size_t) (ie - ids_txt.c_str());
-        if (adv == ids_txt.size()) break;
-        if (ids_txt[adv] != ',' || adv + 1 == ids_txt.size()) { err = "bad request: token ids"; return false; }
-        q = adv + 1;
-    }
-    return true;
+    if (ids == nullptr) { err = "bad request: no token ids"; return false; }
+    return parse_id_list(ids, ids_end, req.ids, err);
 }
 
 /// temperature > 0: the standard chain top_k -> top_p -> min_p -> temp -> dist(seed).  temperature <= 0
@@ -227,7 +309,262 @@ struct StdinQueue {
     bool eof = false;
 };
 
+/// The prompt read GEN and SCORE share (P2-1): ubatch-sized chunks with one PP line after each, then the
+/// prompt -> decode transition.  `prompt_ms` is measured after the transition, like phase 1.  A false
+/// `loan_returned` is a real failure; `cancelled` means a STOP ended the read part-way.
+struct PrefillRun {
+    int64_t read_n = 0;
+    bool failed = false;
+    bool cancelled = false;
+    bool loan_returned = false;
+    double prompt_ms = 0.0;
+};
+
+PrefillRun run_prefill(llama_context* ctx, llama_batch_ext* batch, const std::vector<llama_token>& ids,
+                       int64_t chunk_max, const std::shared_ptr<StdinQueue>& stdin_shared, int64_t base_pos) {
+    PrefillRun r;
+    const auto prefill_begin = Clock::now();
+    const int64_t total = (int64_t) ids.size();
+    for (int64_t at = 0; at < total; at += chunk_max) {
+        if (stdin_shared->stop.load()) { r.cancelled = true; break; }
+        const int count = (int) std::min<int64_t>(chunk_max, total - at);
+        if (!fill_batch(batch, ids.data() + at, count, (int) (base_pos + at))) { r.failed = true; break; }
+        const double chunk_begin_ms = ms_since(prefill_begin);
+        if (llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, batch) != 0) {
+            r.failed = true;
+            break;
+        }
+        r.read_n = at + count;
+        const double now_ms = ms_since(prefill_begin);
+        const double chunk_ms = now_ms - chunk_begin_ms;
+        std::printf("PP %lld %lld %.0f %.1f\n", (long long) r.read_n, (long long) total, now_ms,
+                    chunk_ms > 0.0 ? 1000.0 * (double) count / chunk_ms : 0.0);
+        std::fflush(stdout);
+    }
+    r.loan_returned = core::qwen35_bridge_finish_prompt();
+    r.prompt_ms = ms_since(prefill_begin);
+    return r;
+}
+
+/// The state reset every request starts with (GEN and SCORE): cell metadata + KV cells and the recurrent
+/// (GDN conv/SSM/rollback) planes - the proven reset the two-request diagnostic trusts.
+void reset_session(llama_context* ctx) {
+    if (llama_memory_t mem = llama_get_memory(ctx)) {
+        llama_memory_clear(mem, true);
+    }
+}
+
+/// P2-5 session bookkeeping: `active` is set by a successful SAVE or LOAD and makes GEN continue the session
+/// instead of resetting; it is cleared whenever the state is reset for real (SCORE's semantics (b) reset).
+/// `from_load` distinguishes a session that came out of a file (LOAD) from one that was merely checkpointed
+/// (SAVE); `path`/`file_bytes` describe the last successful session file.  STATE reports these facts.
+struct SessionBook {
+    bool active = false;
+    bool from_load = false;
+    std::string path;
+    size_t file_bytes = 0;
+};
+
+/// The cursor a continuation starts at: last occupied position + 1 (0 when the sequence is empty).
+int64_t state_cursor(llama_context* ctx) {
+    const llama_pos last = llama_memory_seq_pos_max(llama_get_memory(ctx), 0);
+    return last < 0 ? 0 : (int64_t) last + 1;
+}
+
+/// The exact byte size of what SAVE would write for sequence 0 (llama's own size walk; no new format).
+size_t state_blob_size(llama_context* ctx) {
+    return llama_state_seq_get_size(ctx, 0);
+}
+
+/// Absolute-path shape check (drive-qualified or UNC on Windows, leading '/' elsewhere).
+bool path_is_absolute(const std::string& p) {
+    if (p.size() < 2) return false;
+#if defined(_WIN32)
+    if (p[0] == '\\' && p[1] == '\\') return true;   // UNC \\server\share
+    return std::isalpha((unsigned char) p[0]) && p[1] == ':' && p.size() > 2 && (p[2] == '\\' || p[2] == '/');
+#else
+    return p[0] == '/';
+#endif
+}
+
+/// Session paths travel through the line protocol and ANSI file APIs: restrict them to printable ASCII.
+bool path_printable_ascii(const std::string& p) {
+    for (const char c : p) {
+        if ((unsigned char) c < 0x20 || (unsigned char) c > 0x7e) return false;
+    }
+    return true;
+}
+
+/// Rejects any '..' component (path traversal) - the check is textual, symbolic links are not resolved.
+bool path_has_dotdot(const std::string& p) {
+    for (size_t at = 0; at < p.size();) {
+        while (at < p.size() && (p[at] == '\\' || p[at] == '/')) ++at;
+        const size_t start = at;
+        while (at < p.size() && p[at] != '\\' && p[at] != '/') ++at;
+        if (at - start == 2 && p[start] == '.' && p[start + 1] == '.') return true;
+    }
+    return false;
+}
+
+/// '/'-separated, ASCII-lowercased (Windows), no trailing separator: the form the allow-list compares.
+std::string normalized_path(const std::string& p) {
+    std::string s = p;
+    for (char& c : s) {
+        if (c == '\\') c = '/';
+#if defined(_WIN32)
+        if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+#endif
+    }
+    while (s.size() > 1 && s.back() == '/') s.pop_back();
+    return s;
+}
+
+bool path_under_root(const std::string& np, const std::string& root) {
+    const std::string nr = normalized_path(root);
+    if (nr.empty() || np.size() < nr.size() || np.compare(0, nr.size(), nr) != 0) return false;
+    return np.size() == nr.size() || np[nr.size()] == '/';
+}
+
+/// The full SAVE/LOAD path gate: absolute, printable ASCII, no '..', and - when the optional
+/// STRATA_QWEN35_SESSION_ROOTS allow-list (semicolon-separated absolute directories) is set - contained in
+/// one of its roots.  The roots are compared normalized but not resolved (no symlink/junction following).
+bool session_path_allowed(const std::string& path, std::string& err) {
+    if (path.empty()) { err = "session: empty path"; return false; }
+    if (path.size() > 1024) { err = "session: path longer than 1024 characters"; return false; }
+    if (!path_printable_ascii(path)) { err = "session: path must be printable ASCII"; return false; }
+    if (!path_is_absolute(path)) { err = "session: path must be absolute"; return false; }
+    if (path.back() == '\\' || path.back() == '/') { err = "session: path must name a file, not a directory"; return false; }
+    if (path_has_dotdot(path)) { err = "session: '..' is not allowed in the path"; return false; }
+    const char* roots_env = std::getenv("STRATA_QWEN35_SESSION_ROOTS");
+    if (roots_env != nullptr && roots_env[0] != '\0') {
+        const std::string roots = roots_env;
+        const std::string np = normalized_path(path);
+        bool ok = false;
+        for (size_t at = 0; at <= roots.size();) {
+            size_t sep = roots.find(';', at);
+            if (sep == std::string::npos) sep = roots.size();
+            if (sep > at && path_under_root(np, roots.substr(at, sep - at))) { ok = true; break; }
+            if (sep == roots.size()) break;
+            at = sep + 1;
+        }
+        if (!ok) { err = "session: path is outside STRATA_QWEN35_SESSION_ROOTS"; return false; }
+    }
+    return true;
+}
+
+constexpr int64_t kSessionFileCap = (int64_t) 1 << 30;   // 1 GiB: a size gate, not a measurement
+
+bool read_file_bytes(const std::string& path, std::vector<uint8_t>* out, std::string* err) {
+    std::FILE* f = std::fopen(path.c_str(), "rb");
+    if (f == nullptr) { *err = "session: cannot open '" + path + "' for reading"; return false; }
+    std::fseek(f, 0, SEEK_END);
+    const long sz = std::ftell(f);
+    if (sz < 0) { std::fclose(f); *err = "session: cannot size '" + path + "'"; return false; }
+    if ((int64_t) sz < 8) {
+        std::fclose(f);
+        *err = "session: '" + path + "' is too small to be a sequence state";
+        return false;
+    }
+    if ((int64_t) sz > kSessionFileCap) {
+        std::fclose(f);
+        *err = "session: '" + path + "' exceeds the 1 GiB session-file cap";
+        return false;
+    }
+    std::fseek(f, 0, SEEK_SET);
+    out->resize((size_t) sz);
+    const size_t got = std::fread(out->data(), 1, out->size(), f);
+    const int close_rc = std::fclose(f);
+    if (got != out->size() || close_rc != 0) { *err = "session: cannot read '" + path + "'"; return false; }
+    return true;
+}
+
+/// Writes `<path>.tmp`, then replaces `path` with it (MoveFileExA / rename): a failed save never leaves the
+/// previous file truncated; the stray .tmp is removed on every failure.
+bool write_file_atomic(const std::string& path, const uint8_t* data, size_t size, std::string* err) {
+    const std::string tmp = path + ".tmp";
+    std::FILE* f = std::fopen(tmp.c_str(), "wb");
+    if (f == nullptr) { *err = "session: cannot open '" + tmp + "' for writing"; return false; }
+    const size_t put = std::fwrite(data, 1, size, f);
+    const int close_rc = std::fclose(f);
+    if (put != size || close_rc != 0) {
+        std::remove(tmp.c_str());
+        *err = "session: cannot write '" + tmp + "'";
+        return false;
+    }
+#if defined(_WIN32)
+    if (MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING) == 0) {
+        std::remove(tmp.c_str());
+        *err = "session: cannot replace '" + path + "'";
+        return false;
+    }
+#else
+    if (std::rename(tmp.c_str(), path.c_str()) != 0) {
+        std::remove(tmp.c_str());
+        *err = "session: cannot replace '" + path + "'";
+        return false;
+    }
+#endif
+    return true;
+}
+
+/// Minimal JSON string quoting for paths (they are printable ASCII by the gate above; only " and \ need it).
+std::string json_quote(const std::string& s) {
+    std::string out = "\"";
+    for (const char c : s) {
+        if (c == '"' || c == '\\') out += '\\';
+        out += c;
+    }
+    out += '"';
+    return out;
+}
+
 }  // namespace
+
+std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_max, int64_t nextn_layers) {
+    // mtp.available: the model's declared MTP (NextN) layer count - qwen35moe.nextn_predict_layers, the same
+    // key the llama loader reads into hparams.n_layer_nextn.  With a loaded model the caller passes the value;
+    // otherwise only the GGUF metadata header is read (never a tensor payload), and an open/parse error leaves
+    // availability false.  The production UD-IQ3_S file has no such key (false); the MTP experiment has 1.
+    bool mtp_available = false;
+    if (nextn_layers >= 0) {
+        mtp_available = nextn_layers > 0;
+    } else if (!o.model.empty()) {
+        try {
+            const strata::GgufModel m({o.model});
+            const strata::MetaValue* v = m.meta().get("qwen35moe.nextn_predict_layers");
+            if (v != nullptr && v->is_num()) mtp_available = (int64_t) v->num() > 0;
+        } catch (...) {
+            // Documented in the capabilities doc: unreadable metadata leaves mtp.available false.
+        }
+    }
+    // expert_formats: the compile-time grouped-expert kernel whitelist (the GPU native-expert path; see
+    // kernels::iq_expert_role_format / iq_kernels.cu's STRATA_GU_FMTS and STRATA_D_FMTS).  A pack whose layer
+    // pair fails kernels::native_expert_supported is refused at startup, so these are the formats a model can
+    // actually carry.  The array is the union of the two roles; the roles' own split is in the doc.
+    static const struct { int id; const char* name; } kExpertFormats[] = {
+        {2, "Q4_0"}, {3, "Q4_1"}, {6, "Q5_0"}, {7, "Q5_1"}, {8, "Q8_0"}, {12, "Q4_K"}, {13, "Q5_K"},
+        {14, "Q6_K"}, {16, "IQ2_XXS"}, {17, "IQ2_XS"}, {18, "IQ3_XXS"}, {20, "IQ4_NL"}, {21, "IQ3_S"},
+        {22, "IQ2_S"}, {23, "IQ4_XS"}, {29, "IQ1_M"}, {42, "Q2_0"},
+    };
+    std::string fmts;
+    for (const auto& f : kExpertFormats) {
+        if (!strata::kernels::iq_expert_role_format(f.id)) continue;
+        if (!fmts.empty()) fmts += ',';
+        fmts += '"';
+        fmts += f.name;
+        fmts += '"';
+    }
+    char buf[1024];
+    std::snprintf(buf, sizeof buf,
+                  "{\"protocol\":\"strata-serve-v1\",\"continuous_requests\":true,\"cancel\":true,"
+                  "\"state_isolation\":true,\"prefix_cache\":false,\"batching\":false,"
+                  "\"mtp\":{\"available\":%s,\"enabled\":%s,\"default\":false,\"k\":null},"
+                  "\"expert_formats\":[%s],\"context_max\":%lld,\"logits_read\":true,"
+                  "\"state_export\":true,\"disk_kv\":false,\"vision\":false}",
+                  mtp_available ? "true" : "false", env_is_exactly_one("STRATA_QWEN35_MTP") ? "true" : "false",
+                  fmts.c_str(), (long long) context_max);
+    return std::string(buf);
+}
 
 int qwen35_serve(const Qwen35RunOptions& o) {
     if (o.model.empty() || o.pack_dir.empty()) {
@@ -341,6 +678,9 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     cp.n_seq_max = 1;
     cp.n_outputs_max = 1;   // fill_batch flags exactly one output row per process call
     cp.no_perf = false;
+    // P2-5: LOAD builds its temporary context with EXACTLY these parameters before swapping it in - a
+    // restored session must run under the same context shape it was exported from.
+    const llama_context_params cp_saved = cp;
     std::unique_ptr<llama_context, decltype(&llama_free)> ctx(llama_init_from_model(model.get(), cp), llama_free);
     if (ctx == nullptr) {
         std::fprintf(stderr, "strata qwen35 serve: context init failed\n");
@@ -357,6 +697,10 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     // Past graph reservation: decode-graph nodes are the external producer from here on (the same seam the
     // CLI runner arms, with the same escape hatch).
     if (std::getenv("STRATA_QWEN35_NO_SEAM") == nullptr) core::qwen35_arm_decode_seam(true);
+    // P2-1: the capability table this process answers for CAPS - the loaded model's actual context and MTP
+    // layer count, not the argv defaults (the CLI --capabilities path computes it without a load).
+    const std::string caps_json = qwen35_capabilities_json(
+        o, (int64_t) llama_n_ctx(ctx.get()), meta_int(model.get(), "qwen35moe.nextn_predict_layers", 0));
     // READY advertises the context requests are actually checked against.
     std::printf("READY %lld stop\n", (long long) llama_n_ctx(ctx.get()));
     std::fflush(stdout);
@@ -407,6 +751,8 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     // The ACTUAL micro-batch the context reports (never a re-print of the request): PP chunks track it.
     const int64_t chunk_max = std::max<int64_t>(1, (int64_t) llama_n_ubatch(ctx.get()));
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(nullptr, llama_sampler_free);
+    std::vector<int32_t> score_idx;   // SCORE's top-k scratch, reused across requests
+    SessionBook session;              // P2-5: armed by SAVE/LOAD, cleared by any real reset (SCORE's (b))
     std::string line;
     long long serve_reqs = 0;
     for (;;) {
@@ -421,8 +767,244 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         if (line == "QUIT") break;
         // A literal STOP here is an idle one (the reader consumes STOP lines itself).
         if (line == "STOP") continue;
+        if (line == "CAPS") {   // P2-1: the capability table, the same JSON --capabilities prints
+            std::printf("CAPS %s\n", caps_json.c_str());
+            std::fflush(stdout);
+            continue;
+        }
+        if (line == "STATE") {   // P2-5: the one-line session summary (fields: session_state doc)
+            const int64_t cursor = state_cursor(ctx.get());
+            const size_t live_bytes = state_blob_size(ctx.get());
+            std::string js = "{\"loaded\":";
+            js += (session.active && session.from_load) ? "true" : "false";
+            js += ",\"pos\":";
+            js += std::to_string(cursor);
+            js += ",\"bytes\":";
+            js += std::to_string(live_bytes);
+            js += ",\"path\":";
+            js += (session.active && !session.path.empty()) ? json_quote(session.path) : "null";
+            js += ",\"covers\":[\"attn_kv\",\"gdn_state\",\"conv\",\"pos\"]";
+            js += ",\"session\":";
+            js += session.active ? "true" : "false";
+            js += ",\"origin\":";
+            js += session.active ? (session.from_load ? "\"load\"" : "\"save\"") : "null";
+            js += ",\"file_bytes\":";
+            js += (session.active && session.file_bytes > 0) ? std::to_string(session.file_bytes) : "null";
+            js += ",\"max_context\":";
+            js += std::to_string(total_ctx);
+            js += ",\"not_covered\":[\"logits\",\"sampler_rng_state\",\"expert_cache\",\"bridge_counters\","
+                  "\"rollback_history\"]}";
+            std::printf("STATE %s\n", js.c_str());
+            std::fflush(stdout);
+            continue;
+        }
+        if (line.rfind("SAVE ", 0) == 0) {
+            // P2-5: export the CURRENT sequence-0 state as the raw llama_state_seq bytes.  On success the
+            // session is armed: the next GEN appends at the cursor (continuation) instead of resetting.
+            std::string path = line.substr(5);
+            while (!path.empty() && path.front() == ' ') path.erase(0, 1);
+            while (!path.empty() && path.back() == ' ') path.pop_back();
+            const auto save_begin = Clock::now();
+            std::string derr;
+            if (!session_path_allowed(path, derr)) {
+                std::printf("ERR %s\n", derr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            std::vector<uint8_t> blob(state_blob_size(ctx.get()));
+            if (blob.empty()) {
+                std::printf("ERR session: the state size walk failed\n");
+                std::fflush(stdout);
+                continue;
+            }
+            const size_t got = llama_state_seq_get_data(ctx.get(), blob.data(), blob.size(), 0);
+            if (got != blob.size()) {
+                std::printf("ERR session: the state export returned %zu of %zu bytes\n", got, blob.size());
+                std::fflush(stdout);
+                continue;
+            }
+            if (!write_file_atomic(path, blob.data(), blob.size(), &derr)) {
+                std::printf("ERR %s\n", derr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            session.active = true;
+            session.from_load = false;
+            session.path = path;
+            session.file_bytes = blob.size();
+            std::printf("SAVED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
+                        ms_since(save_begin));
+            std::fflush(stdout);
+            std::fprintf(stderr, "serve: session save '%s' bytes=%zu pos=%lld\n", path.c_str(), blob.size(),
+                         (long long) state_cursor(ctx.get()));
+            continue;
+        }
+        if (line.rfind("LOAD ", 0) == 0) {
+            // P2-5: import a session file.  The bytes go into a TEMPORARY context first (same model and
+            // context parameters); only a fully successful import is swapped in, so a bad path, a foreign
+            // file or a corrupt blob leaves the live session untouched - never a half-restored state.
+            std::string path = line.substr(5);
+            while (!path.empty() && path.front() == ' ') path.erase(0, 1);
+            while (!path.empty() && path.back() == ' ') path.pop_back();
+            const auto load_begin = Clock::now();
+            std::string derr;
+            if (!session_path_allowed(path, derr)) {
+                std::printf("ERR %s\n", derr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            std::vector<uint8_t> blob;
+            if (!read_file_bytes(path, &blob, &derr)) {
+                std::printf("ERR %s\n", derr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            // The llama sequence-state header is <u32 magic 0xaf143cd8><i32 seq_id>; checking it here
+            // turns the common "not a state file" / "wrong sequence" mistakes into precise errors.
+            uint32_t magic = 0;
+            int32_t seq_header = -1;
+            std::memcpy(&magic, blob.data(), sizeof(magic));
+            std::memcpy(&seq_header, blob.data() + sizeof(magic), sizeof(seq_header));
+            if (magic != 0xaf143cd8u) {
+                std::printf("ERR session: '%s' is not a llama sequence-state blob (bad header)\n", path.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            if (seq_header != 0) {
+                std::printf("ERR session: '%s' was saved from sequence %d; this engine restores sequence 0\n",
+                            path.c_str(), (int) seq_header);
+                std::fflush(stdout);
+                continue;
+            }
+            llama_context* tmp = llama_init_from_model(model.get(), cp_saved);
+            if (tmp == nullptr) {
+                std::printf("ERR session: the temporary import context could not be created\n");
+                std::fflush(stdout);
+                continue;
+            }
+            const size_t got = llama_state_seq_set_data(tmp, blob.data(), blob.size(), 0);
+            llama_batch_ext* tmp_batch = got != 0 ? llama_batch_ext_init(tmp) : nullptr;
+            if (got == 0 || tmp_batch == nullptr) {
+                if (tmp_batch != nullptr) llama_batch_ext_free(tmp_batch);
+                llama_free(tmp);
+                std::printf("ERR session: the import failed (incompatible model/context or corrupt state); "
+                            "the live session is unchanged\n");
+                std::fflush(stdout);
+                continue;
+            }
+            batch.reset(tmp_batch);   // frees the old batch first; the old context is freed next
+            ctx.reset(tmp);
+            session.active = true;
+            session.from_load = true;
+            session.path = path;
+            session.file_bytes = blob.size();
+            std::printf("LOADED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
+                        ms_since(load_begin));
+            std::fflush(stdout);
+            std::fprintf(stderr, "serve: session load '%s' bytes=%zu pos=%lld\n", path.c_str(), blob.size(),
+                         (long long) state_cursor(ctx.get()));
+            continue;
+        }
+        if (line.rfind("SCORE ", 0) == 0) {
+            // P2-1: read-only candidate logits.  Same prefill as GEN, no token generated, and the session is
+            // reset again after the answer (semantics (b): the next request always starts fresh).
+            ScoreRequest sreq;
+            std::string serr;
+            if (!parse_score_line(line, sreq, serr)) {
+                std::printf("ERR %s\n", serr.c_str());
+                std::fflush(stdout);
+                continue;
+            }
+            bool bad_id = false;
+            for (size_t i = 0; i < sreq.ids.size() && !bad_id; ++i) {
+                if (sreq.ids[i] < 0 || (int64_t) sreq.ids[i] >= n_vocab) bad_id = true;
+            }
+            if (bad_id) {
+                std::printf("ERR a token id is outside the vocabulary\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if ((int64_t) sreq.ids.size() > total_ctx) {
+                std::printf("ERR prompt (%lld tokens) exceeds the context (%lld)\n",
+                            (long long) sreq.ids.size(), (long long) total_ctx);
+                std::fflush(stdout);
+                continue;
+            }
+            stdin_shared->stop.store(false);   // a STOP between requests is stale (the GEN rule)
+            reset_session(ctx.get());
+            session = SessionBook{};   // semantics (b): the SCORE reset ends any active session
+            const int64_t total = (int64_t) sreq.ids.size();
+            const PrefillRun pre = run_prefill(ctx.get(), batch.get(), sreq.ids, chunk_max, stdin_shared, 0);
+            if (pre.failed) {
+                std::printf("ERR prefill failed\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (!pre.loan_returned) {
+                std::printf("ERR the prompt workspace loan was not returned\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (pre.cancelled) {
+                // A STOP ended the read part-way: there is no complete last-position row to score.
+                std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
+                            0LL, (long long) total, pre.prompt_ms, 0.0, "cancel", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
+                            0LL, 0.0, (long long) pre.read_n, 0LL);
+                std::fflush(stdout);
+                std::fprintf(stderr, "serve: req %lld finish=cancel produced=0 prompt_ms=%.1f decode_ms=0.0 score\n",
+                             ++serve_reqs, pre.prompt_ms);
+                reset_session(ctx.get());
+                continue;
+            }
+            const float* logits = llama_get_logits_ith(ctx.get(), -1);
+            if (logits == nullptr) {
+                std::printf("ERR score produced no logits\n");
+                std::fflush(stdout);
+                continue;
+            }
+            if (logits_have_nan(logits, n_vocab)) {
+                std::fprintf(stderr, "strata qwen35 serve: the head logits are not all finite; answering ERR "
+                                     "(score)\n");
+                std::printf("ERR score: the head logits are not all finite\n");
+                std::fflush(stdout);
+                reset_session(ctx.get());
+                continue;
+            }
+            // log_softmax over the FULL vocabulary: logprob = logit - (max + log(sum exp(logit - max))).  The
+            // denominator is all n_vocab logits; the top-k below selects from it, it does not renormalize.
+            float mx = logits[0];
+            for (int64_t i = 1; i < n_vocab; ++i) {
+                if (logits[i] > mx) mx = logits[i];
+            }
+            double sum = 0.0;
+            for (int64_t i = 0; i < n_vocab; ++i) sum += std::exp((double) logits[i] - (double) mx);
+            const double lse = (double) mx + std::log(sum);
+            const int64_t k = std::min<int64_t>(sreq.topk, n_vocab);
+            // Top-k by (logit desc, id asc): an exact tie answers the same order every run.
+            score_idx.resize((size_t) n_vocab);
+            std::iota(score_idx.begin(), score_idx.end(), 0);
+            std::partial_sort(score_idx.begin(), score_idx.begin() + (size_t) k, score_idx.end(),
+                              [logits](int32_t a, int32_t b) {
+                                  return logits[a] != logits[b] ? logits[a] > logits[b] : a < b;
+                              });
+            std::printf("LOGPROBS %lld %lld", (long long) (total - 1), (long long) k);
+            for (int64_t j = 0; j < k; ++j) {
+                const int32_t id = score_idx[(size_t) j];
+                std::printf(" %d:%.4f", (int) id, (double) logits[id] - lse);
+            }
+            std::printf("\n");
+            std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
+                        0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
+                        0.0, (long long) pre.read_n, 0LL);
+            std::fflush(stdout);
+            std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 topk=%lld\n",
+                         ++serve_reqs, pre.prompt_ms, (long long) k);
+            reset_session(ctx.get());
+            continue;
+        }
         if (line.rfind("GEN ", 0) != 0) {
-            std::printf("ERR expected: GEN <max_new> [key=value ...] <id,id,...>\n");
+            std::printf("ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | SCORE <id,id,...> [topk=N] | "
+                        "GEN <max_new> [key=value ...] <id,id,...>\n");
             std::fflush(stdout);
             continue;
         }
@@ -442,9 +1024,20 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             std::fflush(stdout);
             continue;
         }
-        if ((int64_t) req.ids.size() + req.max_new > total_ctx) {
-            std::printf("ERR prompt (%lld tokens) + max_new (%lld) exceeds the context (%lld)\n",
-                        (long long) req.ids.size(), (long long) req.max_new, (long long) total_ctx);
+        // P2-5: after a successful SAVE/LOAD the session is armed and this GEN APPENDS its prompt at the
+        // cursor (the continuation); without a session the request is isolated exactly as before - fresh
+        // state from position 0.  `base_pos` is also what the DONE `reused` field reports.
+        const bool session_gen = session.active;
+        const int64_t base_pos = session_gen ? state_cursor(ctx.get()) : 0;
+        if (base_pos + (int64_t) req.ids.size() + req.max_new > total_ctx) {
+            if (session_gen) {
+                std::printf("ERR session (%lld) + prompt (%lld tokens) + max_new (%lld) exceeds the context "
+                            "(%lld)\n", (long long) base_pos, (long long) req.ids.size(), (long long) req.max_new,
+                            (long long) total_ctx);
+            } else {
+                std::printf("ERR prompt (%lld tokens) + max_new (%lld) exceeds the context (%lld)\n",
+                            (long long) req.ids.size(), (long long) req.max_new, (long long) total_ctx);
+            }
             std::fflush(stdout);
             continue;
         }
@@ -456,43 +1049,18 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         }
         // A STOP that arrived between requests is stale (the official engine's rule).
         stdin_shared->stop.store(false);
-        // Fresh request state: cell metadata + KV cells and the recurrent r/s/p buffers (GDN conv + SSM +
-        // rollback planes), exactly the reset the two-request diagnostic trusts.
-        if (llama_memory_t mem = llama_get_memory(ctx.get())) {
-            llama_memory_clear(mem, true);
-        }
+        // Fresh request state (KV cells + the recurrent GDN planes), the same reset SCORE and the two-request
+        // diagnostic use - skipped when the request continues an armed session.
+        if (!session_gen) reset_session(ctx.get());
         // Prefill, one ubatch-sized chunk at a time; PP after every chunk (the server's progress lines).
-        const auto prefill_begin = Clock::now();
         const int64_t total = (int64_t) req.ids.size();
-        int64_t read_n = 0;
-        bool prefill_failed = false;
-        bool prefill_cancelled = false;
-        for (int64_t at = 0; at < total; at += chunk_max) {
-            if (stdin_shared->stop.load()) { prefill_cancelled = true; break; }
-            const int count = (int) std::min<int64_t>(chunk_max, total - at);
-            if (!fill_batch(batch.get(), req.ids.data() + at, count, (int) at)) { prefill_failed = true; break; }
-            const double chunk_begin_ms = ms_since(prefill_begin);
-            if (llama_process(ctx.get(), LLAMA_PROCESS_TYPE_DECODE, batch.get()) != 0) {
-                prefill_failed = true;
-                break;
-            }
-            read_n = at + count;
-            const double now_ms = ms_since(prefill_begin);
-            const double chunk_ms = now_ms - chunk_begin_ms;
-            std::printf("PP %lld %lld %.0f %.1f\n", (long long) read_n, (long long) total, now_ms,
-                        chunk_ms > 0.0 ? 1000.0 * (double) count / chunk_ms : 0.0);
-            std::fflush(stdout);
-        }
-        // The prompt -> decode transition must run even after a failed or cancelled prompt read: the lent
-        // cache slots are refilled and the decode tier sees them again (a false return is a real failure).
-        const bool loan_returned = core::qwen35_bridge_finish_prompt();
-        const double prompt_ms = ms_since(prefill_begin);
-        if (prefill_failed) {
+        const PrefillRun pre = run_prefill(ctx.get(), batch.get(), req.ids, chunk_max, stdin_shared, base_pos);
+        if (pre.failed) {
             std::printf("ERR prefill failed\n");
             std::fflush(stdout);
             continue;
         }
-        if (!loan_returned) {
+        if (!pre.loan_returned) {
             std::printf("ERR the prompt workspace loan was not returned\n");
             std::fflush(stdout);
             continue;
@@ -500,7 +1068,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         long long produced = 0;
         double decode_ms = 0.0;
         const char* finish = "length";
-        if (prefill_cancelled) {
+        if (pre.cancelled) {
             finish = "cancel";
         } else {
             const auto decode_begin = Clock::now();
@@ -525,7 +1093,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 ++produced;
                 if (llama_vocab_is_eog(vocab, tok)) { finish = "stop"; break; }
                 if (i + 1 < req.max_new) {
-                    if (!fill_batch(batch.get(), &tok, 1, (int) (total + i)) ||
+                    if (!fill_batch(batch.get(), &tok, 1, (int) (base_pos + total + i)) ||
                         llama_process(ctx.get(), LLAMA_PROCESS_TYPE_DECODE, batch.get()) != 0) {
                         std::printf("ERR decode failed at output %lld\n", produced);
                         std::fflush(stdout);
@@ -537,17 +1105,20 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             decode_ms = ms_since(decode_begin);
         }
         if (finish != nullptr) {
-            // Field order is the official engine's (serve/server.py's _parse_done): reuse/hits/lookups and the
-            // tier counters are 0 because phase 1 carries nothing across requests; prompt_read is how much of
-            // the prompt was actually read (fewer than <prompt_tokens> when a STOP ended the read part-way).
+            // Field order is the official engine's (serve/server.py's _parse_done).  `reused` reports the
+            // positions carried into the request: 0 for an isolated request, the session cursor for a
+            // continuation (P2-5); hits/lookups and the tier counters stay 0 - there is no cache tier behind
+            // them.  prompt_read is how much of the prompt was actually read (fewer than <prompt_tokens> when
+            // a STOP ended the read part-way).
             std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
-                        produced, (long long) total, prompt_ms, decode_ms, finish,
-                        0LL /* accepted */, 0LL /* offered */, 0LL /* reused */, 0LL /* hits */, 0LL /* lookups */,
-                        0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) read_n,
+                        produced, (long long) total, pre.prompt_ms, decode_ms, finish,
+                        0LL /* accepted */, 0LL /* offered */, (long long) (session_gen ? base_pos : 0) /* reused */,
+                        0LL /* hits */, 0LL /* lookups */,
+                        0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) pre.read_n,
                         0LL /* offloaded */);
             std::fflush(stdout);
             std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f\n",
-                         ++serve_reqs, finish, produced, prompt_ms, decode_ms);
+                         ++serve_reqs, finish, produced, pre.prompt_ms, decode_ms);
         }
     }
     core::qwen35_bridge_shutdown();
