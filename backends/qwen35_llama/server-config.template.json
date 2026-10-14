@@ -1,0 +1,9 @@
+{
+  "exe": "D:/work/StrataUnified/strata/backends/qwen35_llama/build/strata.exe",
+  "cwd": "D:/work/StrataUnified",
+  "args": ["--qwen35-model", "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf", "--qwen35-pack", "models/pack", "--serve",
+           "--max-context", "4096", "--qwen35-threads", "8", "--qwen35-cache-slots", "3200", "--qwen35-ubatch", "4096"],
+  "tokenizer": "D:/work/StrataUnified/models/qwen36-pack/tokenizer",
+  "model_name": "qwen36-35b-a3b-ud-iq3_s",
+  "env": {"STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1", "STRATA_QWEN35_PACKED_IDS": "1", "STRATA_QWEN35_EXPERT_ORDER": "count_desc"}
+}
