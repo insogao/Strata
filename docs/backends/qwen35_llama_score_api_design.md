@@ -341,7 +341,7 @@ field is accepted with a different meaning than documented here.
 | Not implemented | Today's behavior | Possible later step |
 |---|---|---|
 | real-engine verification of this service | never run against the engine (0 GPU by design) | P2-4: GPU end-to-end on the real model under the usual lease/neutral-cwd discipline |
-| GPU verification of the P2R-1 additions | **done 2026-10-15 (P2R-2), passed**: explicit candidates byte-identical to the same-process `LOGPROBS`; out-of-top-k ids finite `<= 0` and the candidate-set union mass `<= 1`; `SCORE` top-1 == greedy `GEN 1` first token on both prompts; live `/v1/decisions` payload per §2 (always-present `label_mass`, three scopes, `calibrated:false`, no confidence field); old-vs-new exe `LOGPROBS` byte-identical at equal positions | evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up in `docs/backends/qwen35_llama_score_api_e2e.md` |
+| GPU verification of the P2R-1 additions | **done 2026-10-15 (P2R-2), passed**: explicit candidates byte-identical to the same-process `LOGPROBS`; out-of-top-k ids finite `<= 0` and the candidate-set union mass `<= 1`; `SCORE` top-1 == greedy `GEN 1` first token on both prompts; live `/v1/decisions` payload per §2 (always-present `label_mass`, three scopes, `calibrated:false`, no confidence field); old-vs-new exe `LOGPROBS` byte-identical at equal positions. P2R-2's remaining caveat (no observable near-tie in the top-5) was then **quantified by P2R-2b (2026-10-15)**: top-2000 class comparison - same-class repeats byte-identical, cross-class flips real for gaps up to 0.0383/0.0371 (band 0.0599/0.0713) | evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/` and `.../strata-unified-p2r2b-near-tie/`; write-up in `docs/backends/qwen35_llama_score_api_e2e.md` (§6 and §P2R-2b) |
 | server-side prompt rendering / labels / question descriptions | caller owns prompt construction (`prompt_ids`) | a rendering layer *above* this service; the service stays content-free |
 | streaming | none; one JSON response per request | incompatible with a single score answer; only relevant to future generation endpoints |
 | batching / concurrent requests | `503` while busy | engine-side continuous batching (P2-1 `batching=false`), then a scheduler above it |
@@ -411,4 +411,10 @@ history, not as the current contract.
   (evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`, client/p2r2-compare.json).
 - Official files and frozen artifacts: zero edits (P2R-1 touches only the files listed above; no `main`
   merge, no vendor change).
+- P2R-2b (2026-10-15, no source edits): one native `gpu-lock run` lease of the same new exe
+  `d0321a98…`, static stdin, top-2000 class tables; evidence
+  `results/opencode-execution/strata-unified-p2r2b-near-tie/`. It quantifies the near-threshold order
+  sensitivity the P2R-2 caveat left open: same-class repeat lines byte-equal; cross-class max|Δ|
+  5.99e-2 / 7.13e-2 with real adjacent-pair flips for gaps up to 0.0383 / 0.0371 and min flipped gap
+  0.0000 (scoped to this host / this IQ3_S quant / this exe).
 - No performance claim of any kind is made for the real engine; P2-4 owns that.

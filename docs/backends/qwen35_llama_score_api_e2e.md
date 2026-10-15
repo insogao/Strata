@@ -236,5 +236,40 @@ confidence/threshold/verdict anywhere, including the two low-mass cases; `pos`/`
 - Root cause of the first-vs-stabilized difference: **not established** (§4 warning updated with the
   3.3e-2 observation; the 1.11e-2 §4 line remains as recorded history).
 - No true near-tie existed in the measured top-5 (C caveat); testing rank-flip sensitivity below the
-  drift scale needs crafted near-threshold candidates or another prompt (P2R-3+).
+  drift scale needs crafted near-threshold candidates or another prompt (P2R-3+) - **quantified by
+  P2R-2b below via a top-2000 class comparison**.
 - One model/quantization (IQ3_S), no cross-quantization comparison, no speed claim of any kind.
+
+### P2R-2b - near-threshold rank sensitivity (top-2000 class comparison)
+
+P2R-2's C caveat (no true near-tie inside the top-5) is quantified here by one same-process top-2000
+class table. Run 2026-10-15 on branch `phase2r/review-gaps`: **one native**, new exe `d0321a98…`, one
+`gpu-lock run` lease, rc=0, 12.7 s; static stdin `SCORE <P_short> topk=2000` ×3, `SCORE <P_long>
+topk=2000` ×2, `QUIT`; pos 22/22/22/3895/3895; no `ERR`. Evidence:
+`results/opencode-execution/strata-unified-p2r2b-near-tie/` (`final-report.md`, `client/p2r2b-analysis.json`,
+raw stdout under `native1/raw/`).
+
+1. **Per-id drift** (4dp printed values, Δ = later − earlier): P_short cold→warm1 max|Δ| **0.0599**,
+   median 0.0098, 1978/1989 ids nonzero; P_short warm1→warm2 max|Δ| **0.0000** - the two full `LOGPROBS`
+   lines are byte-equal, extending P2R-2's same-class zero-drift from top-5 to top-2000; P_long
+   first→repeat max|Δ| **0.0713**, median 0.0207, 1987/1990 nonzero.
+2. **Rank changes** (order key (value desc, id asc); adjacency on the common-id order): P_short
+   cold→warm1 - 9837 inverted pairs (τ 0.990049), **881 flipped adjacent pairs** (e.g. `2062/2091`,
+   gap 0.0037: `-8.9135→-8.9171` vs `-8.9172→-8.8936`); warm1→warm2 - 0 inversions, 0 flips; P_long
+   first→repeat - 13930 inverted pairs (τ 0.985923), **895 flipped adjacent** (e.g. `1143/2083`,
+   gap 0.0371: `-11.7410→-11.7781` vs `-11.7839→-11.7776`).
+3. **Threshold rule (this host / this IQ3_S quant / this exe only)**: same-class repeats are
+   printed-identical (band 0.0000, so any nonzero gap is stable). Across state classes the measured
+   drift band is max|Δ| **0.0599** (P_short cold→warm1) / **0.0713** (P_long first→repeat); inside the
+   band (gap ≤ band) **881/1961** and **895/1966** adjacent pairs flipped (~45%); flips occurred for
+   gaps up to **0.0383 / 0.0371** and none above; the smallest flipped gap is **0.0000** (printed ties
+   can flip). Practical reading: below a gap of ≈**0.038** the order of two candidates across state
+   classes must be treated as reversible (conservative bound = the 0.06/0.07 band itself).
+4. **Closest calls**: the closest non-flipped call is `4777/14149`, gap 0.0000, margin_to_flip
+   **+0.0015** (P_short cold→warm1); the closest flipped pair is `91/3701` (P_long), gap 0.0000,
+   margin **−0.0284**. Top-k cutoff churn, recorded as measured: 11/11 ids (cold→warm1) and 10/10
+   (first→repeat) change membership; the task's a-priori "identical id sets" assumption did not hold,
+   so drift/rank stats use the intersection and churn is reported separately.
+5. Side by side with prior records (facts only, no root cause attributed): P2-4 **1.11e-2**; P2R-2
+   top-5 max **3.27e-2** with no observable near-tie (min top-5 gap 1.2125); P2R-2b top-2000
+   same-class **0** vs cross-class maxima **5.99e-2 / 7.13e-2** with real flips up to gap 3.8e-2.
