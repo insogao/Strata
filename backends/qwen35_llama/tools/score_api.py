@@ -6,6 +6,9 @@ engine process through a documented stdin/stdout protocol and exposes:
 
     GET  /v1/capabilities   the backend's capability table (engine CAPS passthrough for
                             qwen35_llama; framework-synthesized for official_q36) + service fields
+    GET  /v1/routes         P2R-5: read-only service discovery - the declarative routing matrix
+                            (every endpoint x backend: supported / engine command / refusal /
+                            notes) + active_backend + backend_source; no engine command
     POST /v1/score          read-only top-k log-softmax of one prompt (optional keep=true:
                             state-keeping score, no reset, session stays armed)
     POST /v1/decisions      minimal choice / score / yes_no candidate scoring (optional
@@ -24,6 +27,15 @@ state_export are false) and /v1/score + /v1/decisions answer an explicit 501 the
 silent fallback to generation. Design and protocol differences:
 docs/backends/qwen35_llama_backend_adapters.md.
 
+P2R-5 note (routing matrix): every endpoint gate is the declarative (endpoint, backend) matrix
+in backend_adapters.py (ROUTES) - the service no longer decides support by hand. The 501
+statuses and texts on official_q36 are byte-identical to the pre-matrix ones (pinned by
+tools/test_backend_adapters.py and tools/test_score_api.py), and `GET /v1/routes` publishes
+the matrix read-only (`active_backend`, `backend_source`, every cell with supported /
+engine_command / refusal / notes). Single-entry deployment (chat via the official server +
+score/decisions/session via this service) is a documented recipe, not a merged service - see
+docs/backends/qwen35_llama_backend_adapters.md.
+
 One engine, one in-flight request: a concurrent request is answered 503 (no queue). There is
 no chat/completions, no streaming, no batching, and the engine source is untouched. String
 `prompt` input needs an optional tokenizer (--tokenizer-model); without it the request is
@@ -34,8 +46,8 @@ P2R-3c note (session endpoints): `keep` / `/v1/continue` / `GET /v1/session` spe
 P2R-3a engine contract (`docs/backends/qwen35_llama_session_state.md` §3b). They exist only
 on a backend whose command surface has the session commands (`STATE`); the official q36
 protocol has none of this, so `/v1/continue` and `/v1/session` answer an explicit 501 there,
-and `/v1/score` with `keep` is already refused by the existing score gating - never a silent
-substitution.
+and `/v1/score` (the whole family, `keep` included) is refused by the same matrix gate - never
+a silent substitution.
 
 P2R-4b note (link quarantine): an `EngineProtocolError` is not just answered 502 - the link is
 poisoned and the service quarantines it. The failing request's 502 keeps the original error
@@ -67,8 +79,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from backend_adapters import (DEFAULT_BACKEND, SUPPORTED_BACKENDS, UnsupportedBackendOperation,
-                              get_adapter)
+from backend_adapters import (DEFAULT_BACKEND, SUPPORTED_BACKENDS, get_adapter, refusal_text,
+                              route, routes_payload)
 
 SERVICE_NAME = "score_api"
 DEFAULT_HOST = "127.0.0.1"
@@ -570,7 +582,8 @@ def _usage(done: dict) -> dict:
 
 class ScoreService:
     def __init__(self, link: EngineLink, engine_path=None, timeout=DEFAULT_TIMEOUT,
-                 drain_timeout=DEFAULT_DRAIN_TIMEOUT, tokenizer_model=None, backend=None):
+                 drain_timeout=DEFAULT_DRAIN_TIMEOUT, tokenizer_model=None, backend=None,
+                 backend_source=None):
         self.link = link
         self.engine_path = Path(engine_path) if engine_path else None
         self.timeout = float(timeout)
@@ -581,6 +594,9 @@ class ScoreService:
         elif isinstance(backend, str):
             backend = get_adapter(backend)
         self.backend = backend
+        # --backend (cli) / the config field / the default; "unspecified" when a service is
+        # constructed directly (the library/unit-test path). Reported by GET /v1/routes.
+        self.backend_source = backend_source or "unspecified"
         self._busy = threading.Lock()
         self._dead = False
         self._quarantined = False
@@ -661,23 +677,13 @@ class ScoreService:
                                         % self._tokenizer_error)
         return self._tokenizer
 
-    def _require_backend_score(self, endpoint):
-        try:
-            self.backend.require_score(endpoint)
-        except UnsupportedBackendOperation as exc:
-            raise NotImplementedFeature(str(exc))
-
-    def _require_backend_session(self, endpoint):
-        # The session endpoints need the backend's session commands (`STATE`, the `GEN ...
-        # cont=1` continuation). The official q36 protocol declares neither, so it answers an
-        # explicit 501 - never a silent substitution.
-        if "STATE" not in self.backend.client_commands:
-            raise NotImplementedFeature(
-                "%s is not implemented on the %s backend: its protocol (%s) has no session "
-                "commands (no STATE, no 'GEN ... cont=1'), so a session can be neither continued "
-                "nor reported. This service refuses explicitly instead of substituting another "
-                "operation. Use the qwen35_llama backend for %s."
-                % (endpoint, self.backend.name, "/".join(self.backend.client_commands), endpoint))
+    def _require_route(self, endpoint):
+        # P2R-5: support/refusal is decided by the declarative matrix, never by hand. An
+        # unsupported in-service cell raises NotImplementedFeature with that cell's own
+        # refusal text (byte-identical on official_q36 to the pre-matrix hand-written text).
+        cell = route(endpoint, self.backend.name)
+        if not cell["supported"]:
+            raise NotImplementedFeature(refusal_text(endpoint, self.backend.name))
 
     @staticmethod
     def _keep_field(body):
@@ -688,13 +694,21 @@ class ScoreService:
 
     def score_request(self, body):
         body = _require_object(body)
-        self._require_backend_score("/v1/score")
+        self._require_route("POST /v1/score")
         _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates", "keep"})
         if ("prompt_ids" in body) == ("prompt" in body):
             raise BadRequest("exactly one of prompt_ids or prompt is required")
         topk = _nonnegative_int(body.get("topk", DEFAULT_TOPK), "topk")
         candidates = _parse_explicit_candidates(body["candidates"]) if "candidates" in body else None
+        if candidates is not None:
+            # No-op on qwen35_llama (supported); unreachable on official_q36 (the base cell above
+            # already refused). Consulted so the matrix's candidates form is part of the gate.
+            self._require_route("POST /v1/score:candidates")
         keep = self._keep_field(body)
+        if keep:
+            # Same for the keep form: qwen35_llama supports it (its engine must declare
+            # state_keep_score); the official_q36 base gate already refused the family.
+            self._require_route("POST /v1/score:keep")
         if topk == 0 and candidates is None:
             raise Unprocessable("topk=0 answers only explicit candidates; pass candidates (or topk >= 1)")
         if "prompt" in body:
@@ -706,15 +720,8 @@ class ScoreService:
                 raise Unprocessable("the prompt encoded to zero tokens")
         else:
             ids = _parse_prompt_ids(body["prompt_ids"])
-        if keep:
-            # backend_adapters.py is frozen this round and its score() has no keep flag; the
-            # keep form is issued on the link directly, after the same backend gate above
-            # (keep exists only on qwen35_llama; official_q36 was refused 501 already).
-            result = self._engine_call(lambda: self.link.score(ids, topk, self.timeout,
-                                                               candidates=candidates, keep=True))
-        else:
-            result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
-                                                                  candidates=candidates))
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
+                                                              candidates=candidates, keep=keep))
         payload = {"logprobs": result.pairs or [], "pos": result.pos, "full_vocab_softmax": True,
                    "generated_tokens": 0, "usage": _usage(result.done), "keep": keep}
         if candidates is not None:
@@ -725,11 +732,20 @@ class ScoreService:
         payload = dict(self._engine_call(lambda: self.backend.capabilities(self.link, self.timeout)))
         payload["service"] = SERVICE_NAME
         payload["engine_sha256"] = self._engine_sha256()
+        payload["active_backend"] = self.backend.name
         return 200, payload
+
+    def routes_request(self):
+        # P2R-5: read-only service discovery, rendered from the static matrix. No engine command
+        # and no busy lock: the declared contract is available even when the link is dead or
+        # quarantined (that state is a runtime fact about the engine, not about the routes).
+        return 200, {"active_backend": self.backend.name,
+                     "backend_source": self.backend_source,
+                     "routes": routes_payload()}
 
     def decisions_request(self, body):
         body = _require_object(body)
-        self._require_backend_score("/v1/decisions")
+        self._require_route("POST /v1/decisions")
         _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk", "keep"})
         kind = body.get("kind")
         if kind not in DECISION_KINDS:
@@ -747,14 +763,10 @@ class ScoreService:
             # constrains anything (the old "topk must cover all candidates" refusal is gone).
             _positive_int(topk, "topk")
         keep = self._keep_field(body)
-        if keep:
-            # Same engine as /v1/score: `SCORE <ids> topk=0 cand=<ids> keep=1` - the decision and
-            # a later /v1/continue share this one prefill (link-issued; see score_request).
-            result = self._engine_call(lambda: self.link.score(ids, 0, self.timeout,
-                                                               candidates=flat, keep=True))
-        else:
-            result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
-                                                                  candidates=flat))
+        # Same engine command family as /v1/score: `SCORE <ids> topk=0 cand=<ids> [keep=1]` - with
+        # keep=1 the decision and a later /v1/continue share this one prefill (see score_request).
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
+                                                              candidates=flat, keep=keep))
         by_id = {pair["id"]: pair["logprob"] for pair in result.cand_pairs}
         logprobs = [by_id[token_id] for token_id in flat]
         full_probs = [math.exp(logprob) for logprob in logprobs]
@@ -811,7 +823,7 @@ class ScoreService:
 
     def continue_request(self, body):
         body = _require_object(body)
-        self._require_backend_session("/v1/continue")
+        self._require_route("POST /v1/continue")
         sampling = sorted(set(body) & set(SAMPLING_FIELDS))
         if sampling:
             raise BadRequest("sampling is not implemented on /v1/continue: %s; this endpoint always "
@@ -841,7 +853,7 @@ class ScoreService:
         # arming fact (docs/backends/qwen35_llama_session_state.md); a STATE payload without it
         # is a protocol error, never an invented value. The check runs inside the engine call so
         # that this protocol error goes through the same quarantine as every other one (P2R-4b).
-        self._require_backend_session("/v1/session")
+        self._require_route("GET /v1/session")
 
         def state_call():
             state = self.link.state(self.timeout)
@@ -862,12 +874,15 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/v1/capabilities":
             self._dispatch(lambda: self.service.capabilities_request())
+        elif path == "/v1/routes":
+            self._dispatch(lambda: self.service.routes_request())
         elif path == "/v1/session":
             self._dispatch(lambda: self.service.session_request())
         else:
             self._send_json(404, {"error": "not found: %s; this service implements GET "
-                                           "/v1/capabilities, GET /v1/session, POST /v1/score, "
-                                           "POST /v1/decisions and POST /v1/continue" % path,
+                                           "/v1/capabilities, GET /v1/routes, GET /v1/session, "
+                                           "POST /v1/score, POST /v1/decisions and POST "
+                                           "/v1/continue" % path,
                                   "error_source": "service"})
 
     def do_POST(self):
@@ -880,8 +895,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._dispatch(lambda: self.service.continue_request(self._read_json()))
         else:
             self._send_json(404, {"error": "not found: %s; this service implements GET "
-                                           "/v1/capabilities, GET /v1/session, POST /v1/score, "
-                                           "POST /v1/decisions and POST /v1/continue" % path,
+                                           "/v1/capabilities, GET /v1/routes, GET /v1/session, "
+                                           "POST /v1/score, POST /v1/decisions and POST "
+                                           "/v1/continue" % path,
                                   "error_source": "service"})
 
     def _read_json(self):
@@ -1029,6 +1045,14 @@ def main(argv=None) -> int:
         raise SystemExit("score_api: attach mode needs both --attach-stdin and --attach-stdout")
     config = _load_config(args.config)
     backend = resolve_backend(args.backend, config)
+    # Where the selection came from (reported by GET /v1/routes as backend_source): the CLI
+    # flag wins over the config field; otherwise the default backend is in use.
+    if args.backend is not None:
+        backend_source = "cli"
+    elif config.get("backend") is not None:
+        backend_source = "config"
+    else:
+        backend_source = "default"
     proc = None
     if args.start_engine:
         exe, engine_argv, cwd, env = _resolve_start_command(args, config)
@@ -1058,7 +1082,8 @@ def main(argv=None) -> int:
                              "handshake)\n" % backend.name)
         engine_path = args.engine
     service = ScoreService(link, engine_path=engine_path, timeout=args.timeout,
-                           tokenizer_model=args.tokenizer_model, backend=backend)
+                           tokenizer_model=args.tokenizer_model, backend=backend,
+                           backend_source=backend_source)
     httpd = start_http(service, args.host, args.port)
     host, port = httpd.server_address[:2]
     sys.stdout.write("score_api listening on http://%s:%d\n" % (host, port))

@@ -20,6 +20,7 @@ from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
+import backend_adapters  # noqa: E402
 import score_api  # noqa: E402
 
 STUB = TOOLS / "stub_engine.py"
@@ -755,6 +756,127 @@ class ContinueSessionTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIs(body["state_keep_score"], True)
         self.assertIs(body["session_continue"], True)
+
+
+ROUTES_501_TEXTS = {
+    "POST /v1/score": (
+        "/v1/score is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no SCORE command, so next-token logprobs cannot be read. This service refuses "
+        "explicitly instead of substituting another operation (it never degrades /v1/score into "
+        "generation). Use the qwen35_llama backend for /v1/score."),
+    "POST /v1/decisions": (
+        "/v1/decisions is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no SCORE command, so next-token logprobs cannot be read. This service refuses "
+        "explicitly instead of substituting another operation (it never degrades /v1/decisions "
+        "into generation). Use the qwen35_llama backend for /v1/decisions."),
+    "POST /v1/continue": (
+        "/v1/continue is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+        "continued nor reported. This service refuses explicitly instead of substituting another "
+        "operation. Use the qwen35_llama backend for /v1/continue."),
+    "GET /v1/session": (
+        "/v1/session is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+        "continued nor reported. This service refuses explicitly instead of substituting another "
+        "operation. Use the qwen35_llama backend for /v1/session."),
+}
+
+
+class RoutesDiscoveryTests(unittest.TestCase):
+    """P2R-5: GET /v1/routes - read-only service discovery over the declarative matrix."""
+
+    def setUp(self):
+        self.env = StubService(backend="qwen35_llama", stub=STUB)
+        self.addCleanup(self.env.close)
+
+    def test_routes_matches_capabilities_and_covers_both_backends(self):
+        status, routes, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        self.assertEqual(routes["active_backend"], "qwen35_llama")
+        self.assertEqual(routes["backend_source"], "unspecified")
+        items = routes["routes"]
+        expected = {(endpoint, backend) for endpoint in backend_adapters.ENDPOINTS
+                    for backend in backend_adapters.SUPPORTED_BACKENDS}
+        self.assertEqual({(item["endpoint"], item["backend"]) for item in items}, expected)
+        by_pair = {(item["endpoint"], item["backend"]): item for item in items}
+        qwen_service = (backend_adapters.SCORE_ENDPOINT, "qwen35_llama")
+        official_service = (backend_adapters.SCORE_ENDPOINT, "official_q36")
+        self.assertIs(by_pair[qwen_service]["supported"], True)
+        self.assertIs(by_pair[qwen_service]["in_service"], True)
+        self.assertIsNone(by_pair[qwen_service]["refusal_text"])
+        self.assertIs(by_pair[official_service]["supported"], False)
+        self.assertEqual(by_pair[official_service]["refusal_status"], 501)
+        self.assertEqual(by_pair[official_service]["refusal_text"], ROUTES_501_TEXTS["POST /v1/score"])
+        status, caps, _ = self.env.get("/v1/capabilities")
+        self.assertEqual(status, 200)
+        self.assertEqual(caps["active_backend"], routes["active_backend"])
+        self.assertEqual(caps["backend"], routes["active_backend"])
+
+    def test_routes_is_read_only(self):
+        status, _, _ = self.env.post("/v1/score", {"prompt_ids": [1, 2], "keep": True})
+        self.assertEqual(status, 200)
+        status, session_before, _ = self.env.get("/v1/session")
+        self.assertEqual(status, 200)
+        self.assertIs(session_before["armed"], True)
+        status, first, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        status, second, _ = self.env.get("/v1/routes")
+        self.assertEqual(second, first)
+        status, session_after, _ = self.env.get("/v1/session")
+        self.assertEqual(session_after, session_before)
+
+    def test_routes_get_only(self):
+        status, body, _ = self.env.post("/v1/routes", {})
+        self.assertEqual(status, 404)
+        self.assertIn("not found", body["error"])
+        status, body, _ = self.env.get("/v1/routes/extra")
+        self.assertEqual(status, 404)
+        self.assertIn("not found", body["error"])
+
+
+class OfficialRoutesTests(unittest.TestCase):
+    """P2R-5: the matrix on official_q36 - routes still 200, refused cells still exact 501s."""
+
+    def setUp(self):
+        self.env = StubService(backend="official_q36", stub=OFFICIAL_STUB)
+        self.addCleanup(self.env.close)
+
+    def test_routes_200_supported_false_and_501_spot_check(self):
+        status, routes, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        self.assertEqual(routes["active_backend"], "official_q36")
+        by_pair = {(item["endpoint"], item["backend"]): item for item in routes["routes"]}
+        for endpoint in (backend_adapters.SCORE_ENDPOINT, backend_adapters.SCORE_CANDIDATES_ENDPOINT,
+                         backend_adapters.SCORE_KEEP_ENDPOINT, backend_adapters.DECISIONS_ENDPOINT,
+                         backend_adapters.CONTINUE_ENDPOINT, backend_adapters.SESSION_ENDPOINT):
+            with self.subTest(endpoint=endpoint):
+                item = by_pair[(endpoint, "official_q36")]
+                self.assertIs(item["supported"], False)
+                self.assertIs(item["in_service"], True)
+                self.assertEqual(item["refusal_status"], 501)
+        # Spot-check two refused cells through the real HTTP path.
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1]})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error"], by_pair[(backend_adapters.SCORE_ENDPOINT, "official_q36")]["refusal_text"])
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error"],
+                         by_pair[(backend_adapters.CONTINUE_ENDPOINT, "official_q36")]["refusal_text"])
+
+    def test_501_texts_exactly_unchanged(self):
+        cases = ((backend_adapters.SCORE_ENDPOINT, "POST", "/v1/score", {}),
+                 (backend_adapters.DECISIONS_ENDPOINT, "POST", "/v1/decisions", {}),
+                 (backend_adapters.CONTINUE_ENDPOINT, "POST", "/v1/continue", {}),
+                 (backend_adapters.SESSION_ENDPOINT, "GET", "/v1/session", None))
+        for endpoint, method, path, payload in cases:
+            with self.subTest(endpoint=endpoint):
+                if method == "GET":
+                    status, body, _ = self.env.get(path)
+                else:
+                    status, body, _ = self.env.post(path, payload)
+                self.assertEqual(status, 501)
+                self.assertEqual(body["error_source"], "service")
+                self.assertEqual(body["error"], ROUTES_501_TEXTS[endpoint])
 
 
 class OfficialBackendSessionTests(unittest.TestCase):

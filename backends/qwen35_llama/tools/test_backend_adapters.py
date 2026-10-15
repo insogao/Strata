@@ -177,6 +177,175 @@ class OfficialBackendTests(unittest.TestCase):
         self.assertNotIn("candidates", body)
 
 
+SCORE_501_TEXT = (
+    "/v1/score is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) has "
+    "no SCORE command, so next-token logprobs cannot be read. This service refuses explicitly "
+    "instead of substituting another operation (it never degrades /v1/score into generation). "
+    "Use the qwen35_llama backend for /v1/score.")
+DECISIONS_501_TEXT = (
+    "/v1/decisions is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+    "has no SCORE command, so next-token logprobs cannot be read. This service refuses explicitly "
+    "instead of substituting another operation (it never degrades /v1/decisions into generation). "
+    "Use the qwen35_llama backend for /v1/decisions.")
+CONTINUE_501_TEXT = (
+    "/v1/continue is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+    "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+    "continued nor reported. This service refuses explicitly instead of substituting another "
+    "operation. Use the qwen35_llama backend for /v1/continue.")
+SESSION_501_TEXT = (
+    "/v1/session is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+    "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+    "continued nor reported. This service refuses explicitly instead of substituting another "
+    "operation. Use the qwen35_llama backend for /v1/session.")
+
+
+class RoutingMatrixTests(unittest.TestCase):
+    """P2R-5: the declarative (endpoint, backend) matrix and its query surface (no stubs)."""
+
+    def test_matrix_covers_every_endpoint_and_backend(self):
+        expected = {(endpoint, backend) for endpoint in backend_adapters.ENDPOINTS
+                    for backend in backend_adapters.SUPPORTED_BACKENDS}
+        self.assertEqual(set(backend_adapters.ROUTES), expected)
+        self.assertEqual(len(backend_adapters.ROUTES), 2 * len(backend_adapters.ENDPOINTS))
+        for cell in backend_adapters.ROUTES.values():
+            for key in backend_adapters.ROUTE_CELL_KEYS:
+                self.assertIn(key, cell)
+
+    def test_every_cell_is_consistent(self):
+        # Cells that legitimately carry no engine command: the framework-only /v1/routes and the
+        # synthesized official_q36 capabilities table (no CAPS handshake).
+        without_engine_command = {
+            (backend_adapters.ROUTES_ENDPOINT, "qwen35_llama"),
+            (backend_adapters.ROUTES_ENDPOINT, "official_q36"),
+            (backend_adapters.CAPABILITIES_ENDPOINT, "official_q36"),
+        }
+        for (endpoint, backend), cell in backend_adapters.ROUTES.items():
+            with self.subTest(endpoint=endpoint, backend=backend):
+                self.assertIsInstance(cell["supported"], bool)
+                self.assertIsInstance(cell["in_service"], bool)
+                self.assertIsInstance(cell["notes"], str)
+                self.assertTrue(cell["notes"])
+                if cell["supported"]:
+                    self.assertIsNone(cell["refusal_status"])
+                    self.assertIsNone(cell["refusal_text_template"])
+                    if (endpoint, backend) not in without_engine_command:
+                        self.assertIsInstance(cell["engine_command"], str)
+                        self.assertTrue(cell["engine_command"])
+                elif cell["in_service"]:
+                    # In-service refusals are 501s with a renderable text.
+                    self.assertEqual(cell["refusal_status"], 501)
+                    self.assertIsInstance(cell["refusal_text_template"], str)
+                    self.assertTrue(cell["refusal_text_template"])
+                else:
+                    # Boundary rows (chat, engine SAVE/LOAD): facts, not HTTP refusals.
+                    self.assertIsNone(cell["refusal_status"])
+                    self.assertIsNone(cell["refusal_text_template"])
+
+    def test_unknown_endpoint_and_backend_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            backend_adapters.route("GET /v1/nope", "qwen35_llama")
+        self.assertIn("unknown endpoint", str(caught.exception))
+        self.assertIn("GET /v1/nope", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            backend_adapters.route(backend_adapters.SCORE_ENDPOINT, "native")
+        self.assertIn("unknown backend", str(caught.exception))
+        # refusal_text() only exists for refused cells.
+        with self.assertRaises(ValueError) as caught:
+            backend_adapters.refusal_text(backend_adapters.SCORE_ENDPOINT, "qwen35_llama")
+        self.assertIn("not refused", str(caught.exception))
+
+    def test_route_returns_a_readonly_copy(self):
+        cell = backend_adapters.route(backend_adapters.SCORE_ENDPOINT, "qwen35_llama")
+        cell["supported"] = False
+        self.assertIs(backend_adapters.ROUTES[(backend_adapters.SCORE_ENDPOINT, "qwen35_llama")]["supported"],
+                      True)
+
+    def test_official_refusal_texts_byte_identical_to_pre_matrix(self):
+        expected = {
+            backend_adapters.SCORE_ENDPOINT: SCORE_501_TEXT,
+            backend_adapters.SCORE_CANDIDATES_ENDPOINT: SCORE_501_TEXT,
+            backend_adapters.SCORE_KEEP_ENDPOINT: SCORE_501_TEXT,
+            backend_adapters.DECISIONS_ENDPOINT: DECISIONS_501_TEXT,
+            backend_adapters.CONTINUE_ENDPOINT: CONTINUE_501_TEXT,
+            backend_adapters.SESSION_ENDPOINT: SESSION_501_TEXT,
+        }
+        for endpoint, text in expected.items():
+            with self.subTest(endpoint=endpoint):
+                self.assertEqual(backend_adapters.refusal_text(endpoint, "official_q36"), text)
+
+    def test_qwen35_supported_cells_and_engine_commands(self):
+        expected = {
+            backend_adapters.SCORE_ENDPOINT: ("SCORE", None),
+            backend_adapters.SCORE_CANDIDATES_ENDPOINT: ("cand=", "score_explicit_candidate_ids"),
+            backend_adapters.SCORE_KEEP_ENDPOINT: ("keep=1", "state_keep_score"),
+            backend_adapters.DECISIONS_ENDPOINT: ("cand=", "score_explicit_candidate_ids"),
+            backend_adapters.CONTINUE_ENDPOINT: ("cont=1", "session_continue"),
+            backend_adapters.SESSION_ENDPOINT: ("STATE", None),
+            backend_adapters.CAPABILITIES_ENDPOINT: ("CAPS", None),
+            backend_adapters.ROUTES_ENDPOINT: (None, None),
+        }
+        for endpoint, (command_token, requires) in expected.items():
+            with self.subTest(endpoint=endpoint):
+                cell = backend_adapters.route(endpoint, "qwen35_llama")
+                self.assertIs(cell["supported"], True)
+                self.assertEqual(cell["requires"], requires)
+                if command_token is None:
+                    self.assertIsNone(cell["engine_command"])
+                else:
+                    self.assertIn(command_token, cell["engine_command"])
+
+    def test_official_unsupported_cells_and_boundary_notes(self):
+        for endpoint in (backend_adapters.SCORE_ENDPOINT, backend_adapters.SCORE_CANDIDATES_ENDPOINT,
+                         backend_adapters.SCORE_KEEP_ENDPOINT, backend_adapters.DECISIONS_ENDPOINT,
+                         backend_adapters.CONTINUE_ENDPOINT, backend_adapters.SESSION_ENDPOINT):
+            with self.subTest(endpoint=endpoint):
+                cell = backend_adapters.route(endpoint, "official_q36")
+                self.assertIs(cell["supported"], False)
+                self.assertIs(cell["in_service"], True)
+                self.assertEqual(cell["refusal_status"], 501)
+        state_io = backend_adapters.route(backend_adapters.ENGINE_STATE_ENDPOINT, "official_q36")
+        self.assertIs(state_io["supported"], False)
+        self.assertIn("RESTORE/SERR", state_io["notes"])
+        chat = backend_adapters.route(backend_adapters.CHAT_ENDPOINT, "qwen35_llama")
+        self.assertIs(chat["supported"], False)
+        self.assertIs(chat["in_service"], False)
+        self.assertIn("serve/server.py", chat["notes"])
+        self.assertIn("404", chat["notes"])
+
+    def test_capabilities_for_difference_items(self):
+        qwen = backend_adapters.capabilities_for("qwen35_llama")
+        official = backend_adapters.capabilities_for("official_q36")
+        for key in ("score", "score_explicit_candidate_ids", "state_keep_score", "session_continue",
+                    "STATE", "state_export"):
+            with self.subTest(key=key):
+                self.assertIs(qwen[key], True)
+                self.assertIs(official[key], False)
+        self.assertIs(qwen["caps_handshake"], True)
+        self.assertIs(official["caps_handshake"], False)
+        self.assertEqual(qwen["protocol"], "strata-serve-v1")
+        self.assertEqual(official["protocol"], "official-q36-serve")
+        self.assertEqual(len(qwen["routes"]), len(backend_adapters.ENDPOINTS))
+        self.assertEqual(qwen["routes"][backend_adapters.CONTINUE_ENDPOINT], True)
+        self.assertEqual(official["routes"][backend_adapters.CONTINUE_ENDPOINT], False)
+
+    def test_routes_payload_is_full_matrix_and_serializable(self):
+        payload = backend_adapters.routes_payload()
+        self.assertEqual(len(payload), 2 * len(backend_adapters.ENDPOINTS))
+        json.dumps(payload)  # must be JSON-serializable for GET /v1/routes
+        by_pair = {(item["endpoint"], item["backend"]): item for item in payload}
+        self.assertEqual(set(by_pair), set(backend_adapters.ROUTES))
+        for (endpoint, backend), item in by_pair.items():
+            with self.subTest(endpoint=endpoint, backend=backend):
+                cell = backend_adapters.ROUTES[(endpoint, backend)]
+                self.assertEqual(item["supported"], cell["supported"])
+                self.assertEqual(item["notes"], cell["notes"])
+                if cell["refusal_text_template"] is not None:
+                    self.assertEqual(item["refusal_text"],
+                                     backend_adapters.refusal_text(endpoint, backend))
+                else:
+                    self.assertIsNone(item["refusal_text"])
+
+
 class OfficialStubProtocolTests(unittest.TestCase):
     """Protocol fidelity of the test-only official stub (raw pipes, no HTTP service)."""
 
