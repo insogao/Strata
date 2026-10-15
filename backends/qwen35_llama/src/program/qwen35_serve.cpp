@@ -204,8 +204,11 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     while (*p == ' ') ++p;
     if (*p < '0' || *p > '9') { err = "bad request: max_new"; return false; }
     char* end = nullptr;
+    errno = 0;
     const long long max_new = std::strtoll(p, &end, 10);
-    if (max_new < 1) { err = "bad request: max_new"; return false; }
+    if (errno == ERANGE || end == p || max_new < 1 || (*end != ' ' && *end != '\0')) {
+        err = "bad request: max_new"; return false;
+    }
     req.max_new = max_new;
     p = end;
     bool cont_seen = false;
@@ -1588,7 +1591,10 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         // IS armed and (in the parser) allowed an empty id list (pure continuation, `total` = 0).
         const bool session_gen = session.active;
         const int64_t base_pos = session_gen ? state_cursor(ctx.get()) : 0;
-        if (base_pos + (int64_t) req.ids.size() + req.max_new > total_ctx) {
+        // Subtract only after each operand has been bounded: adding LLONG_MAX to a
+        // carried cursor would otherwise overflow before the context guard ran.
+        if (base_pos < 0 || base_pos > total_ctx || req.ids.size() > (uint64_t) (total_ctx - base_pos) ||
+            req.max_new > total_ctx - base_pos - (int64_t) req.ids.size()) {
             if (session_gen) {
                 std::printf("ERR session (%lld) + prompt (%lld tokens) + max_new (%lld) exceeds the context "
                             "(%lld)\n", (long long) base_pos, (long long) req.ids.size(), (long long) req.max_new,
@@ -1650,8 +1656,12 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::printf("T %d\n", (int) tok);
                 std::fflush(stdout);
                 ++produced;
-                if (llama_vocab_is_eog(vocab, tok)) { finish = "stop"; break; }
-                if (i + 1 < req.max_new) {
+                const bool is_eog = llama_vocab_is_eog(vocab, tok);
+                // An armed session commits EVERY returned token, including the last
+                // length token and EOG. The next request must read its successor logits,
+                // not sample the previous row again. Isolated requests keep their old
+                // evaluation count; SAVE/LOAD needs no new pending-token container field.
+                if (session_gen || (!is_eog && i + 1 < req.max_new)) {
                     if (!fill_batch(batch.get(), &tok, 1, (int) (base_pos + total + i)) ||
                         llama_process(ctx.get(), LLAMA_PROCESS_TYPE_DECODE, batch.get()) != 0) {
                         std::printf("ERR decode failed at output %lld\n", produced);
@@ -1660,6 +1670,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                         break;
                     }
                 }
+                if (is_eog) { finish = "stop"; break; }
             }
             decode_ms = ms_since(decode_begin);
         }

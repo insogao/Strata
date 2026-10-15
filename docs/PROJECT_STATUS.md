@@ -3,25 +3,24 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-15（**阶段 2 收尾＋PR#2 评审补强 P2R-1…P2R-5**：见 §4.0b；阶段 1 交付汇总见 `docs/PHASE1_DELIVERY.md`）
+更新时间：2026-10-15（当前 `codex/session-correctness`，自 P2R 补强 `f3610f82` 开发四项评审修复；Codex 直接实现，暂不使用 OpenCode）。本轮按用户最新范围：**单显卡笔记本/PC，不做双卡施工**。
 
 ## 0. 一句话状态
 
-**第一阶段（核心迁移）已完成并通过自测**：①本仓独立构建 exit 0；②**经官方服务入口**的普通聊天/连续请求/EOS/**取消**/状态隔离全部达成（含引擎级 `finish=cancel` 原文）；③构建与运行**不依赖旧研究树**（中立路径实跑）；④与生产冻结基线的 ABAB 配对回归 **decode PASS、prefill INCONCLUSIVE（中位 +7.15% 在带内，配对噪声；无回归证据）**。阶段 2（统一 Backend/Logits Decisions）可自主启动（**不合并 main**）；阶段 3 未开始。
+阶段一迁移、阶段二原型与 P2R 补强已交付，仍待审查/整合。本轮修复分段续写重复、HTTP 会话所有权、非法概率协议与长度溢出：100 CPU tests PASS，单卡三个有界 native 全部清理；旧版本17/18 token 差异复现，修复后单段/分段/逐 token 一致，状态恢复专项通过。初次状态测试路径错误与构建工具失败均保留原件，详见 `docs/SESSION_CORRECTNESS_REVIEW_20261015.md`。没有新的提速或业务质量通过声明，不合并生产。
 
 ## 1. 三大阶段进度
 
 | 阶段 | 状态 | 关键门槛（自测） | 证据 |
 |---|---|---|---|
 | 阶段 1 核心迁移 | **完成（自测达成）** | ①独立构建 exit 0；②官方服务入口的聊天/连续/EOS/取消/隔离；③不依赖旧研究树；④与本产基线配对回归不劣化 | `docs/PHASE1_DELIVERY.md`（四项逐条证据） |
-| 阶段 2 统一 Backend + Logits Decisions | 未开始（可启动） | 双 Backend 能力表可查询；`/v1/chat/completions` 回归；`/v1/score`、`/v1/decisions` 文档化子集；状态语义与质量回归 | 接口草案见 350/351 报告（E1–E9、四类缓存边界） |
-| 阶段 3 Hardware/Workload Autotuner | 未开始 | 安全预算内搜索；4060 上识别 2700/3200 实测差异；第二张卡验证（若不可得则如实标注待办） | — |
+| 阶段 2 统一 Backend + Logits Decisions | 原型＋P2R 已交付；本轮四项正确性修复待独立审查 | 本机单卡/单 fixture 门通过，范围与状态协议兼容性变化见报告；业务质量/全量性能不继承通过 | `docs/SESSION_CORRECTNESS_REVIEW_20261015.md`，§4.0b 为历史 P2R 证据 |
+| 阶段 3 Hardware/Workload Autotuner | 离线工具 PR #4 独立审查，不在本分支 | 本轮不实施多 GPU；其他硬件覆盖不冒称已验证。完整 EOS/业务联合目标/实测选优仍待办 | `codex/phase3-tune-cli` / PR #4 的交付文档 |
 
 ## 2. 当前分支与提交
 
-- 分支：`integration/qwen35-llama`（`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`）
-- PR：#1（自动随分支更新；**标题/正文编辑受 PAT 权限限制，见 §5 阻断项**）
-- 提交链（自 base `296b59d2` 起）：
+- 当前分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 follow-up PR，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
+- P3 工具 PR #4 为并列审查线，未被合并到本分支。下列为阶段一历史提交链：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）
   - `e0fd2dea` 冒烟＋保真报告（task 355）
   - `c653bef1` ABAB 配对回归报告（task 358）
@@ -89,7 +88,7 @@
 
 | P2R-5 统一 Backend 边界：路由与能力契约（PR#2 评审 P1"避免两套独立服务接口"的代码化部分；分支 `phase2r/review-gaps`） | 完成（**0 GPU 交付**：无真引擎/租约/fence/gpu-lock，仅两个既有 stub；引擎 cpp 与官方文件未碰；**行为等价**：官方 q36 上 4 条既有 501 文本与状态与改动前逐字节一致（两套件精确串测试钉死），既有 63＋13 单测全绿（未改断言）） | `backend_adapters.py` 新增声明式矩阵 `ROUTES`（10 端点 id × 2 后端 = **20 格**；每格 supported/engine_command/refusal_status/refusal_text_template/requires/in_service/notes）＋`route()`/`refusal_text()`/`capabilities_for()`（差异项 score_explicit_candidate_ids/state_keep_score/session_continue/STATE/state_export）/`routes_payload()`，取代手工 `require_score`/`require_backend_session`；`score_api.py` 全部端点改走矩阵（含 score 三形态 `:candidates`/`:keep` 与 decisions/continue/session；keep 调用改为经 adapter 透传），新增只读 `GET /v1/routes`（`active_backend`＋`backend_source`＝cli/config/default/unspecified＋全矩阵；不发引擎命令、无 busy 锁、死链路仍可答），`/v1/capabilities` 增 `active_backend`；官方 q36 六格 in-service 全 501 且文本与改前逐字节相同；`test_backend_adapters.py` 13→**22**（新增 9：矩阵完整性/每格一致/未知端点与后端异常/副本只读/逐字节 501 原文/两后端支持与 requires 差异/边界 notes/能力差异项/序列化），`test_score_api.py` 63→**68**（新增 5：routes 与 capabilities 的 active_backend 一致且覆盖两后端、routes 只读（keep 会话前后 `/v1/session` 逐字节相同）、official routes 200＋supported=false 抽查 2 端点实际 501、4 条 501 精确原文、POST /v1/routes 与子路径 404）；文档 `backend_adapters.md` §7–§9（矩阵表逐格、路由规则、GET /v1/routes 契约、单入口配方「一份配置/一个命令/两个健康检查」＋未统一清单「两个监听器并存、官方 RESTORE/SERR 会话文法未并入、批处理契约 v1 未实现、本服务无 chat」＋后续合并路线；明确未合并为一套服务）＋`backend_selection.md` §服务边界与路由契约指向节 | 证据 `results/opencode-execution/strata-unified-p2r5-backend-boundary/`（两模块 `-v` post 原文与 pre 基线、`matrix-export.json`、两后端 `/v1/routes` 原文样例、pre-change 501 原文、`git show --stat`、final-report）；**补强 PR#3 的全部 P0/P1 至此闭环**（由主管在 PR 描述与本节收口） |
 
-### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
+### 4.1 阶段一历史夜间任务队列（非当前派发队列）
 
 | 序 | 任务 | 入口条件 | 交付与自测判据 |
 |---|---|---|---|

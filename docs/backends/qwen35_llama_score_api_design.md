@@ -1,5 +1,15 @@
 # qwen35_llama score API - `/v1/score`, `/v1/capabilities`, a minimal `/v1/decisions` and the session endpoints (P2-3 subset; P2R-1 payload semantics; P2R-3c session endpoints; P2R-4b link quarantine)
 
+**Current compatibility update (2026-10-15)**: stateful HTTP requests now require
+the opaque `session:{id,revision}` handle issued by keep=true. Missing/wrong/stale
+handles answer409 before any engine command, including attempts to reset another
+caller's state with a stateless score. Successful stateful mutations advance the
+revision; an owned stateless score releases it. Older stateful examples below must
+carry this field. Stateless scoring on an unowned engine is unchanged. Non-finite
+or impossible protocol probabilities/timings and invalid finish reasons quarantine
+the link (502); positive HTTP counts are bounded to int32. Full migration, raw
+evidence and recovery limits: [session correctness follow-up](../SESSION_CORRECTNESS_REVIEW_20261015.md).
+
 Phase-2 backend-interface work, task **P2-3** (branch `phase2/backend-interface`), extended by **P2R-1**
 and **P2R-3c** (branch `phase2r/review-gaps`). This adds a **thin HTTP service of our own** that drives one
 existing serve-protocol engine process (`CAPS` / `SCORE` / `GEN` / `STATE`) and exposes the endpoints below.

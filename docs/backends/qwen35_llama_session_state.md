@@ -1,5 +1,14 @@
 # qwen35_llama single-session state export/import (P2-5, containerized by P2R-4a)
 
+**Current follow-up (2026-10-15)**: armed GEN now commits every emitted token,
+including the final length token/EOS. Consecutive pure continuations no longer
+repeat the pending boundary token described in the historical §13 evidence below.
+The cursor counts every emitted token, and STRATAST stays v1 (no pending field).
+LOAD still restores no logits: append real token ids before continuing after LOAD.
+The HTTP service separately enforces an opaque ownership/revision handle; raw
+engine stdin remains one exclusive-owner pipe. See
+[session correctness and real-model evidence](../SESSION_CORRECTNESS_REVIEW_20261015.md).
+
 **Status**: implemented in `src/program/qwen35_serve.cpp` (P2-5, 0-GPU task; **P2R-4a** added the
 self-describing file container - magic/version/lengths/CRC32/model fingerprint - around the unchanged raw
 payload). This is the **single-session state boundary** for the serve engine: one explicit export/import of
@@ -516,8 +525,9 @@ compared against an **in-process twin run from the same state**; `A` (the warm p
 `R1`/`R2`/`R3` full-prefill references are exactly as preregistered. Raw facts behind the adaptation (all
 in the evidence): the preregistered pure `GEN 16 cont=1` right after `SCORE keep=1` reproduces the
 P2R-3b-2/P2R-3b-order stream `[90, 198, 1, 78151, …, 92]` (16/16), while any *consecutive* pure
-continuation re-samples the pending last token first (the engine keeps the logits of the last fed token in
-the live context - there is no logits store in the file).
+continuation on **that pre-fix build** re-sampled the pending last token first (the engine kept the logits
+of the last fed token). This live-continuation defect is fixed by the current follow-up; the separate
+absence of logits in the file remains unchanged.
 
 ### N1 - positive path: SAVE/LOAD, 128/256, multi-round, repeated restore, isolation
 

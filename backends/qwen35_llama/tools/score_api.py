@@ -36,8 +36,12 @@ engine_command / refusal / notes). Single-entry deployment (chat via the officia
 score/decisions/session via this service) is a documented recipe, not a merged service - see
 docs/backends/qwen35_llama_backend_adapters.md.
 
-One engine, one in-flight request: a concurrent request is answered 503 (no queue). There is
-no chat/completions, no streaming, no batching, and the engine source is untouched. String
+One engine, one in-flight request: a concurrent request is answered 503 (no queue).
+Stateful workflows additionally carry an opaque session id and current revision:
+keep=true issues the handle; subsequent score/decision/continue mutations without
+the current handle answer409 before touching the pipe. See
+docs/SESSION_CORRECTNESS_REVIEW_20261015.md. There is
+no chat/completions, no streaming and no batching. String
 `prompt` input needs an optional tokenizer (--tokenizer-model); without it the request is
 refused with an explanation instead of being guessed at - except `/v1/continue`, whose `text`
 is `null` when no tokenizer is available (never an error).
@@ -70,6 +74,7 @@ import json
 import math
 import os
 import queue
+import secrets
 import subprocess
 import sys
 import threading
@@ -149,6 +154,10 @@ class EngineProtocolError(ServiceError):
     source = "engine"
 
 
+class SessionConflict(ServiceError):
+    status = 409
+
+
 def _timeout_message(timeout: float) -> str:
     return "the engine did not answer in time (request timeout %.1f s)" % timeout
 
@@ -167,40 +176,41 @@ class GenerationResult:
     done: dict
 
 
-def _parse_logprobs(line: str):
+def _parse_probability_row(line: str, name: str):
     parts = line.split()
     if len(parts) < 4:
-        raise EngineProtocolError("short LOGPROBS line: %r" % line)
+        raise EngineProtocolError("short %s line: %r" % (name, line))
     try:
         pos = int(parts[1])
         count = int(parts[2])
         pairs = []
+        seen = set()
         for token in parts[3:]:
-            token_id, _, logprob = token.partition(":")
-            pairs.append({"id": int(token_id), "logprob": float(logprob)})
+            token_id, separator, logprob = token.partition(":")
+            token_id, logprob = int(token_id), float(logprob)
+            if not separator or token_id < 0 or not math.isfinite(logprob) or logprob > 0:
+                raise ValueError("requires a nonnegative id and finite logprob <= 0")
+            if token_id in seen:
+                raise ValueError("duplicate token id")
+            seen.add(token_id)
+            pairs.append({"id": token_id, "logprob": logprob})
+        if pos < 0 or count < 1:
+            raise ValueError("requires nonnegative position and positive count")
     except ValueError as exc:
-        raise EngineProtocolError("malformed LOGPROBS line: %r (%s)" % (line, exc))
+        raise EngineProtocolError("malformed %s line: %r (%s)" % (name, line, exc))
     if len(pairs) != count:
-        raise EngineProtocolError("LOGPROBS declares %d pairs but has %d: %r" % (count, len(pairs), line))
+        raise EngineProtocolError("%s declares %d pairs but has %d: %r" % (name, count, len(pairs), line))
+    if math.fsum(math.exp(pair["logprob"]) for pair in pairs) > 1.0 + LABEL_MASS_TOLERANCE:
+        raise EngineProtocolError("%s probabilities exceed full-vocabulary mass" % name)
     return pos, pairs
+
+
+def _parse_logprobs(line: str):
+    return _parse_probability_row(line, "LOGPROBS")
 
 
 def _parse_candlogprobs(line: str):
-    parts = line.split()
-    if len(parts) < 4:
-        raise EngineProtocolError("short CANDLOGPROBS line: %r" % line)
-    try:
-        pos = int(parts[1])
-        count = int(parts[2])
-        pairs = []
-        for token in parts[3:]:
-            token_id, _, logprob = token.partition(":")
-            pairs.append({"id": int(token_id), "logprob": float(logprob)})
-    except ValueError as exc:
-        raise EngineProtocolError("malformed CANDLOGPROBS line: %r (%s)" % (line, exc))
-    if len(pairs) != count:
-        raise EngineProtocolError("CANDLOGPROBS declares %d pairs but has %d: %r" % (count, len(pairs), line))
-    return pos, pairs
+    return _parse_probability_row(line, "CANDLOGPROBS")
 
 
 def _parse_done(line: str) -> dict:
@@ -208,7 +218,7 @@ def _parse_done(line: str) -> dict:
     if len(parts) < 16:
         raise EngineProtocolError("short DONE line: %r" % line)
     try:
-        return {
+        result = {
             "produced": int(parts[1]),
             "prompt_tokens": int(parts[2]),
             "prompt_ms": float(parts[3]),
@@ -217,6 +227,11 @@ def _parse_done(line: str) -> dict:
             "reused": int(parts[8]),
             "prompt_read": int(parts[14]),
         }
+        if (any(result[key] < 0 for key in ("produced", "prompt_tokens", "reused", "prompt_read"))
+                or any(not math.isfinite(result[key]) or result[key] < 0 for key in ("prompt_ms", "decode_ms"))
+                or result["finish"] not in {"score", "length", "stop", "cancel"}):
+            raise ValueError("invalid counters, timing or finish reason")
+        return result
     except ValueError as exc:
         raise EngineProtocolError("malformed DONE line: %r (%s)" % (line, exc))
 
@@ -370,7 +385,10 @@ class EngineLink:
                 continue
             if line.startswith("T "):
                 try:
-                    tokens.append(int(line[2:].strip()))
+                    token = int(line[2:].strip())
+                    if token < 0 or token > 2147483647:
+                        raise ValueError("token id outside int32 range")
+                    tokens.append(token)
                 except ValueError:
                     raise EngineProtocolError("malformed T line during GEN cont=1: %r" % line)
                 continue
@@ -488,8 +506,8 @@ def _reject_unknown_fields(body, allowed):
 
 
 def _positive_int(value, what):
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-        raise BadRequest("%s must be a positive integer" % what)
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 2147483647:
+        raise BadRequest("%s must be a positive integer <= 2147483647" % what)
     return value
 
 
@@ -604,6 +622,46 @@ class ScoreService:
         self._tokenizer = None
         self._tokenizer_error = None
         self._tokenizer_loaded = False
+        self._session_lease = None
+        self._session_uncertain = False
+
+    def _owned_call(self, body, call, keep):
+        """Lease check, engine mutation and revision publication share the pipe lock."""
+        provided = body.get("session")
+        if provided is not None:
+            if (not isinstance(provided, dict) or set(provided) != {"id", "revision"}
+                    or not isinstance(provided["id"], str) or not provided["id"].isascii()
+                    or not 1 <= len(provided["id"]) <= 128
+                    or type(provided["revision"]) is not int or provided["revision"] < 1):
+                raise BadRequest("session must contain an opaque id and positive integer revision")
+
+        def owned():
+            if self._session_lease is None:
+                if provided is not None:
+                    raise SessionConflict("session is absent or expired")
+            elif (provided is None
+                  or not secrets.compare_digest(provided["id"], self._session_lease["id"])
+                  or provided["revision"] != self._session_lease["revision"]):
+                raise SessionConflict("session ownership or revision conflict; no engine command was sent")
+            if self._session_uncertain and keep:
+                raise SessionConflict("session state is uncertain after a failed request; use an owned "
+                                      "stateless score/decision to reset it, or restart the service")
+            try:
+                result = call()
+            except ServiceError:
+                if self._session_lease is not None:
+                    self._session_uncertain = True
+                raise
+            if keep:
+                previous = self._session_lease
+                self._session_lease = {"id": previous["id"] if previous else secrets.token_urlsafe(32),
+                                       "revision": previous["revision"] + 1 if previous else 1}
+            else:
+                self._session_lease = None
+            self._session_uncertain = False
+            return result, dict(self._session_lease) if self._session_lease else None
+
+        return self._engine_call(owned)
 
     def _quarantine_note(self) -> str:
         note = self.link.quarantine()
@@ -695,7 +753,7 @@ class ScoreService:
     def score_request(self, body):
         body = _require_object(body)
         self._require_route("POST /v1/score")
-        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates", "keep"})
+        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates", "keep", "session"})
         if ("prompt_ids" in body) == ("prompt" in body):
             raise BadRequest("exactly one of prompt_ids or prompt is required")
         topk = _nonnegative_int(body.get("topk", DEFAULT_TOPK), "topk")
@@ -720,12 +778,14 @@ class ScoreService:
                 raise Unprocessable("the prompt encoded to zero tokens")
         else:
             ids = _parse_prompt_ids(body["prompt_ids"])
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
-                                                              candidates=candidates, keep=keep))
+        result, lease = self._owned_call(body, lambda: self.backend.score(self.link, ids, topk, self.timeout,
+                                                                         candidates=candidates, keep=keep), keep)
         payload = {"logprobs": result.pairs or [], "pos": result.pos, "full_vocab_softmax": True,
                    "generated_tokens": 0, "usage": _usage(result.done), "keep": keep}
         if candidates is not None:
             payload["candidates"] = result.cand_pairs
+        if keep or "session" in body:
+            payload["session"] = lease
         return 200, payload
 
     def capabilities_request(self):
@@ -733,6 +793,7 @@ class ScoreService:
         payload["service"] = SERVICE_NAME
         payload["engine_sha256"] = self._engine_sha256()
         payload["active_backend"] = self.backend.name
+        payload["service_session_contract"] = "opaque-lease-revision/1"
         return 200, payload
 
     def routes_request(self):
@@ -746,7 +807,7 @@ class ScoreService:
     def decisions_request(self, body):
         body = _require_object(body)
         self._require_route("POST /v1/decisions")
-        _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk", "keep"})
+        _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk", "keep", "session"})
         kind = body.get("kind")
         if kind not in DECISION_KINDS:
             raise Unprocessable("kind must be one of %s" % ", ".join(DECISION_KINDS))
@@ -765,8 +826,8 @@ class ScoreService:
         keep = self._keep_field(body)
         # Same engine command family as /v1/score: `SCORE <ids> topk=0 cand=<ids> [keep=1]` - with
         # keep=1 the decision and a later /v1/continue share this one prefill (see score_request).
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
-                                                              candidates=flat, keep=keep))
+        result, lease = self._owned_call(body, lambda: self.backend.score(self.link, ids, 0, self.timeout,
+                                                                         candidates=flat, keep=keep), keep)
         by_id = {pair["id"]: pair["logprob"] for pair in result.cand_pairs}
         logprobs = [by_id[token_id] for token_id in flat]
         full_probs = [math.exp(logprob) for logprob in logprobs]
@@ -807,6 +868,8 @@ class ScoreService:
                                        "distribution mass lies outside the candidate set.",
             },
         }
+        if keep or "session" in body:
+            payload["session"] = lease
         return 200, payload
 
     def _try_decode(self, tokens):
@@ -830,12 +893,12 @@ class ScoreService:
                              "decodes greedily from the armed session - remove the field(s) instead "
                              "of relying on them being ignored"
                              % ", ".join(repr(name) for name in sampling))
-        _reject_unknown_fields(body, {"max_new", "ids"})
+        _reject_unknown_fields(body, {"max_new", "ids", "session"})
         if "max_new" not in body:
             raise BadRequest("max_new is required (a positive integer)")
         max_new = _positive_int(body["max_new"], "max_new")
         ids = _parse_continue_ids(body.get("ids", []))
-        result = self._engine_call(lambda: self.link.generate_continue(max_new, ids, self.timeout))
+        result, lease = self._owned_call(body, lambda: self.link.generate_continue(max_new, ids, self.timeout), True)
         payload = {
             "tokens": result.tokens,
             "text": self._try_decode(result.tokens),
@@ -845,6 +908,7 @@ class ScoreService:
             "prompt_tokens": result.done["prompt_tokens"],
             "generated_tokens": len(result.tokens),
             "usage": _usage(result.done),
+            "session": lease,
         }
         return 200, payload
 
@@ -912,7 +976,9 @@ class _Handler(BaseHTTPRequestHandler):
             raise PayloadTooLarge("request body exceeds %d bytes" % MAX_BODY_BYTES)
         raw = self.rfile.read(length) if length else b""
         try:
-            return json.loads(raw.decode("utf-8"))
+            def bad_constant(value):
+                raise ValueError("non-finite JSON number: %s" % value)
+            return json.loads(raw.decode("utf-8"), parse_constant=bad_constant)
         except (UnicodeDecodeError, ValueError) as exc:
             raise BadRequest("request body is not valid UTF-8 JSON: %s" % exc)
 
@@ -932,7 +998,11 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(status, payload)
 
     def _send_json(self, status, payload, headers=None):
-        data = json.dumps(payload, ensure_ascii=False).encode("utf-8") + b"\n"
+        try:
+            data = json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
+        except ValueError:
+            status = 500
+            data = b'{"error":"non-finite response refused","error_source":"service"}\n'
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))

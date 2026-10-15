@@ -1,0 +1,307 @@
+{
+  "registered_at": "2026-10-15T06:37:57.015774+00:00",
+  "arm": "fixed",
+  "commands": [
+    {
+      "name": "caps",
+      "command": "CAPS"
+    },
+    {
+      "name": "full_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "full",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "full_state",
+      "command": "STATE"
+    },
+    {
+      "name": "reset_split",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "split_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "split1",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "split1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "split2",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "split_state",
+      "command": "STATE"
+    },
+    {
+      "name": "llmax_before",
+      "command": "STATE"
+    },
+    {
+      "name": "llmax",
+      "command": "GEN 9223372036854775807 cont=1"
+    },
+    {
+      "name": "llmax_after",
+      "command": "STATE"
+    },
+    {
+      "name": "overflow_before",
+      "command": "STATE"
+    },
+    {
+      "name": "overflow",
+      "command": "GEN 9223372036854775808 cont=1"
+    },
+    {
+      "name": "overflow_after",
+      "command": "STATE"
+    },
+    {
+      "name": "decimal_before",
+      "command": "STATE"
+    },
+    {
+      "name": "decimal",
+      "command": "GEN 9999999999999999999999999999999999999999 cont=1"
+    },
+    {
+      "name": "decimal_after",
+      "command": "STATE"
+    },
+    {
+      "name": "suffix_before",
+      "command": "STATE"
+    },
+    {
+      "name": "suffix",
+      "command": "GEN 1x cont=1"
+    },
+    {
+      "name": "suffix_after",
+      "command": "STATE"
+    },
+    {
+      "name": "reset_one",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "one_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "one0",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state0",
+      "command": "STATE"
+    },
+    {
+      "name": "one1",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state1",
+      "command": "STATE"
+    },
+    {
+      "name": "one2",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state2",
+      "command": "STATE"
+    },
+    {
+      "name": "one3",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state3",
+      "command": "STATE"
+    },
+    {
+      "name": "one4",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state4",
+      "command": "STATE"
+    },
+    {
+      "name": "one5",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state5",
+      "command": "STATE"
+    },
+    {
+      "name": "one6",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state6",
+      "command": "STATE"
+    },
+    {
+      "name": "one7",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state7",
+      "command": "STATE"
+    },
+    {
+      "name": "one8",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state8",
+      "command": "STATE"
+    },
+    {
+      "name": "one9",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state9",
+      "command": "STATE"
+    },
+    {
+      "name": "one10",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state10",
+      "command": "STATE"
+    },
+    {
+      "name": "one11",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state11",
+      "command": "STATE"
+    },
+    {
+      "name": "one12",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state12",
+      "command": "STATE"
+    },
+    {
+      "name": "one13",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state13",
+      "command": "STATE"
+    },
+    {
+      "name": "one14",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state14",
+      "command": "STATE"
+    },
+    {
+      "name": "one15",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one_state15",
+      "command": "STATE"
+    },
+    {
+      "name": "one_tail",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "one_final_state",
+      "command": "STATE"
+    },
+    {
+      "name": "reset_load",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "load_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "load_prefix",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "save16",
+      "command": "SAVE session-correctness/fixed-step16.bin"
+    },
+    {
+      "name": "live_append",
+      "command": "GEN 4 cont=1 867,198,92,90"
+    },
+    {
+      "name": "live_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "load16",
+      "command": "LOAD session-correctness/fixed-step16.bin"
+    },
+    {
+      "name": "resave16",
+      "command": "SAVE session-correctness/fixed-roundtrip.bin"
+    },
+    {
+      "name": "load_before",
+      "command": "STATE"
+    },
+    {
+      "name": "load_pure",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "load_after",
+      "command": "STATE"
+    },
+    {
+      "name": "load_append",
+      "command": "GEN 4 cont=1 867,198,92,90"
+    },
+    {
+      "name": "load_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "quit",
+      "command": "QUIT"
+    }
+  ],
+  "prompt_tokens": 3896,
+  "prompt_sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+  "model_sha256_registered": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "model_not_rehashed": true,
+  "state_files": [
+    "D:\\work\\StrataUnified\\session-correctness\\fixed-step16.bin",
+    "D:\\work\\StrataUnified\\session-correctness\\fixed-roundtrip.bin"
+  ],
+  "native_limit": 1,
+  "native_runtime_limit_seconds": 150,
+  "goal": "old reproduces known F1; fixed all token/cursor/bound/rejection/roundtrip gates pass",
+  "note": "LOAD pure continuation is intentionally refused because logits are absent; append parity is tested separately",
+  "purpose": "review-only response indexing; original executable stdin retained locally; do not execute this redacted manifest"
+}

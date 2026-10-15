@@ -41,7 +41,8 @@ def main() -> int:
                         help="test-only CANDLOGPROBS distortion for protocol-violation tests")
     parser.add_argument("--fault-mode",
                         choices=("none", "short-logprobs", "junk-logprobs", "short-done",
-                                 "extra-line", "late-legal", "gen-extra-line"),
+                                 "extra-line", "late-legal", "gen-extra-line", "nan-logprobs",
+                                 "positive-logprobs", "nan-candidates"),
                         default="none",
                         help="test-only P2R-4b protocol-error injection: short-logprobs (fewer LOGPROBS "
                              "pairs than declared), junk-logprobs (non-numeric logprob), short-done "
@@ -203,9 +204,16 @@ def main() -> int:
             if args.fault_mode == "extra-line":
                 # an answer line nobody requested, ahead of the real answer
                 emit("CANDLOGPROBS %d 1 0:%.4f" % (pos, logprobs[0]))
+            if args.fault_mode in ("nan-logprobs", "positive-logprobs") and topk > 0:
+                emit("LOGPROBS %d 1 0:%s" % (pos, "nan" if args.fault_mode == "nan-logprobs" else "0.5"))
+                continue
             if topk > 0:
                 emit("LOGPROBS %d %d %s" % (pos, count, " ".join(top_pairs)))
             if cand is not None:
+                if args.fault_mode == "nan-candidates":
+                    emit("CANDLOGPROBS %d %d %s" % (pos, len(cand),
+                         " ".join("%d:nan" % c for c in cand)))
+                    continue
                 pairs = ["%d:%.4f" % (c, logprobs[c]) for c in cand]
                 if args.cand_mode == "swap" and len(pairs) > 1:
                     pairs = list(reversed(pairs))

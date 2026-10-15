@@ -1,0 +1,60 @@
+{
+  "registered_at": "2026-10-15T06:37:57.014116+00:00",
+  "arm": "old",
+  "commands": [
+    {
+      "name": "caps",
+      "command": "CAPS"
+    },
+    {
+      "name": "full_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "full",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "full_state",
+      "command": "STATE"
+    },
+    {
+      "name": "reset_split",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "split_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "split1",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "split1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "split2",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "split_state",
+      "command": "STATE"
+    },
+    {
+      "name": "quit",
+      "command": "QUIT"
+    }
+  ],
+  "prompt_tokens": 3896,
+  "prompt_sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+  "model_sha256_registered": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "model_not_rehashed": true,
+  "state_files": [],
+  "native_limit": 1,
+  "native_runtime_limit_seconds": 150,
+  "goal": "old reproduces known F1; fixed all token/cursor/bound/rejection/roundtrip gates pass",
+  "note": "LOAD pure continuation is intentionally refused because logits are absent; append parity is tested separately",
+  "purpose": "review-only response indexing; original executable stdin retained locally; do not execute this redacted manifest"
+}

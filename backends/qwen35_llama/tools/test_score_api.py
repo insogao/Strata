@@ -557,7 +557,7 @@ class LinkQuarantineTests(unittest.TestCase):
         env = self._env(fault_mode="gen-extra-line")
         status, body, _ = env.post("/v1/score", {"prompt_ids": [1, 2, 3], "topk": 2, "keep": True})
         self.assertEqual(status, 200, body)
-        self._expect_quarantine(env, "/v1/continue", {"max_new": 2},
+        self._expect_quarantine(env, "/v1/continue", {"max_new": 2, "session": body["session"]},
                                 "unexpected line during GEN cont=1")
         self._expect_dead(env, "GET", "/v1/session")
 
@@ -600,9 +600,20 @@ class ContinueSessionTests(unittest.TestCase):
     def setUp(self):
         self.env = StubService()
         self.addCleanup(self.env.close)
+        self.lease = None
+
+    def post(self, path, payload):
+        # Existing single-owner cases now explicitly carry the issued handle.
+        # Interleaving/adversarial tests below use independent raw HTTP requests.
+        if self.lease is not None and "session" not in payload:
+            payload = {**payload, "session": self.lease}
+        result = self.env.post(path, payload)
+        if result[0] == 200 and "session" in result[1]:
+            self.lease = result[1]["session"]
+        return result
 
     def arm(self, ids=(1, 2, 3)):
-        status, body, _ = self.env.post("/v1/score", {"prompt_ids": list(ids), "topk": 2, "keep": True})
+        status, body, _ = self.post("/v1/score", {"prompt_ids": list(ids), "topk": 2, "keep": True})
         self.assertEqual(status, 200, body)
         return body
 
@@ -624,7 +635,7 @@ class ContinueSessionTests(unittest.TestCase):
 
     def test_score_without_keep_clears_session(self):
         self.arm()
-        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "topk": 1})
+        status, body, _ = self.post("/v1/score", {"prompt_ids": [1], "topk": 1})
         self.assertEqual(status, 200)
         self.assertIs(body["keep"], False)
         session = self.session()
@@ -635,12 +646,12 @@ class ContinueSessionTests(unittest.TestCase):
 
     def test_score_keep_requires_boolean(self):
         for value in (1, 0, "true", None, [True]):
-            status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "keep": value})
+            status, body, _ = self.post("/v1/score", {"prompt_ids": [1], "keep": value})
             self.assertEqual(status, 400, value)
             self.assertIn("keep", body["error"])
 
     def test_decisions_keep_true_keeps_payload_and_arms(self):
-        status, body, _ = self.env.post("/v1/decisions",
+        status, body, _ = self.post("/v1/decisions",
                                         {"kind": "yes_no", "prompt_ids": [1, 2],
                                          "candidates": [[0], [1]], "keep": True})
         self.assertEqual(status, 200)
@@ -660,13 +671,13 @@ class ContinueSessionTests(unittest.TestCase):
 
     def test_decisions_without_keep_clears_session(self):
         self.arm()
-        status, _, _ = self.env.post("/v1/decisions",
+        status, _, _ = self.post("/v1/decisions",
                                      {"kind": "choice", "prompt_ids": [1], "candidates": [[0], [1]]})
         self.assertEqual(status, 200)
         self.assertIs(self.session()["armed"], False)
 
     def test_decisions_keep_requires_boolean(self):
-        status, body, _ = self.env.post("/v1/decisions",
+        status, body, _ = self.post("/v1/decisions",
                                         {"kind": "choice", "prompt_ids": [1],
                                          "candidates": [[0], [1]], "keep": "yes"})
         self.assertEqual(status, 400)
@@ -674,7 +685,7 @@ class ContinueSessionTests(unittest.TestCase):
 
     def test_continue_pure_and_text_null_without_tokenizer(self):
         self.arm([1, 2, 3])
-        status, body, _ = self.env.post("/v1/continue", {"max_new": 5})
+        status, body, _ = self.post("/v1/continue", {"max_new": 5})
         self.assertEqual(status, 200)
         self.assertEqual(body["tokens"], [0, 1, 2, 3, 4])
         self.assertIsNone(body["text"])
@@ -688,7 +699,7 @@ class ContinueSessionTests(unittest.TestCase):
 
     def test_continue_with_ids_appends_at_cursor(self):
         self.arm([1, 2, 3])
-        status, body, _ = self.env.post("/v1/continue", {"max_new": 2, "ids": [5, 6]})
+        status, body, _ = self.post("/v1/continue", {"max_new": 2, "ids": [5, 6]})
         self.assertEqual(status, 200)
         self.assertEqual(body["tokens"], [0, 1])
         self.assertEqual(body["reused"], 3)
@@ -699,43 +710,43 @@ class ContinueSessionTests(unittest.TestCase):
         self.assertEqual(session["engine_state"]["pos"], 3 + 2 + 2)
 
     def test_continue_without_armed_session_is_422_verbatim(self):
-        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        status, body, _ = self.post("/v1/continue", {"max_new": 1})
         self.assertEqual(status, 422)
         self.assertEqual(body["error_source"], "engine")
         self.assertEqual(body["error"], "cont=1 needs an armed session")
 
     def test_continue_multi_round_stays_armed(self):
         self.arm([1, 2, 3])
-        status, first, _ = self.env.post("/v1/continue", {"max_new": 4})
+        status, first, _ = self.post("/v1/continue", {"max_new": 4})
         self.assertEqual(status, 200)
         self.assertEqual(first["reused"], 3)
-        status, second, _ = self.env.post("/v1/continue", {"max_new": 1})
+        status, second, _ = self.post("/v1/continue", {"max_new": 1})
         self.assertEqual(status, 200)
         self.assertEqual(second["reused"], 3 + 4)
         self.assertIs(self.session()["armed"], True)
 
     def test_continue_max_new_validation_400(self):
         for payload in ({}, {"max_new": 0}, {"max_new": -1}, {"max_new": "4"}, {"max_new": True}):
-            status, body, _ = self.env.post("/v1/continue", payload)
+            status, body, _ = self.post("/v1/continue", payload)
             self.assertEqual(status, 400, payload)
             self.assertIn("max_new", body["error"])
 
     def test_continue_sampling_fields_400(self):
         for name, value in (("temperature", 0.7), ("seed", 1), ("top_p", 0.9), ("min_p", 0.1),
                             ("top_k", 5)):
-            status, body, _ = self.env.post("/v1/continue", {"max_new": 1, name: value})
+            status, body, _ = self.post("/v1/continue", {"max_new": 1, name: value})
             self.assertEqual(status, 400, name)
             self.assertIn(name, body["error"])
             self.assertIn("not implemented", body["error"])
 
     def test_continue_unknown_field_400(self):
-        status, body, _ = self.env.post("/v1/continue", {"max_new": 1, "n": 2})
+        status, body, _ = self.post("/v1/continue", {"max_new": 1, "n": 2})
         self.assertEqual(status, 400)
         self.assertIn("unknown field", body["error"])
 
     def test_continue_ids_validation_400(self):
         for value in ("5", [True], [-1], {}):
-            status, body, _ = self.env.post("/v1/continue", {"max_new": 1, "ids": value})
+            status, body, _ = self.post("/v1/continue", {"max_new": 1, "ids": value})
             self.assertEqual(status, 400, value)
 
     def test_session_readonly_and_fresh_state(self):
@@ -747,7 +758,7 @@ class ContinueSessionTests(unittest.TestCase):
         self.arm([7, 8])
         before = self.session()
         self.assertEqual(self.session(), before)
-        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        status, body, _ = self.post("/v1/continue", {"max_new": 1})
         self.assertEqual(status, 200)
         self.assertEqual(body["reused"], 2)
 
