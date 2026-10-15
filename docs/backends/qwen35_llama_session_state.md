@@ -11,13 +11,15 @@ failure legs left the live session untouched) - results, raw lines and limits: s
 
 **P2R-4a scope**: the container format, the fixed LOAD validation order, the model fingerprint and the
 `STATE` additions are implemented and documented here; the **real-engine matrix for the container
-(corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation) is P2R-4c and has NOT run yet** -
-until it does, the container's functional evidence is the 0-GPU build + unit tests of P2R-4a plus the
-(legacy-format) P2-6 parity record.
+(corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation) ran as P2R-4c on 2026-10-15
+(section 13: N1/N2 pass with documented sequence adaptations - pure continuations after LOAD cannot
+sample, see there - and one unexplained doc-vs-build magic literal spelled out there)** -
+before that it was the 0-GPU build + unit tests of P2R-4a plus the (legacy-format) P2-6 parity record.
 
 Scope rules this doc obeys: nothing here claims cross-machine portability; cross-process continuation
-restores are verified for the same machine and build only (P2-6 N1/N2, section 11; container matrix pending
-P2R-4c).
+restores are verified for the same machine and build only (P2-6 N1/N2, section 11; container matrix:
+section 13 - it includes a cross-process container restore: native2 LOADed the container written by
+native1).
 
 ## 1. Commands
 
@@ -377,8 +379,8 @@ build the second `SAVE` is expected to produce a byte-identical file (same cells
 tensor rows; the import packs cells from head 0). This expectation got its empirical check in P2-6 - on the
 **legacy raw-blob format**; the two files were byte-identical (`sha256 7d34f3b9…368414`, section 11). For
 the P2R-4a container the same expectation holds by construction (all header fields are deterministic for
-an unchanged session; CRC32 of identical payload bytes is identical); its real-engine re-check is part of
-P2R-4c.
+an unchanged session; CRC32 of identical payload bytes is identical); its real-engine re-check did **not**
+run in P2R-4c (the preregistered N1/N2 matrix has no SAVE->LOAD->SAVE leg - section 13) and remains open.
 
 ## 9. Not implemented / not claimed
 
@@ -431,7 +433,7 @@ to the P2-6 task directory in the research repo; this document is updated with t
 **Format note**: P2-6 ran on the **pre-P2R-4a raw-blob build** (`6dee0c66…` does not write or read
 containers); the state files it validated are **legacy raw blobs** under the current format. The
 container's own real-engine matrix (corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation)
-is **P2R-4c** and had not run when this section was written.
+is **P2R-4c** and had not run when this section was written (it ran afterwards - section 13).
 
 **PASS.** Exe `6dee0c66c3e87c3020c6ddde3c9ebaa40bed3369745e8e1dbfb0a7ac963ad90a` (139,253,760 B), context 8192,
 neutral model + pack; three strictly serial `gpu-lock` leases (one process each, `--stdin-file`, all exit 0,
@@ -480,3 +482,97 @@ save/load cycles, long sequences, repeated continuations) is not measured here. 
   (`state_keep_score` / `session_continue`).
 - Protocol summary: `docs/backends/qwen35_llama_serve_protocol.md`; capability table:
   `docs/backends/qwen35_llama_capabilities_and_score.md`.
+
+## 13. P2R-4c - real-engine hardening matrix (executed 2026-10-15, this machine)
+
+**Status: N1 PASS and N2 PASS** (all preregistered items), **2 natives** on exe
+`b07b2c46a757161d6be236abccef9c6702ea73836eb66860bc6ebc9b0f64115c` (139,267,072 B, re-verified before
+launch), ctx4096 / 8 threads / 3200 slots / ubatch4096, model+pack as P2-2/P2-6. One `gpu-lock` lease per
+native, strictly serial (rc=0 both, 32.4 s / 30.5 s), no cleanup fence at any point, lock released, no
+`strata.exe` residue; session files only under the research-repo evidence `state/` directory (engine paths
+through the sanctioned ASCII junction, `STRATA_QWEN35_SESSION_ROOTS` set to it and recorded). Evidence:
+`results/opencode-execution/strata-unified-p2r4c-state-matrix/` (both stdins verbatim, full child logs,
+per-request parsed JSON, `client/p2r4c-compare.json`, per-rejection STATE pairs, state1/state2 and the six
+corrupt variants with SHA256 + exact generation method, pre/post host state).
+
+**Sequence adaptations (preregistered and documented in the evidence `final-report.md`).** A **pure**
+`GEN <k> cont=1` as the *first* request after `LOAD` cannot sample: a restored context holds no logits
+(this document's own `not_covered: logits`: "*a session can only be continued, not re-sampled at the same
+position without a new token*"). The preregistered restore/rejection continuations therefore carry the
+fixed 4-id prompt **P4 = the last 4 ids of P_long** (`248068,271,248069,271`; the P2-6 `P2` rule) and are
+compared against an **in-process twin run from the same state**; `A` (the warm pure continuation) and the
+`R1`/`R2`/`R3` full-prefill references are exactly as preregistered. Raw facts behind the adaptation (all
+in the evidence): the preregistered pure `GEN 16 cont=1` right after `SCORE keep=1` reproduces the
+P2R-3b-2/P2R-3b-order stream `[90, 198, 1, 78151, …, 92]` (16/16), while any *consecutive* pure
+continuation re-samples the pending last token first (the engine keeps the logits of the last fed token in
+the live context - there is no logits store in the file).
+
+### N1 - positive path: SAVE/LOAD, 128/256, multi-round, repeated restore, isolation
+
+`state1` = container saved right after the warm 16-token continuation (`SAVED 146055932 3911 348.0`;
+on-disk size 146,055,932 B - `SAVED.bytes` equals the file size). `state2` = independent short-prompt
+container (`SAVED 66336380 23 173.5`; 66,336,380 B on disk).
+
+| item (preregistered) | result | raw anchor |
+|---|---|---|
+| `A == R1` 16/16 incl. finish (`length`) | **PASS** | both `[90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92]`; `DONE 16 0 0.0 … length … reused=3896` vs `DONE 16 3896 2743.7 … length … reused=0` |
+| `C == R2` (128-cap request) 17/17 incl. EOS | **PASS** | both `A + [248046]`, `finish=stop`; same 17/17 as P2R-3b-2 |
+| `D == R3` (256-cap request) 7/7 incl. EOG | **PASS** | both `[271,248068,271,248069,271,9405,248044]`, `finish=stop` |
+| restore parity `P == B == E` 16/16 incl. finish | **PASS** (adapted, see above) | `[90,198,220,328,78151,763,220,15,11,198,220,328,9676,33805,763,867]`; `B` after **two consecutive** `LOAD state1`; `E` after the `P_short` episode + `LOAD state1` |
+| multi-round after `SAVE` (`GEN 32 cont=1`) | **PASS** (executed; evidence) | `[867,198,92,248046]`, `finish=stop`, `reused=3930` |
+| repeated restore: `LOADED` fields equal | **PASS** | `LOADED 146055932 3911 772.3` then `LOADED 146055932 3911 436.0` (bytes/pos equal; ms differs) |
+| `STATE.pos` after each `LOAD` identical | **PASS** | both STATE lines byte-identical: `loaded=true`, `pos=3911`, `path=state1.bin`, `file_bytes=146055932`, `payload_bytes=146055836`, `origin=load` |
+| `STATE` after `SAVE` fields | **PASS** | `session=true`, `container_version=1`, `model_fp_prefix=0d4160ef57f03a80`, `payload_bytes = file_bytes - 96`; `origin="save"` (the arming command; the task text's `score-keep` literal is the one delta - see open items), `pos=3911` |
+| whole N1 run: 0 `ERR` | **PASS** | 25/25 requests answered, no `ERR` line in the child log |
+
+### N2 - rejection matrix: six corrupt/foreign containers, each rejected, session never touched
+
+The six variants were derived **host-side from the `state1` container** (original SHA256
+`f5fe4123de36b5f872a393003c496242d270f398de8c61917ced004ef468e986`, unchanged before/after N2; variant
+SHA256 and generation method in the evidence `raw/bad-files.json`):
+
+| # | variant | engine answer (verbatim, path shortened) |
+|---|---|---|
+| 1 | payload byte flipped (middle) | `ERR session: '…bad-payload-flip.bin' payload CRC32 mismatch (container 19cbc5d5, computed c179c6c0)` |
+| 2 | version field := 2 | `ERR session: '…bad-version-bump.bin' has container version 2; this build reads version 1` |
+| 3 | last 4096 B dropped | `ERR session: '…bad-truncated.bin' size mismatch (the file is 146051836 bytes, the container declares 146055932)` |
+| 4 | model_fp first byte flipped | `ERR session: '…bad-fp-wrong.bin' model fingerprint mismatch (container 0c4160ef57f03a80..., this engine 0d4160ef57f03a80...)` |
+| 5 | header stripped (bare payload) | `ERR session: '…bad-legacy-raw.bin' is a legacy raw state blob (no STRATAST container); re-SAVE it with this build to migrate` |
+| 6 | magic first byte flipped | `ERR session: '…bad-magic-bad.bin' is not a STRATAST session container (bad magic)` |
+
+Six distinct classes, each its own text, in the fixed validation order (size -> magic -> version ->
+header -> vocab -> ctx -> pos -> CRC -> fp); **every rejection left the live session untouched**:
+
+- rejection #1 happened directly after the `SCORE keep=1` + warm-continuation session (origin
+  `score-keep`, `pos=3911`, no file): the `STATE` line before and after it is **byte-identical**;
+- for rejections #2..#6 the session was anchored on a successful `LOAD state1` and rewound to it before
+  each rejection: every pre/post `STATE` pair is **byte-identical** (`loaded=true`, `origin=load`,
+  `path=state1.bin`, `pos=3911`);
+- after every rejection the same continuation `GEN 16 cont=1 P4` reproduced the reference `D0`
+  **token-exact 16/16** (`reused=3911`, `prompt_read=4`, `finish=length`) - D1..D5 all equal D0;
+- `A' == R'` 16/16 (the N2-internal warm-vs-full-prefill pair); `A'` is the same 16-token stream as N1's
+  `A` (cross-native reference only, not a judged identity);
+- **cross-process restore of the container is covered**: `state1` was written by native1 and validated +
+  continued by native2 (all N2 `LOAD state1` anchors and the D0..D5 continuations).
+
+### Unexplained / open items (as executed)
+
+- **Magic literal: the shipped build writes `SRATAST\0` (7 ASCII + NUL, hex `53 52 41 54 41 53 54 00`),
+  while section 1b and every relevant `ERR` text spell `STRATAST` (8 ASCII bytes, no NUL).** The engine
+  is self-consistent (round-trip accepted, all six rejection classes behave exactly as documented), and
+  no source was changed in this task - the constant-vs-document disagreement
+  (`qwen35_serve.cpp` `kContainerMagic = {'S','R','A','T','A','S','T'}`) needs a supervisor decision.
+- `SAVE -> LOAD -> SAVE` container **byte-identity** re-check (section 8) did not run in P2R-4c (no second
+  `SAVE` in the preregistered N1/N2 shape); remains open.
+- `STATE.origin` after `SAVE` is `"save"` (the last arming command), not the task text's literal
+  `score-keep`; this matches section 1's field contract and the P2-6 record - recorded as a
+  task-text-vs-spec delta, not a defect.
+- The preregistered pure `GEN cont=1` legs right after `LOAD` are not executable on this engine (no
+  logits in a restored context, section 2 `not_covered`); the adapted legs above cover the same restore
+  identity with input-carrying continuations.
+- Process note (kept in the evidence, not an engine fact): the two-native batch launched with the
+  task-window (task.md mtime + 20 min) already elapsed (`-267 s` / `-302 s` window-left at the two
+  native starts, 12:37:33 / 12:38:07 vs mtime 12:13:06) after ~22 min of executor preparation; it was
+  executed as one already-started atomic operation with all guards (exe SHA, lock, fence, RAM/GPU,
+  process table) re-verified immediately before each launch, and the raw values are recorded in
+  `native1/argv-plan.json`, `native2/argv-plan.json` and `client/p2r4c-orch-summary.json`.
