@@ -57,7 +57,8 @@ flags, engine peak plus pre/post sampling) remain part of the result.
 
 ## Review and integration
 
-Stage-three work is proposed in an independent PR to `phase2/backend-interface`;
+Stage-three work is proposed in [PR #4](https://github.com/insogao/Strata/pull/4)
+to `phase2/backend-interface` (P3-4 code commit `ae1a3512`);
 no main merge, P2R cherry-pick, engine/kernel edit, model overwrite or production
 profile installation. P3-4 changes only Python tooling and documentation. Existing
 engine sources/default server/setup entry points remain identical to the handoff

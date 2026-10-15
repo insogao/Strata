@@ -20,7 +20,7 @@
 ## 2. 当前分支与提交
 
 - 当前分支：`codex/phase3-tune-cli`，从 `phase3/autotuner` 的交接提交 `b01c9bd7` 开工；阶段三基于阶段二 `954a88e4`。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
-- 阶段三独立 PR 指向 `phase2/backend-interface`；与补强 PR #3 为并列审查线，均不合并 main。
+- 阶段三独立 [PR #4](https://github.com/insogao/Strata/pull/4) 指向 `phase2/backend-interface`，P3-4 代码提交 `ae1a3512`；与补强 PR #3 为并列审查线，均不合并 main。
 - 下列为阶段一历史提交链（自 base `296b59d2` 起，阶段三见 §4.0c）：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）
   - `e0fd2dea` 冒烟＋保真报告（task 355）
