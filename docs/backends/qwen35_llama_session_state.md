@@ -1,14 +1,23 @@
-# qwen35_llama single-session state export/import (P2-5)
+# qwen35_llama single-session state export/import (P2-5, containerized by P2R-4a)
 
-**Status**: implemented in `src/program/qwen35_serve.cpp` (P2-5, 0-GPU task). This is the **single-session
-state boundary** for the serve engine: one explicit export/import of the CURRENT session state, reusing
-llama's own sequence-state serialization (`llama_state_seq_get_size/get_data/set_data`) - **no new
-serialization format**. Functional/GPU verification (parity) ran as **P2-6** on 2026-10-15 and passed on this
-machine/build (same-process and cross-process continuations byte-identical; failure legs left the live
-session untouched) - results, raw lines and limits: section 11.
+**Status**: implemented in `src/program/qwen35_serve.cpp` (P2-5, 0-GPU task; **P2R-4a** added the
+self-describing file container - magic/version/lengths/CRC32/model fingerprint - around the unchanged raw
+payload). This is the **single-session state boundary** for the serve engine: one explicit export/import of
+the CURRENT session state; the payload itself still reuses llama's own sequence-state serialization
+(`llama_state_seq_get_size/get_data/set_data`) - the container only describes and protects those bytes.
+Functional/GPU verification (parity) ran as **P2-6** on 2026-10-15 against the **pre-container raw-blob
+build** and passed on this machine/build (same-process and cross-process continuations byte-identical;
+failure legs left the live session untouched) - results, raw lines and limits: section 11.
+
+**P2R-4a scope**: the container format, the fixed LOAD validation order, the model fingerprint and the
+`STATE` additions are implemented and documented here; the **real-engine matrix for the container
+(corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation) is P2R-4c and has NOT run yet** -
+until it does, the container's functional evidence is the 0-GPU build + unit tests of P2R-4a plus the
+(legacy-format) P2-6 parity record.
 
 Scope rules this doc obeys: nothing here claims cross-machine portability; cross-process continuation
-restores are verified for the same machine and build only (P2-6 N1/N2, section 11).
+restores are verified for the same machine and build only (P2-6 N1/N2, section 11; container matrix pending
+P2R-4c).
 
 ## 1. Commands
 
@@ -24,8 +33,8 @@ Answers (engine -> client, stdout):
 
 | Command | Success | Failure |
 |---|---|---|
-| `SAVE` | `SAVED <bytes> <pos> <ms>` - state blob size, sequence-0 cursor (occupied positions), elapsed ms | `ERR <reason>` |
-| `LOAD` | `LOADED <bytes> <pos> <ms>` - the same fields, measured on the imported state | `ERR <reason>` |
+| `SAVE` | `SAVED <bytes> <pos> <ms>` - **container file size** (P2R-4a; the pre-container build reported the raw payload size - see section 1b), sequence-0 cursor (occupied positions), elapsed ms | `ERR <reason>` |
+| `LOAD` | `LOADED <bytes> <pos> <ms>` - the same fields, measured on the imported container file (container file size, cursor, elapsed) | `ERR <reason>` |
 | `STATE` | `STATE <json>` (below) | never fails (a pure query) |
 
 `<path>` is the rest of the line (leading/trailing spaces trimmed; paths with spaces are allowed). The path
@@ -45,8 +54,9 @@ gate (all checks textual; symbolic links/junctions are not resolved):
 
 ```json
 {"loaded":false,"pos":0,"bytes":2216,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],
- "session":false,"origin":null,"file_bytes":null,"max_context":4096,
- "not_covered":["logits","sampler_rng_state","expert_cache","bridge_counters","rollback_history"]}
+ "session":false,"origin":null,"file_bytes":null,"payload_bytes":null,"max_context":4096,
+ "container_version":1,"model_fp_prefix":"0123456789abcdef",
+ "not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
 ```
 
 | Field | Meaning |
@@ -55,11 +65,102 @@ gate (all checks textual; symbolic links/junctions are not resolved):
 | `session` | `true` when a session is armed at all (`SAVE` or `LOAD`); this is the fact that makes the next `GEN` continue instead of resetting |
 | `origin` | `"save"` / `"load"` / `"score-keep"` / `null` - which command armed the active session (`score-keep` = P2R-3a `SCORE keep=1` that found no armed session; continuing an armed session never changes it) |
 | `pos` | current sequence-0 cursor: last occupied position + 1 (`0` when the sequence is empty). This is the position a continuation appends at |
-| `bytes` | byte size of the state **as it is now** (what `SAVE` would write at this moment). On a fresh/cleared engine this is the non-zero size of the empty state |
-| `path` | file of the active session (`null` when none); `file_bytes` its byte size at the time of the last successful `SAVE`/`LOAD` (may differ from `bytes` once the session has advanced) |
-| `covers` | what the exported bytes cover - see section 2; this list is the implementation's own truth table |
+| `bytes` | byte size of the state **as it is now** (the raw payload size `SAVE` would write at this moment). On a fresh/cleared engine this is the non-zero size of the empty state |
+| `path` | file of the active session (`null` when none) |
+| `file_bytes` | byte size of that file at the time of the last successful `SAVE`/`LOAD` - **the container size** (P2R-4a); `null` when no session file is involved (or after the session advanced the live state differs, see `bytes`) |
+| `payload_bytes` | **P2R-4a**: the raw sequence-state payload size inside that file (`file_bytes` minus the 96-byte header for v1); `null` when no session file is involved |
+| `covers` | what the exported payload covers - see section 2; this list is the implementation's own truth table |
 | `not_covered` | state a restored session does NOT carry (see section 2) |
 | `max_context` | the live `llama_n_ctx` (the same value `READY` advertises) |
+| `container_version` | **P2R-4a**: `1` - the session-file container version this build writes and the only one it accepts (a build-level fact, like `covers`, independent of session state) |
+| `model_fp_prefix` | **P2R-4a**: the first 8 bytes (16 lowercase hex chars) of the startup-cached model fingerprint (section 1b); `null` only in the corner case where the fingerprint could not be computed at startup (then `SAVE`/`LOAD` refuse) |
+
+## 1b. The session file container (P2R-4a)
+
+The file `SAVE` writes is no longer the bare blob: it is a **self-describing container** around the same
+raw payload. Byte order is little-endian; the header is fixed and its length is a field, so v1 readers
+require at least 96 bytes but accept longer headers (a writer may append fields):
+
+| Offset | Length | Field | Meaning |
+|---|---|---|---|
+| 0 | 8 | `magic` | `"STRATAST"` (8 ASCII bytes, no NUL) |
+| 8 | 4 | `version` | u32 = 1 |
+| 12 | 4 | `header_bytes` | u32, total header length (v1 writers: 96) |
+| 16 | 8 | `payload_bytes` | u64, raw `llama_state_seq_get_data` byte count |
+| 24 | 8 | `file_bytes` | u64, `header_bytes + payload_bytes` (the whole file) |
+| 32 | 4 | `payload_crc32` | u32, CRC-32/ISO-HDLC over the payload |
+| 36 | 4 | `n_vocab` | u32, vocabulary size of the saving model |
+| 40 | 4 | `max_context` | u32, context size of the saving engine |
+| 44 | 8 | `pos` | u64, sequence cursor at `SAVE` (= `SAVED`'s `pos`) |
+| 52 | 32 | `model_fp` | model fingerprint (see below) |
+| 84 | 4 | `flags` | u32 = 0 (reserved) |
+| 88 | 8 | reserved | zero (up to `header_bytes`) |
+| `header_bytes` | `payload_bytes` | payload | the unchanged raw sequence-state bytes |
+
+`SAVE` writes the container to `<path>.tmp` and atomically replaces `<path>` (same discipline as P2-5),
+and `SAVED <bytes>` reports the **container file size** (`file_bytes`; exactly 96 bytes more than the
+pre-container build's count for the same state). `LOADED <bytes>` reports the container file size of the
+imported file, so `SAVE` and `LOAD` of one file agree. `STATE` reports the split: `file_bytes` = container
+size, `payload_bytes` = raw payload size.
+
+`LOAD` validates the container in this **fixed order**, and every mismatch answers its own `ERR` and leaves
+the live session (including an armed one) untouched - the import path is not entered, so no half-restore
+is possible at this stage either:
+
+1. **readable** - path gate, then file opened/read (whole file, 1 GiB cap - the cap now applies to the
+   container; the payload is at most 999,999,904 bytes) and at least 96 bytes long;
+2. **file size** - the file length equals the `file_bytes` field;
+3. **magic** - `"STRATAST"`;
+4. **version** - equals 1;
+5. **header_bytes** - at least 96, within the file, and `payload_bytes == file size - header_bytes`;
+6. **n_vocab** - equals the running model's vocabulary size;
+7. **max_context** - equals the running engine's context (`llama_n_ctx`); equality, not ">=" - a state
+   saved under a different context is a different context shape and the import requires the exact one;
+8. **pos** - `pos <= max_context` (the payload's own cell metadata is validated by llama's reader inside
+   the import, step 10 below);
+9. **payload CRC32** - CRC-32/ISO-HDLC of the payload equals `payload_crc32`;
+10. **model_fp** - the 32-byte fingerprint equals the engine's startup-cached fingerprint.
+
+Only after all ten pass does the payload go through the P2-5 import discipline: a **temporary context**
+(same model and parameters, fresh batch), `llama_state_seq_set_data` (llama's reader validates the raw
+blob's own structure - the payload's `<u32 0xaf143cd8><i32 seq_id 0>` header included), and the swap-in
+only on full success (section 4). Distinct error texts (all on stdout as `ERR session: ...`, the engine
+keeps serving):
+
+| Mismatch | `ERR` text (after `ERR session: `) |
+|---|---|
+| too short for the fixed header, not legacy | `'<path>' is too small to be a STRATAST session container (<n> bytes; the fixed header is 96)` |
+| size field mismatch | `'<path>' size mismatch (the file is <n> bytes, the container declares <m>)` |
+| magic missing, foreign file | `'<path>' is not a STRATAST session container (bad magic)` |
+| **legacy raw blob** | `'<path>' is a legacy raw state blob (no STRATAST container); re-SAVE it with this build to migrate` |
+| version | `'<path>' has container version <v>; this build reads version 1` |
+| invalid header length fields | `'<path>' has an invalid container header length (header <h>, payload <p>, file <n>)` |
+| vocab | `'<path>' was saved for vocab <v>; this model has <n>` |
+| context | `'<path>' was saved under context <c>; this engine runs context <n>` |
+| pos | `'<path>' declares position <p> beyond the context (<n>)` |
+| CRC32 | `'<path>' payload CRC32 mismatch (container <x>, computed <y>)` |
+| fingerprint | `'<path>' model fingerprint mismatch (container <pfx>..., this engine <pfx>...)` |
+
+**Legacy raw blobs (pre-P2R-4a `SAVE` files)** are those whose first four bytes are llama's own raw
+sequence-state magic `0xaf143cd8`. They are always **refused** with the dedicated text above (never
+silently accepted); the migration is simply to `LOAD` them with the pre-container build (or any build that
+still accepts them) and re-`SAVE` with this build - the engine no longer reads raw blobs at all. The
+"legacy" classification is reachable both from the size check and from the magic check, so an old file is
+always reported as an old file, not as a generic length error.
+
+**Model fingerprint** (`model_fp`, `STATE`'s `model_fp_prefix`): `SHA-256( size_le64 || first min(1 MiB,
+size) bytes || last min(1 MiB, size) bytes )` of the `--qwen35-model` file - exactly 2 MiB + 8 bytes are
+ever read, never a full 13.6 GB hash. It is computed **once at startup** (right after the model loads) and
+cached; `SAVE` stamps the cached value and `LOAD` compares against it. A same-path replacement of the model
+file **after** startup does not change the weights the running engine holds, so the startup value remains
+the correct compatibility reference and is deliberately not recomputed. What it is: a **compatibility
+check** that tells models (architectures/quantizations/lengths) apart. What it is **not**: a security
+measure (no keyed MAC, trivially forgeable by anyone editing the file; it detects accidents, not attacks).
+Boundary: the **expert pack is not part of the fingerprint** - the pack (expert weight blobs) is not
+sequence state and is not carried by the container (`not_covered` lists `pack`/`expert_cache`); a state
+restored against the same model but a different pack restores as valid numbers of the same model with
+different expert weights - the fingerprint would not detect it. If a future flow needs pack identity, it
+must be added explicitly (e.g. as another fingerprint field).
 
 ## 2. What is exported: covers, exactly
 
@@ -89,6 +190,9 @@ writes/reads both, and a failure of the recurrent half aborts the whole import).
 - `sampler_rng_state` - the sampler chain is recreated per request; an explicit `seed` reproduces sampling;
 - `expert_cache` - the expert residency cache is a separate subsystem (`qwen35_bridge`), untouched by the
   blob; a restored session simply starts with whatever residency it has, which affects speed, not values;
+- `pack` - the expert weight pack directory is not sequence state and is not carried by the container;
+  the model fingerprint covers the GGUF model file only (section 1b), so a state is not refused when the
+  pack differs - restore the same pack the state was produced with if values must match;
 - `bridge_counters` - the engine's diagnostics/statistics are not session state;
 - `rollback_history` - the recurrent rollback snapshots (when the build has any) are not part of the blob;
   the import restores the logical current rows and resets the rollback index binding, so a restored session
@@ -107,7 +211,8 @@ The serve engine's documented default is per-request isolation (each `GEN`/`SCOR
 3. The `DONE` field `reused` reports the carried cursor (the positions the request inherited); it stays `0`
    for requests with no session. All other fields are unchanged.
 4. The session cursor and content evolve with each continuation; `STATE` always reports the live values
-   (`bytes`/`pos`), while `path`/`file_bytes` still describe the last file written/read.
+   (`bytes`/`pos`), while `path`/`file_bytes`/`payload_bytes` still describe the last file written/read
+   (`file_bytes` = container size, `payload_bytes` = raw payload inside it).
 5. The session is cleared (back to full isolation) by:
    - a `SCORE` request **without** `keep=1`, which performs its documented semantics-(b) reset - see
      section 6 (`SCORE ... keep=1` instead keeps/arms the session, and a failed/cancelled keep request
@@ -176,7 +281,8 @@ corrected-sequence re-check is a separate dispatch; the service mapping (`/v1/sc
 
 `SAVE`:
 
-- path gate failures (`ERR session: ...`), state size/read failures, and file failures all answer `ERR` and
+- path gate failures (`ERR session: ...`), a missing startup fingerprint (refused with its own `ERR`; the
+  container must carry a fingerprint), state size/read failures, and file failures all answer `ERR` and
   leave the session (and any previously armed state) exactly as it was;
 - the file write is atomic in effect: bytes go to `<path>.tmp`, then `MoveFileExA(..., REPLACE_EXISTING)`
   (POSIX `rename`) replaces `<path>`. On any failure the `.tmp` is removed and an existing `<path>` is left
@@ -185,9 +291,11 @@ corrected-sequence re-check is a separate dispatch; the service mapping (`/v1/sc
 
 `LOAD`:
 
-- path/capability/format failures happen before any engine change: bad path (`ERR session: ...`), unreadable
-  file, file smaller than the 8-byte blob header, file larger than the 1 GiB cap, wrong magic (not a
-  sequence-state blob), header `seq_id != 0` (this engine restores sequence 0 only);
+- container failures happen in the fixed order of section 1b and before any engine change: bad path
+  (`ERR session: ...`), unreadable file, file larger than the 1 GiB cap, file shorter than the 96-byte
+  container header (legacy raw blob included), size/magic/version/header length mismatch, wrong vocabulary
+  or context, illegal position, payload CRC mismatch, fingerprint mismatch, legacy raw blob - each with its
+  own text (section 1b), all with the live session untouched;
 - a structurally valid header does not prove a compatible body. The import therefore runs **into a temporary
   context first** (`llama_init_from_model` with the exact live context parameters + the fresh
   `llama_batch_ext`): `llama_state_seq_set_data` either fully succeeds there or fails (llama's reader
@@ -202,11 +310,15 @@ Anything answered `ERR` keeps the engine serving - the same request-level contra
 
 ## 5. Compatibility and version boundaries (what this does NOT guarantee)
 
-- **Same build, same model, same context parameters** is the only supported pairing. The blob has a magic
-  and a sequence id - **no version field, no model name, no checksum**. A blob from a different
-  build/architecture/layout may be rejected by llama's structural validation (`ERR`), but a blob from a
-  same-shaped, different-weight model would not be detected: it would restore as valid numbers of the wrong
-  distribution. Do not treat session files as portable artifacts.
+- **Same build, same model, same context parameters** is the only supported pairing. The container
+  (P2R-4a) now detects much of what P2-5 could not: wrong format version, wrong vocabulary or context,
+  corruption anywhere in the payload (CRC32), and a different model **file** (fingerprint over
+  size + first/last 1 MiB). Known residual gaps, stated plainly: (a) the fingerprint is a 2 MiB+8 sample,
+  so two same-size model files that differ only outside the sampled head/tail would not be told apart;
+  (b) the pack is deliberately not fingerprinted (section 1b); (c) a container from a different
+  build/architecture with the same model, vocab and context passes the container checks and is then
+  caught (or not) by llama's structural validation inside the import - if it is accepted, the "values"
+  are what that build wrote. Do not treat session files as portable artifacts.
 - **No cross-machine guarantee**: nothing here promises that a file written on one GPU/machine restores
   identically on another. Numerical identity of a continuation is only expected within the same build and
   hardware; the actual parity check is P2-6 on this machine.
@@ -262,8 +374,11 @@ it never affects a request unless the caller `LOAD`s it.
 `SAVE -> LOAD -> SAVE` (and repeated cycles) is a supported operation sequence: `LOAD` swaps in a fresh
 context built from the same model/parameters, so the following `SAVE` serializes that context. On the same
 build the second `SAVE` is expected to produce a byte-identical file (same cells, same positions, same
-tensor rows; the import packs cells from head 0). This expectation got its empirical check in P2-6: the two
-files were byte-identical (`sha256 7d34f3b9…368414`, section 11).
+tensor rows; the import packs cells from head 0). This expectation got its empirical check in P2-6 - on the
+**legacy raw-blob format**; the two files were byte-identical (`sha256 7d34f3b9…368414`, section 11). For
+the P2R-4a container the same expectation holds by construction (all header fields are deterministic for
+an unchanged session; CRC32 of identical payload bytes is identical); its real-engine re-check is part of
+P2R-4c.
 
 ## 9. Not implemented / not claimed
 
@@ -272,8 +387,9 @@ files were byte-identical (`sha256 7d34f3b9…368414`, section 11).
   `SAVE`/`LOAD`/`STATE` with the answers above;
 - token history: the file stores state only, not the token list (llama's `state_seq` blob has no tokens).
   A continuation works with token ids the caller supplies; there is no "resume the exact prompt" helper;
-- multiple sessions, session ids, listing, deletion, quotas, compression, encryption, checksums beyond the
-  blob's own magic, fsync/folder-flush guarantees beyond the replace;
+- multiple sessions, session ids, listing, deletion, quotas, compression, encryption, integrity beyond the
+  container's CRC32 (no keyed MAC/cryptographic authentication - the fingerprint is a compatibility check,
+  not a security measure), fsync/folder-flush guarantees beyond the replace;
 - cross-machine/cross-build portability (section 5);
 - GPU parity (section 10).
 
@@ -312,6 +428,11 @@ to the P2-6 task directory in the research repo; this document is updated with t
 
 ## 11. Parity - P2-6 result (executed 2026-10-15, this machine)
 
+**Format note**: P2-6 ran on the **pre-P2R-4a raw-blob build** (`6dee0c66…` does not write or read
+containers); the state files it validated are **legacy raw blobs** under the current format. The
+container's own real-engine matrix (corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation)
+is **P2R-4c** and had not run when this section was written.
+
 **PASS.** Exe `6dee0c66c3e87c3020c6ddde3c9ebaa40bed3369745e8e1dbfb0a7ac963ad90a` (139,253,760 B), context 8192,
 neutral model + pack; three strictly serial `gpu-lock` leases (one process each, `--stdin-file`, all exit 0,
 no cleanup fence left). State blob: 145,215,172 B at cursor `pos = 3870` (saved after a 4-token `GEN` on the
@@ -346,6 +467,11 @@ save/load cycles, long sequences, repeated continuations) is not measured here. 
 - Commands and session bookkeeping: `backends/qwen35_llama/src/program/qwen35_serve.cpp` (`SESSION` helpers:
   `SessionBook`, `state_cursor`, `state_blob_size`, `session_path_allowed`, `read_file_bytes`,
   `write_file_atomic`; the `STATE`/`SAVE`/`LOAD` branches in the command loop; session-aware `GEN`).
+- P2R-4a container additions (same file): the `kContainer*` constants, the LE scalar helpers
+  (`put_u32_le`/`put_u64_le`/`get_u32_le`/`get_u64_le`),
+  `crc32_ieee`, the self-contained `Sha256`, `compute_model_fingerprint` + `fp_prefix_hex` (computed once
+  after the model load, cached), `write_container_header`, `SessionBook::payload_bytes`, the container
+  build inside `SAVE` and the fixed-order validation inside `LOAD`.
 - Blob write/read: llama's own API - `llama_state_seq_get_size/get_data/set_data` ->
   `vendor/llama.cpp/src/llama-context.cpp` (`state_seq_*`) -> `llama-memory-hybrid.cpp` ->
   `llama-memory-recurrent.cpp` / `llama-kv-cache.cpp`.

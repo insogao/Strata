@@ -25,7 +25,7 @@
 //     DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused>
 //          <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>
 //     CAPS <json>                                 the --capabilities JSON (P2-1)
-//     SAVED <bytes> <pos> <ms>                    SAVE's answer (state blob size, cursor, elapsed)
+//     SAVED <bytes> <pos> <ms>                    SAVE's answer (container file size, cursor, elapsed)
 //     LOADED <bytes> <pos> <ms>                   LOAD's answer (same fields, after the import)
 //     STATE <json>                                the session summary (one line)
 //     ERR <message>                               request-level refusal; the engine keeps serving
@@ -48,13 +48,20 @@
 // CAPS answers the same JSON as `--capabilities` (see qwen35_capabilities_json and
 // docs/backends/qwen35_llama_capabilities_and_score.md).
 //
-// SAVE / LOAD / STATE (P2-5) are the single-session state boundary: SAVE writes the CURRENT sequence-0 state
-// as the raw bytes `llama_state_seq_get_data` produces (attention KV + GDN conv/SSM planes + cell
-// positions - no new serialization format), LOAD imports such a file, STATE prints one JSON line about the
-// session.  A successful SAVE or LOAD arms session continuation: the next GEN appends its prompt at the
+// SAVE / LOAD / STATE (P2-5; P2R-4a container) are the single-session state boundary: SAVE writes the
+// CURRENT sequence-0 state wrapped in a self-describing container (`STRATAST` magic, version, header and
+// payload lengths, payload CRC32, model fingerprint, vocabulary, context, cursor), LOAD validates that
+// container first and only then imports it, STATE prints one JSON line about the session.  The container
+// payload itself is unchanged from P2-5: the raw bytes `llama_state_seq_get_data` produces (attention KV
+// + GDN conv/SSM planes + cell positions); the container only describes and protects them.  A successful
+// SAVE or LOAD arms session continuation: the next GEN appends its prompt at the
 // current cursor instead of resetting first (`reused` reports the carried positions), which is how a
-// restored session "continues".  Without SAVE/LOAD the per-request reset below is untouched.  LOAD imports
-// into a TEMPORARY context and swaps only after the import fully succeeded, so a bad path/file leaves the
+// restored session "continues".  Without SAVE/LOAD the per-request reset below is untouched.  LOAD checks
+// the container in a fixed order (file size -> magic -> version -> header length -> vocabulary -> context
+// -> pos -> payload CRC32 -> model fingerprint), answers a distinct `ERR` for every mismatch and leaves
+// the live session untouched on any failure (including a legacy raw blob from a pre-P2R-4a build, which is
+// refused with its own `ERR`); only after all checks passed is the payload imported
+// into a TEMPORARY context and swapped only after the import fully succeeded, so a bad path/file leaves the
 // live session untouched; SCORE's semantics (b) reset clears the session (documented in
 // docs/backends/qwen35_llama_session_state.md - the full contract, boundaries and P2-6 plan).  P2R-3a adds
 // `GEN ... cont=1` (see that doc): an EXPLICIT continuation - it refuses to run without an armed session
@@ -471,14 +478,17 @@ void reset_session(llama_context* ctx) {
 /// whenever the state is reset for real (SCORE's semantics (b) reset, a failed/cancelled keep request).
 /// `from_load` distinguishes a session that came out of a file (LOAD) from one that was merely checkpointed
 /// (SAVE); `from_score_keep` (P2R-3a) marks a session armed by `SCORE keep=1` with no file; `path`/
-/// `file_bytes` describe the last successful session file.  STATE reports these facts.  Continuing an
-/// armed session (GEN, `cont=1` or `keep=1` on top of one) never re-arms it: origin and file fields stay.
+/// `file_bytes` describe the last successful session file (P2R-4a: `file_bytes` is the CONTAINER file size,
+/// `payload_bytes` the raw sequence-state bytes inside it - both null when there is no file).  STATE
+/// reports these facts.  Continuing an armed session (GEN, `cont=1` or `keep=1` on top of one) never
+/// re-arms it: origin and file fields stay.
 struct SessionBook {
     bool active = false;
     bool from_load = false;
     bool from_score_keep = false;
     std::string path;
     size_t file_bytes = 0;
+    size_t payload_bytes = 0;
 };
 
 /// The cursor a continuation starts at: last occupied position + 1 (0 when the sequence is empty).
@@ -487,9 +497,207 @@ int64_t state_cursor(llama_context* ctx) {
     return last < 0 ? 0 : (int64_t) last + 1;
 }
 
-/// The exact byte size of what SAVE would write for sequence 0 (llama's own size walk; no new format).
+/// The exact byte size of the raw sequence-0 state (llama's own size walk; the container payload size).
 size_t state_blob_size(llama_context* ctx) {
     return llama_state_seq_get_size(ctx, 0);
+}
+
+/// P2R-4a: the session-file container - a fixed 96-byte little-endian header in front of the P2-5 raw
+/// payload.  layout (offsets in bytes): 0 magic "STRATAST" (8); 8 version (u32, 1); 12 header_bytes (u32,
+/// this header's total length, 96 for v1); 16 payload_bytes (u64, raw sequence-state bytes); 24 file_bytes
+/// (u64, header_bytes + payload_bytes); 32 payload_crc32 (u32, CRC-32/ISO-HDLC over the payload); 36
+/// n_vocab (u32); 40 max_context (u32); 44 pos (u64, sequence cursor at SAVE); 52 model_fp (32 bytes);
+/// 84 flags (u32, 0); 88..96 reserved (zero).  The payload follows the header.  A writer may append fields
+/// (header_bytes > 96, readers skip to header_bytes); version 1 readers require at least 96.
+constexpr size_t kContainerMagicBytes = 8;
+constexpr uint8_t kContainerMagic[kContainerMagicBytes] = {'S', 'R', 'A', 'T', 'A', 'S', 'T'};
+constexpr uint32_t kContainerVersion = 1;
+constexpr uint32_t kContainerHeaderBytes = 96;
+
+/// The raw llama sequence-state magic a legacy (pre-P2R-4a) SAVE file begins with - used to tell "an old
+/// session file" apart from "some other file" in LOAD's errors.
+constexpr uint32_t kRawStateMagic = 0xaf143cd8u;
+
+void put_u32_le(uint8_t* p, uint32_t v) {
+    p[0] = (uint8_t) (v & 0xffu);
+    p[1] = (uint8_t) ((v >> 8) & 0xffu);
+    p[2] = (uint8_t) ((v >> 16) & 0xffu);
+    p[3] = (uint8_t) ((v >> 24) & 0xffu);
+}
+
+void put_u64_le(uint8_t* p, uint64_t v) {
+    for (int i = 0; i < 8; ++i) p[i] = (uint8_t) ((v >> (8 * i)) & 0xffu);
+}
+
+uint32_t get_u32_le(const uint8_t* p) {
+    return (uint32_t) p[0] | ((uint32_t) p[1] << 8) | ((uint32_t) p[2] << 16) | ((uint32_t) p[3] << 24);
+}
+
+uint64_t get_u64_le(const uint8_t* p) {
+    uint64_t v = 0;
+    for (int i = 0; i < 8; ++i) v |= (uint64_t) p[i] << (8 * i);
+    return v;
+}
+
+/// CRC-32/ISO-HDLC (the zlib/PKZIP one: reflected, poly 0xEDB88320, init 0xFFFFFFFF, final xor
+/// 0xFFFFFFFF) - the container payload checksum.  A table built once on first use.
+uint32_t crc32_ieee(const uint8_t* data, size_t n) {
+    static const struct Table {
+        uint32_t t[256];
+        Table() {
+            for (uint32_t i = 0; i < 256; ++i) {
+                uint32_t c = i;
+                for (int k = 0; k < 8; ++k) c = (c & 1u) ? (0xedb88320u ^ (c >> 1)) : (c >> 1);
+                t[i] = c;
+            }
+        }
+    } table;
+    uint32_t c = 0xffffffffu;
+    for (size_t i = 0; i < n; ++i) c = table.t[(c ^ data[i]) & 0xffu] ^ (c >> 8);
+    return c ^ 0xffffffffu;
+}
+
+/// SHA-256 (FIPS 180-4), self-contained: the model fingerprint is its only user.  `final` is terminal
+/// (the object is not reusable afterwards).
+struct Sha256 {
+    uint32_t h[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
+                     0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
+    uint64_t len = 0;      // message bytes fed so far
+    uint8_t block[64] = {0};
+    size_t fill = 0;
+
+    static uint32_t ror(uint32_t v, int r) { return (v >> r) | (v << (32 - r)); }
+
+    void compress(const uint8_t* p) {
+        static const uint32_t k[64] = {
+            0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u,
+            0xab1c5ed5u, 0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu,
+            0x9bdc06a7u, 0xc19bf174u, 0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu,
+            0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau, 0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u,
+            0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u, 0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu,
+            0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u, 0xa2bfe8a1u, 0xa81a664bu,
+            0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u, 0x19a4c116u,
+            0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+            0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u,
+            0xc67178f2u};
+        uint32_t w[64];
+        for (int i = 0; i < 16; ++i) {
+            w[i] = ((uint32_t) p[i * 4] << 24) | ((uint32_t) p[i * 4 + 1] << 16) |
+                   ((uint32_t) p[i * 4 + 2] << 8) | (uint32_t) p[i * 4 + 3];
+        }
+        for (int i = 16; i < 64; ++i) {
+            const uint32_t s0 = ror(w[i - 15], 7) ^ ror(w[i - 15], 18) ^ (w[i - 15] >> 3);
+            const uint32_t s1 = ror(w[i - 2], 17) ^ ror(w[i - 2], 19) ^ (w[i - 2] >> 10);
+            w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+        }
+        uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
+        uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
+        for (int i = 0; i < 64; ++i) {
+            const uint32_t s1 = ror(e, 6) ^ ror(e, 11) ^ ror(e, 25);
+            const uint32_t ch = (e & f) ^ (~e & g);
+            const uint32_t t1 = hh + s1 + ch + k[i] + w[i];
+            const uint32_t s0 = ror(a, 2) ^ ror(a, 13) ^ ror(a, 22);
+            const uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+            const uint32_t t2 = s0 + maj;
+            hh = g; g = f; f = e; e = d + t1;
+            d = c; c = b; b = a; a = t1 + t2;
+        }
+        h[0] += a; h[1] += b; h[2] += c; h[3] += d;
+        h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+    }
+
+    void update(const uint8_t* data, size_t n) {
+        len += n;
+        while (n > 0) {
+            const size_t take = std::min<size_t>(64 - fill, n);
+            std::memcpy(block + fill, data, take);
+            fill += take;
+            data += take;
+            n -= take;
+            if (fill == 64) { compress(block); fill = 0; }
+        }
+    }
+
+    void final(uint8_t out[32]) {
+        const uint64_t bits = len * 8;
+        uint8_t tail[72];
+        size_t tail_len = 0;
+        tail[tail_len++] = 0x80;
+        while ((fill + tail_len) % 64 != 56) tail[tail_len++] = 0;
+        for (int i = 7; i >= 0; --i) tail[tail_len++] = (uint8_t) (bits >> (8 * i));
+        update(tail, tail_len);
+        for (int i = 0; i < 8; ++i) {
+            out[i * 4 + 0] = (uint8_t) (h[i] >> 24);
+            out[i * 4 + 1] = (uint8_t) (h[i] >> 16);
+            out[i * 4 + 2] = (uint8_t) (h[i] >> 8);
+            out[i * 4 + 3] = (uint8_t) h[i];
+        }
+    }
+};
+
+/// P2R-4a: the model fingerprint - SHA-256 over <u64 file size LE> || first min(1 MiB, size) bytes ||
+/// last min(1 MiB, size) bytes of the --qwen35-model file: exactly 2 MiB + 8 bytes are ever read, never
+/// the whole 13.6 GB.  It is computed ONCE, right after the model load, and cached for the process's
+/// life: a same-path replacement of the file after startup does not change the weights the running engine
+/// holds, so the startup value stays the correct compatibility reference for SAVE/LOAD.  This is a
+/// COMPATIBILITY check (different model / quantization / file length), not a security measure - the
+/// expert pack is deliberately not part of it (documented in docs/backends/qwen35_llama_session_state.md).
+struct ModelFingerprint {
+    bool ok = false;
+    uint8_t bytes[32] = {0};
+};
+
+ModelFingerprint compute_model_fingerprint(const std::string& path) {
+    ModelFingerprint fp;
+    std::FILE* f = std::fopen(path.c_str(), "rb");
+    if (f == nullptr) return fp;
+    int64_t size = -1;
+#if defined(_WIN32)
+    if (_fseeki64(f, 0, SEEK_END) == 0) size = (int64_t) _ftelli64(f);
+#else
+    if (fseeko(f, 0, SEEK_END) == 0) size = (int64_t) ftello(f);
+#endif
+    if (size <= 0) {
+        std::fclose(f);
+        return fp;
+    }
+    const int64_t chunk = std::min<int64_t>(size, (int64_t) 1 << 20);
+    std::vector<uint8_t> buf((size_t) chunk);
+    Sha256 sha;
+    uint8_t size_le[8];
+    put_u64_le(size_le, (uint64_t) size);
+    sha.update(size_le, sizeof(size_le));
+    bool io_ok = true;
+#if defined(_WIN32)
+    io_ok = io_ok && _fseeki64(f, 0, SEEK_SET) == 0;
+#else
+    io_ok = io_ok && fseeko(f, 0, SEEK_SET) == 0;
+#endif
+    if (io_ok) io_ok = std::fread(buf.data(), 1, (size_t) chunk, f) == (size_t) chunk;
+    if (io_ok) sha.update(buf.data(), (size_t) chunk);
+#if defined(_WIN32)
+    if (io_ok) io_ok = _fseeki64(f, size - chunk, SEEK_SET) == 0;
+#else
+    if (io_ok) io_ok = fseeko(f, size - chunk, SEEK_SET) == 0;
+#endif
+    if (io_ok) io_ok = std::fread(buf.data(), 1, (size_t) chunk, f) == (size_t) chunk;
+    if (io_ok) sha.update(buf.data(), (size_t) chunk);
+    const int close_rc = std::fclose(f);
+    if (!io_ok || close_rc != 0) return fp;
+    sha.final(fp.bytes);
+    fp.ok = true;
+    return fp;
+}
+
+/// The 8-byte (16 hex chars) fingerprint prefix STATE and the error texts print.
+std::string fp_prefix_hex(const uint8_t* fp) {
+    static const char* hex = "0123456789abcdef";
+    std::string s;
+    for (int i = 0; i < 8; ++i) {
+        s += hex[fp[i] >> 4];
+        s += hex[fp[i] & 0x0f];
+    }
+    return s;
 }
 
 /// Absolute-path shape check (drive-qualified or UNC on Windows, leading '/' elsewhere).
@@ -621,6 +829,24 @@ bool write_file_atomic(const std::string& path, const uint8_t* data, size_t size
     }
 #endif
     return true;
+}
+
+/// P2R-4a: fill the fixed 96-byte container header.  The payload CRC32 is left zero here - the caller
+/// writes it after `llama_state_seq_get_data` has filled the payload region (offset header_bytes).
+void write_container_header(uint8_t* h, uint64_t payload_size, uint32_t n_vocab, uint32_t max_context,
+                            uint64_t pos, const ModelFingerprint& fp) {
+    std::memcpy(h, kContainerMagic, kContainerMagicBytes);
+    put_u32_le(h + 8, kContainerVersion);
+    put_u32_le(h + 12, kContainerHeaderBytes);
+    put_u64_le(h + 16, payload_size);
+    put_u64_le(h + 24, (uint64_t) kContainerHeaderBytes + payload_size);
+    put_u32_le(h + 32, 0);   // payload_crc32: filled in after the payload is written
+    put_u32_le(h + 36, n_vocab);
+    put_u32_le(h + 40, max_context);
+    put_u64_le(h + 44, pos);
+    std::memcpy(h + 52, fp.bytes, sizeof(fp.bytes));
+    put_u32_le(h + 84, 0);   // flags, reserved
+    std::memset(h + 88, 0, kContainerHeaderBytes - 88);   // reserved to header_bytes
 }
 
 /// Minimal JSON string quoting for paths (they are printable ASCII by the gate above; only " and \ need it).
@@ -756,6 +982,15 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             std::fprintf(stderr, "strata qwen35 serve: %s is '%s', not a qwen35moe model\n", o.model.c_str(), arch);
             return 2;
         }
+    }
+    // P2R-4a: the model fingerprint, computed ONCE at startup and cached (never per request, never a
+    // full-file hash).  Failure to read the model file back is a corner case (the model just loaded from
+    // it); the engine keeps serving ordinary requests but refuses SAVE/LOAD, which need the fingerprint.
+    const ModelFingerprint model_fp = compute_model_fingerprint(o.model);
+    const std::string model_fp_prefix = model_fp.ok ? fp_prefix_hex(model_fp.bytes) : std::string();
+    if (!model_fp.ok) {
+        std::fprintf(stderr, "strata qwen35 serve: warning: cannot compute the session model fingerprint from "
+                             "%s; SAVE/LOAD will refuse\n", o.model.c_str());
     }
     const llama_vocab* vocab = llama_model_get_vocab(model.get());
     const int64_t n_layers = llama_model_n_layer(model.get());
@@ -909,17 +1144,29 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                                     : (session.from_score_keep ? "\"score-keep\"" : "\"save\"")) : "null";
             js += ",\"file_bytes\":";
             js += (session.active && session.file_bytes > 0) ? std::to_string(session.file_bytes) : "null";
+            // P2R-4a: the raw payload size inside the last session file; file_bytes is the container size.
+            js += ",\"payload_bytes\":";
+            js += (session.active && session.payload_bytes > 0) ? std::to_string(session.payload_bytes) : "null";
             js += ",\"max_context\":";
             js += std::to_string(total_ctx);
-            js += ",\"not_covered\":[\"logits\",\"sampler_rng_state\",\"expert_cache\",\"bridge_counters\","
-                  "\"rollback_history\"]}";
+            // P2R-4a: the container version this build writes/reads and the model fingerprint prefix
+            // (16 hex chars of the startup-cached SHA-256); both are build-level facts, not session facts.
+            js += ",\"container_version\":";
+            js += std::to_string(kContainerVersion);
+            js += ",\"model_fp_prefix\":";
+            js += model_fp_prefix.empty() ? std::string("null") : json_quote(model_fp_prefix);
+            js += ",\"not_covered\":[\"logits\",\"sampler_rng_state\",\"expert_cache\",\"pack\","
+                  "\"bridge_counters\",\"rollback_history\"]}";
             std::printf("STATE %s\n", js.c_str());
             std::fflush(stdout);
             continue;
         }
         if (line.rfind("SAVE ", 0) == 0) {
-            // P2-5: export the CURRENT sequence-0 state as the raw llama_state_seq bytes.  On success the
-            // session is armed: the next GEN appends at the cursor (continuation) instead of resetting.
+            // P2-5 / P2R-4a: export the CURRENT sequence-0 state as the raw llama_state_seq bytes wrapped
+            // in the 96-byte container (magic/version/lengths/CRC/fingerprint/vocab/context/pos).  On
+            // success the session is armed: the next GEN appends at the cursor (continuation) instead of
+            // resetting.  `SAVED`'s byte count is the CONTAINER file size (the pre-P2R-4a build reported
+            // the raw payload size; the difference is exactly the 96-byte header).
             std::string path = line.substr(5);
             while (!path.empty() && path.front() == ' ') path.erase(0, 1);
             while (!path.empty() && path.back() == ' ') path.pop_back();
@@ -930,19 +1177,32 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::fflush(stdout);
                 continue;
             }
-            std::vector<uint8_t> blob(state_blob_size(ctx.get()));
-            if (blob.empty()) {
+            if (!model_fp.ok) {
+                std::printf("ERR session: the model fingerprint is unavailable (the --qwen35-model file could "
+                            "not be re-read); refusing to write a session container\n");
+                std::fflush(stdout);
+                continue;
+            }
+            const size_t payload_size = state_blob_size(ctx.get());
+            if (payload_size == 0) {
                 std::printf("ERR session: the state size walk failed\n");
                 std::fflush(stdout);
                 continue;
             }
-            const size_t got = llama_state_seq_get_data(ctx.get(), blob.data(), blob.size(), 0);
-            if (got != blob.size()) {
-                std::printf("ERR session: the state export returned %zu of %zu bytes\n", got, blob.size());
+            std::vector<uint8_t> container((size_t) kContainerHeaderBytes + payload_size, 0);
+            const int64_t save_pos = state_cursor(ctx.get());
+            write_container_header(container.data(), (uint64_t) payload_size, (uint32_t) n_vocab,
+                                   (uint32_t) total_ctx, (uint64_t) save_pos, model_fp);
+            const size_t got = llama_state_seq_get_data(ctx.get(), container.data() + kContainerHeaderBytes,
+                                                        payload_size, 0);
+            if (got != payload_size) {
+                std::printf("ERR session: the state export returned %zu of %zu bytes\n", got, payload_size);
                 std::fflush(stdout);
                 continue;
             }
-            if (!write_file_atomic(path, blob.data(), blob.size(), &derr)) {
+            put_u32_le(container.data() + 32, crc32_ieee(container.data() + kContainerHeaderBytes,
+                                                         payload_size));
+            if (!write_file_atomic(path, container.data(), container.size(), &derr)) {
                 std::printf("ERR %s\n", derr.c_str());
                 std::fflush(stdout);
                 continue;
@@ -951,18 +1211,23 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             session.from_load = false;
             session.from_score_keep = false;
             session.path = path;
-            session.file_bytes = blob.size();
-            std::printf("SAVED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
-                        ms_since(save_begin));
+            session.file_bytes = container.size();
+            session.payload_bytes = payload_size;
+            std::printf("SAVED %zu %lld %.1f\n", container.size(), (long long) save_pos, ms_since(save_begin));
             std::fflush(stdout);
-            std::fprintf(stderr, "serve: session save '%s' bytes=%zu pos=%lld\n", path.c_str(), blob.size(),
-                         (long long) state_cursor(ctx.get()));
+            std::fprintf(stderr, "serve: session save '%s' bytes=%zu pos=%lld payload=%zu model_fp=%s\n",
+                         path.c_str(), container.size(), (long long) save_pos, payload_size,
+                         model_fp_prefix.c_str());
             continue;
         }
         if (line.rfind("LOAD ", 0) == 0) {
-            // P2-5: import a session file.  The bytes go into a TEMPORARY context first (same model and
-            // context parameters); only a fully successful import is swapped in, so a bad path, a foreign
-            // file or a corrupt blob leaves the live session untouched - never a half-restored state.
+            // P2-5 / P2R-4a: import a session container.  The container is validated first (fixed order,
+            // every mismatch its own ERR - a failure here never touches the live session, not even an
+            // armed one); only then do the payload bytes go into a TEMPORARY context (same model and
+            // context parameters) and only a fully successful import is swapped in, so a bad path, a
+            // foreign file or a corrupt payload leaves the live session untouched - never a half-restore.
+            // `LOADED`'s byte count is the CONTAINER file size, like `SAVED` (the raw payload size is the
+            // container's payload field and STATE's payload_bytes).
             std::string path = line.substr(5);
             while (!path.empty() && path.front() == ' ') path.erase(0, 1);
             while (!path.empty() && path.back() == ' ') path.pop_back();
@@ -979,20 +1244,110 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::fflush(stdout);
                 continue;
             }
-            // The llama sequence-state header is <u32 magic 0xaf143cd8><i32 seq_id>; checking it here
-            // turns the common "not a state file" / "wrong sequence" mistakes into precise errors.
-            uint32_t magic = 0;
-            int32_t seq_header = -1;
-            std::memcpy(&magic, blob.data(), sizeof(magic));
-            std::memcpy(&seq_header, blob.data() + sizeof(magic), sizeof(seq_header));
-            if (magic != 0xaf143cd8u) {
-                std::printf("ERR session: '%s' is not a llama sequence-state blob (bad header)\n", path.c_str());
+            if (!model_fp.ok) {
+                std::printf("ERR session: the model fingerprint is unavailable (the --qwen35-model file could "
+                            "not be re-read); refusing to import a session container\n");
                 std::fflush(stdout);
                 continue;
             }
-            if (seq_header != 0) {
-                std::printf("ERR session: '%s' was saved from sequence %d; this engine restores sequence 0\n",
-                            path.c_str(), (int) seq_header);
+            // The fixed validation order: file size -> magic -> version -> header length -> n_vocab ->
+            // max_context -> pos -> payload CRC32 -> model fingerprint (see the session-state doc).  The
+            // legacy/foreign classification on a missing magic keeps "an old raw state file" and "some
+            // other file" apart; the payload's own llama header (magic + sequence id) is validated by
+            // llama's reader inside the import below.
+            if (blob.size() < kContainerHeaderBytes) {
+                if (blob.size() >= 4 && get_u32_le(blob.data()) == kRawStateMagic) {
+                    std::printf("ERR session: '%s' is a legacy raw state blob (no STRATAST container); re-SAVE "
+                                "it with this build to migrate\n", path.c_str());
+                } else {
+                    std::printf("ERR session: '%s' is too small to be a STRATAST session container (%zu bytes; "
+                                "the fixed header is %zu)\n", path.c_str(), blob.size(),
+                                (size_t) kContainerHeaderBytes);
+                }
+                std::fflush(stdout);
+                continue;
+            }
+            const bool container_magic_ok =
+                std::memcmp(blob.data(), kContainerMagic, kContainerMagicBytes) == 0;
+            const bool legacy_shape = get_u32_le(blob.data()) == kRawStateMagic;
+            const uint64_t declared_file_bytes = get_u64_le(blob.data() + 24);
+            if ((uint64_t) blob.size() != declared_file_bytes) {
+                if (!container_magic_ok) {
+                    if (legacy_shape) {
+                        std::printf("ERR session: '%s' is a legacy raw state blob (no STRATAST container); "
+                                    "re-SAVE it with this build to migrate\n", path.c_str());
+                    } else {
+                        std::printf("ERR session: '%s' is not a STRATAST session container (bad magic)\n",
+                                    path.c_str());
+                    }
+                } else {
+                    std::printf("ERR session: '%s' size mismatch (the file is %zu bytes, the container declares "
+                                "%llu)\n", path.c_str(), blob.size(), (unsigned long long) declared_file_bytes);
+                }
+                std::fflush(stdout);
+                continue;
+            }
+            if (!container_magic_ok) {
+                if (legacy_shape) {
+                    std::printf("ERR session: '%s' is a legacy raw state blob (no STRATAST container); re-SAVE "
+                                "it with this build to migrate\n", path.c_str());
+                } else {
+                    std::printf("ERR session: '%s' is not a STRATAST session container (bad magic)\n",
+                                path.c_str());
+                }
+                std::fflush(stdout);
+                continue;
+            }
+            const uint32_t container_version = get_u32_le(blob.data() + 8);
+            if (container_version != kContainerVersion) {
+                std::printf("ERR session: '%s' has container version %u; this build reads version %u\n",
+                            path.c_str(), container_version, kContainerVersion);
+                std::fflush(stdout);
+                continue;
+            }
+            const uint32_t header_bytes = get_u32_le(blob.data() + 12);
+            const uint64_t payload_bytes = get_u64_le(blob.data() + 16);
+            if (header_bytes < kContainerHeaderBytes || (uint64_t) header_bytes > (uint64_t) blob.size() ||
+                payload_bytes != (uint64_t) blob.size() - (uint64_t) header_bytes) {
+                std::printf("ERR session: '%s' has an invalid container header length (header %u, payload %llu, "
+                            "file %zu)\n", path.c_str(), header_bytes, (unsigned long long) payload_bytes,
+                            blob.size());
+                std::fflush(stdout);
+                continue;
+            }
+            const uint32_t saved_vocab = get_u32_le(blob.data() + 36);
+            if ((uint64_t) saved_vocab != (uint64_t) n_vocab) {
+                std::printf("ERR session: '%s' was saved for vocab %u; this model has %lld\n", path.c_str(),
+                            saved_vocab, (long long) n_vocab);
+                std::fflush(stdout);
+                continue;
+            }
+            const uint32_t saved_ctx = get_u32_le(blob.data() + 40);
+            if ((int64_t) saved_ctx != total_ctx) {
+                std::printf("ERR session: '%s' was saved under context %u; this engine runs context %lld\n",
+                            path.c_str(), saved_ctx, (long long) total_ctx);
+                std::fflush(stdout);
+                continue;
+            }
+            const uint64_t saved_pos = get_u64_le(blob.data() + 44);
+            if (saved_pos > (uint64_t) total_ctx) {
+                std::printf("ERR session: '%s' declares position %llu beyond the context (%lld)\n", path.c_str(),
+                            (unsigned long long) saved_pos, (long long) total_ctx);
+                std::fflush(stdout);
+                continue;
+            }
+            const uint8_t* payload = blob.data() + header_bytes;
+            const uint32_t saved_crc = get_u32_le(blob.data() + 32);
+            const uint32_t computed_crc = crc32_ieee(payload, (size_t) payload_bytes);
+            if (saved_crc != computed_crc) {
+                std::printf("ERR session: '%s' payload CRC32 mismatch (container %08x, computed %08x)\n",
+                            path.c_str(), saved_crc, computed_crc);
+                std::fflush(stdout);
+                continue;
+            }
+            if (std::memcmp(blob.data() + 52, model_fp.bytes, sizeof(model_fp.bytes)) != 0) {
+                std::printf("ERR session: '%s' model fingerprint mismatch (container %s..., this engine %s...)\n",
+                            path.c_str(), fp_prefix_hex(blob.data() + 52).c_str(), model_fp_prefix.c_str());
                 std::fflush(stdout);
                 continue;
             }
@@ -1002,7 +1357,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::fflush(stdout);
                 continue;
             }
-            const size_t got = llama_state_seq_set_data(tmp, blob.data(), blob.size(), 0);
+            const size_t got = llama_state_seq_set_data(tmp, payload, (size_t) payload_bytes, 0);
             llama_batch_ext* tmp_batch = got != 0 ? llama_batch_ext_init(tmp) : nullptr;
             if (got == 0 || tmp_batch == nullptr) {
                 if (tmp_batch != nullptr) llama_batch_ext_free(tmp_batch);
@@ -1019,11 +1374,13 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             session.from_score_keep = false;
             session.path = path;
             session.file_bytes = blob.size();
+            session.payload_bytes = (size_t) payload_bytes;
             std::printf("LOADED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
                         ms_since(load_begin));
             std::fflush(stdout);
-            std::fprintf(stderr, "serve: session load '%s' bytes=%zu pos=%lld\n", path.c_str(), blob.size(),
-                         (long long) state_cursor(ctx.get()));
+            std::fprintf(stderr, "serve: session load '%s' bytes=%zu pos=%lld payload=%zu model_fp=%s\n",
+                         path.c_str(), blob.size(), (long long) state_cursor(ctx.get()),
+                         (size_t) payload_bytes, model_fp_prefix.c_str());
             continue;
         }
         if (line.rfind("SCORE ", 0) == 0) {
