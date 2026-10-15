@@ -33,3 +33,14 @@
   本阶段 355/358 是实验门开启下的研究配置，不构成产品能力。
 - 选择依据只引用已被本阶段实测覆盖的数字（`docs/backends/qwen35_llama_test_evidence.md`），
   不引用官方/他机/他量化的换算值。
+
+## 服务边界与路由契约（P2R-5）
+
+两后端在服务层的支持/拒绝/引擎命令映射已固化为声明式矩阵（`backends/qwen35_llama/tools/
+backend_adapters.py` 的 `ROUTES` 与 `route()`／`refusal_text()`／`capabilities_for()`），并由
+`GET /v1/routes` 只读发布（含 `active_backend`／`backend_source`／每格 supported、engine_command、
+refusal、notes）。单入口部署配方（一份配置、一个命令、chat＋score 两个健康检查）与
+**未统一清单**（两个监听器并存、官方 `RESTORE`/`SERR` 会话文法未并入、批处理契约 v1 未实现、
+本服务不含 chat）及后续合并路线，见 `docs/backends/qwen35_llama_backend_adapters.md` §7–§9。
+纪律不变：官方 q36 后端上 `/v1/score`、`/v1/decisions`、`/v1/continue`、`GET /v1/session` 一律
+显式 501（文本与 P2R-5 前逐字节一致），绝不静默替代；不宣称"已合并为一套服务"。

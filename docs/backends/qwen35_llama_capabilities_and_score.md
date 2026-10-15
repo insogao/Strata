@@ -1,14 +1,19 @@
-# qwen35_llama capabilities table and SCORE (P2-1)
+# qwen35_llama capabilities table and SCORE (P2-1; `cand=`/`topk=0` added by P2R-1)
 
-Phase-2 backend-interface work, task **P2-1** (branch `phase2/backend-interface`). Two additions to the Qwen35
-path, both implemented in `backends/qwen35_llama/**` only:
+Phase-2 backend-interface work, task **P2-1** (branch `phase2/backend-interface`), extended by **P2R-1**
+(branch `phase2r/review-gaps`). Two additions to the Qwen35 path, both implemented in
+`backends/qwen35_llama/**` only:
 
 1. **Capability table** - a machine-readable statement of what this backend actually does, available as
    `--capabilities` (CLI, one JSON line, exit 0, no model load, no GPU) and as the `CAPS` command of the
    serve line protocol (same JSON, process keeps serving).
 2. **`SCORE`** - a read-only candidate-logits command: prefill the given ids through the **same** path as
    `GEN`, generate **no** token, and answer the last position's top-k log-softmax over the **full**
-   vocabulary, then `DONE ... score`.
+   vocabulary, then `DONE ... score`. **P2R-1** adds the optional `cand=<id,...>` key (explicit candidate
+   ids answered from the same row/lse, whatever their top-k rank) and allows `topk=0` (candidates only,
+   no `LOGPROBS` line). The GPU cross-check of the additions **ran in P2R-2 (2026-10-15) and passed**
+   (evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up: "P2R-2: GPU
+   validation of the P2R-1 additions" in `docs/backends/qwen35_llama_score_api_e2e.md`).
 
 The field values below are the implementation's own values, each with its source. Nothing in this table is a
 product claim; features that do not exist are `false` and listed in "Not implemented" (a wrong `true` would be
@@ -46,10 +51,11 @@ line.
 
 ## Field-by-field values and sources
 
-Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `build.ps1`):
+Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `build.ps1`; the two
+`score_*` fields are P2R-1, `state_keep_score`/`session_continue` are P2R-3a):
 
 ```json
-{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"state_export":true,"disk_kv":false,"vision":false}
+{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"score_explicit_candidate_ids":true,"score_max_candidate_ids":2048,"state_keep_score":true,"session_continue":true,"state_export":true,"disk_kv":false,"vision":false}
 ```
 
 | Field | Value | Source / evidence |
@@ -67,9 +73,32 @@ Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `b
 | `expert_formats` | array | The compile-time grouped-expert kernel whitelist of the GPU native-expert path: the union of the gate/up and down role tables `STRATA_GU_FMTS` / `STRATA_D_FMTS` (`vendor`-independent source: `src/kernels/cuda/iq_kernels.cu:614-621`), exported by `kernels::iq_expert_role_format` (`iq_kernels.cu:2722`, declared `include/strata/kernels/iq_kernels.hpp:56`). A build without `STRATA_Q6K_EXPERTS` answers without `Q6_K`. This is the binding set: `qwen35_bridge_init` refuses a pack at startup unless every layer pair passes `kernels::native_expert_supported` (`src/core/qwen35_bridge.cpp:1848-1855`). See "expert_formats roles" below. |
 | `context_max` | int | CLI: the `--max-context` argv value (default 4096) - what this invocation would check requests against. serve: the live `llama_n_ctx` (identical to the `READY <ctx>` value). A request whose prompt exceeds it is answered `ERR` and the process keeps serving. |
 | `logits_read` | `true` | This task's `SCORE` command (see below); no other logits export exists. |
-| `state_export` | `true` | P2-5: single-session state export/import exists - `SAVE <path>` / `LOAD <path>` / `STATE` (attention KV + GDN conv/SSM planes + positions, the raw `llama_state_seq` bytes). The official engine's own `RESTORE` command and its `SAVED <tokens> ...`/`SERR` grammar are **not** implemented; contract, boundaries (no cross-machine/cross-build guarantee; same-process and cross-process parity on this machine/build verified by P2-6, section 11 of the session-state doc) and failure semantics: `docs/backends/qwen35_llama_session_state.md`. Value flipped from `false` in P2-5 (the P2-2 captures below still show the old value - they are verbatim history of that build). |
+| `score_explicit_candidate_ids` | `true` | **P2R-1**: `SCORE` accepts the optional `cand=<id,...>` key and answers every requested id from the same last-position row/lse, whatever its top-k rank (`CANDLOGPROBS` line; see below). Requests without `cand=` remain byte-identical to the P2-1 engine. |
+| `score_max_candidate_ids` | `2048` | **P2R-1**: the hard cap of explicit `cand=` ids per `SCORE`; above it the request is refused `ERR bad request: cand has more than 2048 ids (use topk= for a wide distribution)`. A constant of the implementation (`kScoreMaxCand` in `qwen35_serve.cpp`), not a tunable. |
+| `state_keep_score` | `true` | **P2R-3a**: `SCORE` accepts the optional `keep=1` key - the same read-only logprobs answer, but no reset: the prompt is appended at the armed session's cursor (from 0 when none was armed), `DONE`'s `reused` reports the carried cursor and the session stays armed (`STATE` `origin="score-keep"` when this request armed it). A request without `keep=` is byte-identical to the pre-P2R-3a engine. |
+| `session_continue` | `true` | **P2R-3a**: `GEN` accepts the optional `cont=1` key - an explicit continuation that requires an armed session (`ERR cont=1 needs an armed session` otherwise) and allows an **empty id list** (pure continuation). `DONE` reports `prompt_tokens`/`prompt_read` = the tokens actually appended/read and `reused` = the cursor before the append; the session stays armed. A request without `cont=` is byte-identical to the pre-P2R-3a engine. |
+| `state_export` | `true` | P2-5: single-session state export/import exists - `SAVE <path>` / `LOAD <path>` / `STATE` (attention KV + GDN conv/SSM planes + positions, the raw `llama_state_seq` payload inside the **P2R-4a self-describing container**: magic/version/lengths/payload CRC32/model fingerprint, every validation mismatch its own `ERR` and the live session untouched; the **P2R-4c real-engine matrix** (2026-10-15) rejected all six corrupt/foreign classes with distinct errors and verified repeated-restore/continuation identities and isolation on the container, section 13 of the session-state doc). The official engine's own `RESTORE` command and its `SAVED <tokens> ...`/`SERR` grammar are **not** implemented; contract, boundaries (no cross-machine/cross-build guarantee; same-process and cross-process parity on this machine/build verified by P2-6, section 11 of the session-state doc) and failure semantics: `docs/backends/qwen35_llama_session_state.md`. Value flipped from `false` in P2-5 (the P2-2 captures below still show the old value - they are verbatim history of that build). |
 | `disk_kv` | `false` | No disk KV; a session file is an explicit export, nothing is loaded, cached or reused implicitly, and nothing survives the process without `SAVE`. |
 | `vision` | `false` | The Qwen35 serve path implements no vision (`GENI` is answered `ERR`); the native engine's `--vision` is a different engine and not reachable from `--qwen35-model`. |
+
+P2R-3a note: state-keeping score (`SCORE ... keep=1` / `state_keep_score`) and conditional continuation
+(`GEN ... cont=1` / `session_continue`) are implemented in the engine (contracts:
+`docs/backends/qwen35_llama_session_state.md` §3b and `docs/backends/qwen35_llama_serve_protocol.md`).
+**GPU evidence: P2R-3b ran 2026-10-15** (one native, new exe `7c441a94…`, rc=0) and confirmed the flow's
+load-bearing facts: continuation `prompt_read=0`/`prompt_ms=0` (the 4K prefix is not re-prefilled), the
+`origin="score-keep"` bookkeeping, `ERR cont=1 needs an armed session` after a plain `SCORE`, the fresh
+(`reused=0`) path after a session clear, and the `keep=1` append context guard (`ERR session (...) +
+prompt (...) exceeds the context`); in the same run the kept state reproduced a fresh full-prefill
+reference **token-for-token 16/16**. The pre-registered reference schedule itself (identity vs the
+*immediately following* `GEN <P_long>`) is **not executable at ctx4096** - a plain `GEN` continues an
+armed session and its P_long append overflows; those pairwise comparisons are recorded as FAIL-as-written
+in `qwen35_llama_score_api_e2e.md` §P2R-3b, and a corrected-sequence re-check is a separate dispatch. The
+service exposure is **P2R-3c, done 2026-10-15**: the thin service now exposes `/v1/score` and
+`/v1/decisions` with `keep`, `POST /v1/continue` and read-only `GET /v1/session`, and passes these two
+capability fields through unchanged (`docs/backends/qwen35_llama_score_api_design.md` §2); the real-engine
+service session ran 8/8 steps `200` (evidence
+`results/opencode-execution/strata-unified-p2r3c-service-keep/`; write-up "P2R-3c - score→continue over the
+service" in `qwen35_llama_score_api_e2e.md`). P2R-3c changed no engine code.
 
 ### expert_formats roles
 
@@ -98,17 +127,37 @@ Two honest limits of this field:
 ### Syntax
 
 ```text
-SCORE <id,id,...> [topk=N]
+SCORE <id,id,...> [topk=N] [cand=id,id,...]
 ```
 
 - `<id,id,...>`: comma-separated decimal token ids of the prompt (the same grammar `GEN` uses; spaces inside
-  the list are rejected). The id list may appear before or after the key; exactly one id list per command.
-- `topk=N`: optional, default **5**; `N` must be a positive decimal integer (a repeated key takes the last
-  value). Any other key is refused with `ERR` - a silently ignored `topk` typo would answer a different
-  question than the one asked. (Unlike `GEN`, which skips the conversation-cache keys, `SCORE` has no cache
-  keys to skip.)
+  the list are rejected). The id list may appear before or after the keys; exactly one id list per command.
+- `topk=N`: optional, default **5**; `N` must be a **non-negative** decimal integer (a repeated key takes the
+  last value, unchanged). `topk=0` is legal **only together with `cand=`**: it suppresses the `LOGPROBS` line
+  and answers the explicit candidates alone; `topk=0` without `cand=` is refused (`ERR bad request: topk` -
+  an empty answer is no answer).
+- `cand=id,id,...` (**P2R-1**): optional; comma-separated decimal token ids to answer explicitly. Rules
+  (each violation is an `ERR` and the engine keeps serving):
+  - non-decimal / negative / empty list -> `ERR bad request: cand`;
+  - **duplicate id -> `ERR bad request: duplicate cand id <id>`** - explicit answer only, never silently
+    deduplicated (so the answer always mirrors the question one-to-one);
+  - **more than 2048 ids -> `ERR bad request: cand has more than 2048 ids (use topk= for a wide
+    distribution)`** (the cap is also advertised as `score_max_candidate_ids`);
+  - **a repeated `cand=` key -> `ERR bad request: duplicate cand key`** - deliberately NOT `topk`'s
+    last-value-wins: a silently dropped candidate list would answer a different question;
+  - an id outside `[0, n_vocab)` is refused by the same check as the prompt ids, with the same text
+    `ERR a token id is outside the vocabulary`.
+- Any other key is refused with `ERR` - a silently ignored key typo would answer a different question than
+  the one asked. (Unlike `GEN`, which skips the conversation-cache keys, `SCORE` has no cache keys to skip.)
 - Bad syntax, an out-of-vocabulary id, or a prompt longer than the context is answered `ERR ...` and the
   engine keeps serving - the same contract as `GEN`.
+- **Backward compatibility (hard criterion)**: a request **without** `cand=` is answered **byte-for-byte
+  identically** to the P2-1 engine - the `LOGPROBS` line, the `DONE` fields and the stderr diagnostic. The
+  only pre-existing text P2R-1 changes is the fallback `ERR expected: ...` line, which now shows
+  `SCORE <id,id,...> [topk=N] [cand=id,id,...]`. The same-request cross-check against the old exe was
+  **run in P2R-2 (2026-10-15)**: at three same-position requests (cold P_short, warm#1/warm#2 P_long) the
+  old (`6dee0c66...`) and new (`d0321a98...`) exes printed **byte-identical `LOGPROBS` lines**; `DONE`
+  and the stderr diagnostic are byte-identical outside their timing fields (`prompt_ms`/`decode_ms`).
 
 ### Semantics (implemented exactly as listed)
 
@@ -118,7 +167,9 @@ SCORE <id,id,...> [topk=N]
    generated**: the sampler is not created nor advanced.
 2. The **last position's logits** are taken (`llama_get_logits_ith(ctx, -1)`; the context runs with
    `n_outputs_max = 1`). The row is the distribution for the token that would follow the last prompt token.
-3. One line is printed:
+   **One** log-softmax over the full vocabulary is computed from it; everything below reads that row and
+   that lse - there is no second forward/prefill for any consumer.
+3. Unless `topk=0` was requested, one line is printed:
 
    ```text
    LOGPROBS <pos> <k> <id>:<logprob> <id>:<logprob> ...
@@ -133,6 +184,18 @@ SCORE <id,id,...> [topk=N]
      decimals (`%.4f`). The denominator is **every** one of the `n_vocab` logits - the top-k never
      renormalizes, so `sum` of any selection need not be 1. The selection itself is the `k` largest logits,
      ties broken by ascending id (deterministic order).
+3b. If the request carried `cand=`, one line is printed after `LOGPROBS` (if any) and before `DONE`:
+
+   ```text
+   CANDLOGPROBS <pos> <n> <id>:<logprob> <id>:<logprob> ...
+   ```
+
+   - `<n>`: the number of requested candidates (1..2048, `len(cand)` of the command).
+   - order: **exactly the request's `cand=` order** - no sort, no dedup (duplicates were refused at parse
+     time), so pair `j` in the answer corresponds to candidate `j` in the command.
+   - `<pos>` and each `<logprob>`: the same `pos`, the same row and the **same full-vocab lse** as the
+     `LOGPROBS` line (`logprob = logits[id] - lse`, `%.4f`) - a requested id is answered whatever its top-k
+     rank, including ids far below the top-k; the value is not renormalized over the candidate set.
 4. Then the request's completion line, same field order as `GEN` (`serve/server.py::_parse_done`):
 
    ```text
@@ -149,13 +212,17 @@ SCORE <id,id,...> [topk=N]
    `SCORE` - always starts fresh, and `reused` stays 0. A `SCORE` has no observable side effect beyond its
    own answer (it does not advance any sampler; there is none).
 6. Error handling, all `ERR ...` and the service continues:
-   - malformed line / two id lists / unknown key / non-positive `topk` -> `ERR bad request: ...`;
-   - an id outside `[0, n_vocab)` -> `ERR a token id is outside the vocabulary`;
+   - malformed line / two id lists / unknown key / negative `topk` -> `ERR bad request: ...`;
+   - `topk=0` without `cand=` -> `ERR bad request: topk` (unchanged legacy text);
+   - malformed `cand=` (empty, non-decimal, negative), duplicate cand id, duplicate `cand=` key,
+     more than 2048 cand ids -> `ERR bad request: ...` (texts above);
+   - an id outside `[0, n_vocab)` (prompt **or** `cand`) -> `ERR a token id is outside the vocabulary`;
    - more prompt tokens than the context -> `ERR prompt (...) exceeds the context (...)`;
    - prefill failure or an unreturned prompt workspace -> `ERR prefill failed` / `ERR the prompt workspace
      loan was not returned`;
    - a NaN anywhere in the head logits -> `ERR score: the head logits are not all finite` (the same
      finite-logits invariant `GEN` enforces as `DONE ... nonfinite`; `SCORE` does not emit a partial answer).
+   A `STOP` during the read answers `DONE ... cancel` with neither `LOGPROBS` nor `CANDLOGPROBS`.
 
 ### Level of approximation
 
@@ -190,6 +257,18 @@ No HTTP server is implemented in P2-1. The intended mapping for the documented s
    as such in the endpoint); the following `DONE ... score` line is the usage/timing envelope
    (`prompt_tokens`, `prompt_ms`, `prompt_read`). `ERR` lines map to a 4xx with the message.
 3. State: (b) independent - the endpoint is stateless; a `/v1/score` call never affects a later request.
+
+P2R-1 note: the service now exists (P2-3, `tools/score_api.py`). It maps `/v1/score` `candidates` to
+`SCORE <ids> topk=N cand=...` and `/v1/decisions` to `SCORE <ids> topk=0 cand=...` (one prefill, no top-k
+dependency); the payload semantics (`full_vocab_probability` / `conditional_probability` / always-present
+`label_mass` / no business confidence) are specified in `docs/backends/qwen35_llama_score_api_design.md`.
+
+P2R-3c note: the service also exposes this document's session commands - `/v1/score` and `/v1/decisions`
+accept `keep` (engine `SCORE ... keep=1`), `POST /v1/continue` maps to `GEN <max_new> cont=1 [<ids>]`, and
+`GET /v1/session` maps to one read-only `STATE`. `/v1/capabilities` still passes `state_keep_score` /
+`session_continue` through unchanged. On the official q36 backend, whose protocol declares no session
+commands, those endpoints answer an explicit `501` (never a silent substitution). Full contract: session
+endpoints, lifecycle table and error mapping in `docs/backends/qwen35_llama_score_api_design.md` §2.
 
 ## Build record (P2-1)
 
@@ -279,3 +358,17 @@ documented ("not determined").
 Research repo `results/opencode-execution/strata-unified-p2-2-caps-score-gpu/`: `job/`, `audit/`, `result/`
 (gpu-lock results, digests `digest-N1.json`/`digest-N2.json` with per-check verdicts), `raw/raw-N1/child_00.log`
 (full transcript), `batch/samples-N1.jsonl` (10 s RAM/GPU sampling), `pre-env/`, `batch/state-*`.
+
+P2R-1 note (2026-10-15, branch `phase2r/review-gaps`): the `cand=`/`topk=0` extension and the two
+`score_*` capability fields are implemented in `src/program/qwen35_serve.cpp` (parse, `CANDLOGPROBS` block,
+CAPS builder); the explicit candidates read the **same** last-position row and the **same** full-vocab lse the
+`LOGPROBS` line uses - one prefill, no second forward. New exe `sha256=d0321a98ab1908ef3c0f0d91b1b6e6c42758d79594222c6def425bf406a4bc09`
+(139,257,344 B). This task itself was **0 GPU**. **P2R-2 (2026-10-15) has since run the GPU cross-check and it
+passed**: old-vs-new exe `LOGPROBS` lines byte-identical at equal positions (cold/warm1/warm2), `cand=`
+values byte-identical to the same-process `LOGPROBS` line, explicit out-of-top-k ids finite and `<= 0` with
+candidate-set mass `<= 1`, `SCORE` top-1 == the greedy `GEN 1` first token on both prompts, and the
+`/v1/decisions` payload (always-present `label_mass`, three probability scopes, `calibrated:false`, no
+confidence/threshold field) verified against the live engine. Evidence:
+`results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up in
+`docs/backends/qwen35_llama_score_api_e2e.md` ("P2R-2: GPU validation of the P2R-1 additions"). The
+P2-1/P2-2 captures above were taken from pre-P2R-1 builds and remain verbatim history.

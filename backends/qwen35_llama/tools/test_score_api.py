@@ -20,9 +20,11 @@ from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
+import backend_adapters  # noqa: E402
 import score_api  # noqa: E402
 
 STUB = TOOLS / "stub_engine.py"
+OFFICIAL_STUB = TOOLS / "stub_engine_official_q36.py"
 PYTHON = sys.executable
 
 
@@ -55,17 +57,28 @@ def raw_post(port, path, data):
 
 class StubService:
     def __init__(self, vocab=64, drop_scores=0, score_delay_ms=0, timeout=30.0,
-                 drain_timeout=1.0, tokenizer_model=None):
-        argv = [PYTHON, "-B", "-u", str(STUB), "--vocab", str(vocab)]
+                 drain_timeout=1.0, tokenizer_model=None, cand_mode=None, backend=None, stub=None,
+                 fault_mode=None):
+        stub = stub or STUB
+        argv = [PYTHON, "-B", "-u", str(stub), "--vocab", str(vocab)]
         if drop_scores:
             argv += ["--drop-scores", str(drop_scores)]
         if score_delay_ms:
             argv += ["--score-delay-ms", str(score_delay_ms)]
+        if cand_mode:
+            argv += ["--cand-mode", cand_mode]
+        if fault_mode:
+            argv += ["--fault-mode", fault_mode]
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=str(TOOLS))
         self.link = score_api.EngineLink(self.proc.stdin, self.proc.stdout, proc=self.proc)
-        self.link.wait_ready(15.0)
-        self.service = score_api.ScoreService(self.link, engine_path=str(STUB), timeout=timeout,
-                                              drain_timeout=drain_timeout, tokenizer_model=tokenizer_model)
+        ready = self.link.wait_ready(15.0)
+        adapter = None
+        if backend is not None:
+            adapter = score_api.get_adapter(backend)
+            adapter.note_ready(ready)
+        self.service = score_api.ScoreService(self.link, engine_path=str(stub), timeout=timeout,
+                                              drain_timeout=drain_timeout, tokenizer_model=tokenizer_model,
+                                              backend=adapter)
         self.httpd = score_api.start_http(self.service, "127.0.0.1", 0)
         self.port = self.httpd.server_address[1]
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
@@ -161,6 +174,101 @@ class ScoreTests(unittest.TestCase):
         self.assertIn("not found", body["error"])
 
 
+class CandidateScoreTests(unittest.TestCase):
+    """P2R-1: the optional explicit `candidates` field of /v1/score."""
+
+    def setUp(self):
+        self.env = StubService()
+        self.addCleanup(self.env.close)
+
+    def test_candidates_order_preserved_and_same_row(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1, 2], "topk": 64, "candidates": [5, 1, 3]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [5, 1, 3])
+        top = {pair["id"]: pair["logprob"] for pair in body["logprobs"]}
+        for candidate in body["candidates"]:
+            # the same row and the same full-vocab lse as LOGPROBS: the values are identical
+            self.assertEqual(candidate["logprob"], top[candidate["id"]])
+
+    def test_candidate_outside_topk_still_returned(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "topk": 2, "candidates": [50]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [50])
+        self.assertLess(body["candidates"][0]["logprob"], body["logprobs"][-1]["logprob"])
+
+    def test_topk0_with_candidates_answers_only_candidates(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [3], "topk": 0, "candidates": [2, 4]})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["logprobs"], [])
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [2, 4])
+        self.assertEqual(body["pos"], 0)
+
+    def test_topk0_without_candidates_422(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "topk": 0})
+        self.assertEqual(status, 422)
+        self.assertIn("candidates", body["error"])
+
+    def test_candidates_and_topk_coexist(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "topk": 3, "candidates": [10]})
+        self.assertEqual(status, 200)
+        self.assertEqual(len(body["logprobs"]), 3)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [10])
+
+    def test_candidates_duplicate_400(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "candidates": [2, 2]})
+        self.assertEqual(status, 400)
+        self.assertIn("distinct", body["error"])
+
+    def test_candidates_over_limit_400(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "candidates": list(range(2049))})
+        self.assertEqual(status, 400)
+        self.assertIn("2048", body["error"])
+
+    def test_candidates_outside_vocabulary_engine_422(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "candidates": [999999]})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIn("outside the vocabulary", body["error"])
+
+
+class CandidateProtocolViolationTests(unittest.TestCase):
+    """P2R-1: a malformed CANDLOGPROBS answer is a protocol violation, never passed on."""
+
+    def _env(self, mode):
+        env = StubService(cand_mode=mode)
+        self.addCleanup(env.close)
+        return env
+
+    def test_count_mismatch_502(self):
+        env = self._env("count-bump")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3]})
+        self.assertEqual(status, 502)
+        self.assertIn("CANDLOGPROBS", body["error"])
+
+    def test_unsolicited_line_502(self):
+        env = self._env("unsolicited")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1]})
+        self.assertEqual(status, 502)
+        self.assertIn("unrequested", body["error"])
+
+    def test_two_lines_502(self):
+        env = self._env("twice")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3]})
+        self.assertEqual(status, 502)
+        self.assertIn("two CANDLOGPROBS", body["error"])
+
+    def test_wrong_id_order_502(self):
+        env = self._env("swap")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3, 9]})
+        self.assertEqual(status, 502)
+        self.assertIn("order", body["error"])
+
+
 class DecisionsTests(unittest.TestCase):
     def setUp(self):
         self.env = StubService()
@@ -184,7 +292,7 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(status, 422)
         self.assertIn("distinct", body["error"])
 
-    def test_choice_normal_omits_label_mass(self):
+    def test_choice_normal_label_mass_always_returned(self):
         status, body, _ = self.env.post("/v1/decisions",
                                         {"kind": "choice", "prompt_ids": [1, 2], "candidates": [[0], [1], [2]]})
         self.assertEqual(status, 200)
@@ -194,11 +302,45 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(body["pos"], 1)
         self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[0], [1], [2]])
         for candidate in body["candidates"]:
-            self.assertAlmostEqual(candidate["probability"], math.exp(candidate["logprob"]), places=12)
+            self.assertAlmostEqual(candidate["full_vocab_probability"], math.exp(candidate["logprob"]),
+                                   places=12)
+            self.assertAlmostEqual(candidate["probability"], candidate["full_vocab_probability"], places=15)
             self.assertLessEqual(candidate["logprob"], 0.0)
-        self.assertNotIn("label_mass", body)
-        self.assertIn("label_mass_omitted", body)
-        self.assertIn("not a closed", body["label_mass_omitted"])
+        mass = body["label_mass"]
+        self.assertAlmostEqual(mass, sum(candidate["full_vocab_probability"] for candidate in body["candidates"]),
+                               places=12)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertEqual(body["label_mass_tolerance"], score_api.LABEL_MASS_TOLERANCE)
+        self.assertIs(body["calibrated"], False)
+        self.assertNotIn("label_mass_omitted", body)
+        for candidate in body["candidates"]:
+            self.assertAlmostEqual(candidate["conditional_probability"],
+                                   candidate["full_vocab_probability"] / mass, places=12)
+        scopes = body["probability_scopes"]
+        self.assertEqual(set(scopes), {"full_vocab_probability", "conditional_probability",
+                                       "business_confidence"})
+        for text in scopes.values():
+            self.assertIsInstance(text, str)
+            self.assertTrue(text)
+
+    def test_low_mass_has_no_confidence_fields(self):
+        # mass ~= 0.27 for ids 1 and 5 in the stub's fixed distribution: clearly below the tolerance,
+        # and the payload must say so without inventing any confidence or threshold.
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "choice", "prompt_ids": [1], "candidates": [[1], [5]]})
+        self.assertEqual(status, 200)
+        self.assertLess(body["label_mass"], 0.5)
+        self.assertGreater(body["label_mass"], 0.0)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertIs(body["calibrated"], False)
+        for candidate in body["candidates"]:
+            self.assertIsNotNone(candidate["conditional_probability"])
+            self.assertGreater(candidate["conditional_probability"], candidate["full_vocab_probability"])
+        for key in body:
+            self.assertNotIn("confidence", key)
+            self.assertNotIn("threshold", key)
+        for candidate in body["candidates"]:
+            self.assertNotIn("confidence", " ".join(candidate))
 
     def test_score_normal(self):
         status, body, _ = self.env.post("/v1/decisions",
@@ -207,7 +349,27 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(body["kind"], "score")
         self.assertEqual(len(body["candidates"]), 2)
         self.assertEqual(body["generated_tokens"], 0)
-        self.assertIn("label_mass_omitted", body)
+        self.assertIn("label_mass", body)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertNotIn("label_mass_omitted", body)
+
+    def test_yes_no_payload_mass_and_scopes(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "yes_no", "prompt_ids": [7], "candidates": [[0], [1]]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[0], [1]])
+        self.assertIn("label_mass", body)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertIs(body["calibrated"], False)
+        self.assertEqual(len(body["probability_scopes"]), 3)
+
+    def test_candidate_outside_vocabulary_422(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "choice", "prompt_ids": [1],
+                                         "candidates": [[999999], [1]]})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIn("outside the vocabulary", body["error"])
 
     def test_yes_no_normal_and_arity(self):
         status, body, _ = self.env.post("/v1/decisions",
@@ -220,11 +382,14 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(status, 422)
         self.assertIn("exactly two", body["error"])
 
-    def test_candidate_outside_topk_rejected(self):
+    def test_candidate_outside_topk_still_scored(self):
+        # P2R-1 semantic change: explicit candidate scoring has no top-k dependency, so ids outside the
+        # distribution's top-k are answered (the old "outside the engine's returned top-N" 422 is gone).
         status, body, _ = self.env.post("/v1/decisions",
                                         {"kind": "choice", "prompt_ids": [1], "candidates": [[7], [8]]})
-        self.assertEqual(status, 422)
-        self.assertIn("top-", body["error"])
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[7], [8]])
+        self.assertIn("label_mass", body)
 
 
 class FullCoverTests(unittest.TestCase):
@@ -241,6 +406,9 @@ class FullCoverTests(unittest.TestCase):
         self.assertIn("label_mass", body)
         self.assertNotIn("label_mass_omitted", body)
         self.assertLessEqual(abs(body["label_mass"] - 1.0), score_api.LABEL_MASS_TOLERANCE)
+        self.assertIs(body["label_mass_covers_distribution"], True)
+        total_conditional = sum(candidate["conditional_probability"] for candidate in body["candidates"])
+        self.assertAlmostEqual(total_conditional, 1.0, places=9)
 
 
 class BusyTests(unittest.TestCase):
@@ -280,6 +448,120 @@ class TimeoutTests(unittest.TestCase):
         self.assertIn("dead", body["error"])
 
 
+class LinkQuarantineTests(unittest.TestCase):
+    """P2R-4b: an EngineProtocolError quarantines the link (engine killed, service dead, the
+    pipe is never read again); a legitimate engine `ERR` is NOT a protocol error."""
+
+    def _env(self, **kwargs):
+        env = StubService(**kwargs)
+        self.addCleanup(env.close)
+        return env
+
+    def _expect_quarantine(self, env, path, payload, needle):
+        status, body, _ = env.post(path, payload)
+        self.assertEqual(status, 502, body)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIs(body["quarantined"], True)
+        self.assertIn(needle, body["error"])
+        self.assertIn("quarantined after this protocol error", body["error"])
+        self.assertIn("restart the service", body["error"])
+        return body
+
+    def _expect_dead(self, env, method, path, payload=None):
+        status, body, _ = request(env.port, method, path, payload)
+        self.assertEqual(status, 502, body)
+        self.assertIs(body["quarantined"], True)
+        self.assertIn("dead", body["error"])
+        self.assertIn("quarantined", body["error"])
+        self.assertIn("restart the service", body["error"])
+        return body
+
+    def test_short_logprobs_quarantines_keeping_original_text(self):
+        env = self._env(fault_mode="short-logprobs")
+        body = self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1, 2], "topk": 3},
+                                       "LOGPROBS declares 3 pairs but has 2")
+        self.assertEqual(body["error_source"], "engine")
+
+    def test_junk_logprobs_quarantines(self):
+        env = self._env(fault_mode="junk-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2},
+                                "malformed LOGPROBS line")
+
+    def test_all_engine_endpoints_502_after_quarantine(self):
+        env = self._env(fault_mode="short-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "LOGPROBS")
+        for method, path, payload in (
+                ("POST", "/v1/score", {"prompt_ids": [1]}),
+                ("POST", "/v1/decisions", {"kind": "choice", "prompt_ids": [1],
+                                           "candidates": [[0], [1]]}),
+                ("POST", "/v1/continue", {"max_new": 1}),
+                ("GET", "/v1/session", None),
+                ("GET", "/v1/capabilities", None)):
+            self._expect_dead(env, method, path, payload)
+
+    def test_engine_process_terminated(self):
+        env = self._env(fault_mode="short-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "LOGPROBS")
+        deadline = time.monotonic() + 10.0
+        while env.proc.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertIsNotNone(env.proc.poll(),
+                             "the quarantined engine process must have been terminated")
+
+    def test_short_done_quarantines(self):
+        env = self._env(fault_mode="short-done")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "short DONE")
+        self._expect_dead(env, "GET", "/v1/capabilities")
+
+    def test_unrequested_extra_line_quarantines(self):
+        env = self._env(fault_mode="extra-line")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1]}, "unrequested CANDLOGPROBS")
+        self._expect_dead(env, "POST", "/v1/score", {"prompt_ids": [1]})
+
+    def test_cand_mode_count_bump_now_quarantines(self):
+        # Task-scoped behaviour change: this pre-existing distortion mode answered a 502 but did
+        # not touch the link; it is an EngineProtocolError, so it now quarantines as well.
+        env = self._env(cand_mode="count-bump")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "candidates": [3]},
+                                "CANDLOGPROBS")
+        self._expect_dead(env, "POST", "/v1/score", {"prompt_ids": [1]})
+
+    def test_late_legal_lines_are_never_read(self):
+        # The stub emits the mismatched line and then the complete legal answer right behind it;
+        # the quarantine must terminate the link before a later request can consume any of it.
+        env = self._env(fault_mode="late-legal")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1, 2], "topk": 3},
+                                "LOGPROBS declares 3 pairs but has 2")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1, 2], "topk": 3})
+        self.assertEqual(status, 502, body)
+        self.assertNotIn("logprobs", body)
+        self.assertNotIn("pos", body)
+        self.assertIn("dead", body["error"])
+
+    def test_business_engine_err_is_not_quarantined(self):
+        env = self._env()
+        status, body, _ = env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error"], "cont=1 needs an armed session")
+        self.assertEqual(body["error_source"], "engine")
+        self.assertNotIn("quarantined", body)
+        status, body, _ = env.get("/v1/session")
+        self.assertEqual(status, 200)
+        self.assertIs(body["armed"], False)
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [999999]})
+        self.assertEqual(status, 422)
+        self.assertIn("outside the vocabulary", body["error"])
+        self.assertEqual(env.get("/v1/capabilities")[0], 200)
+
+    def test_continue_protocol_error_quarantines(self):
+        env = self._env(fault_mode="gen-extra-line")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1, 2, 3], "topk": 2, "keep": True})
+        self.assertEqual(status, 200, body)
+        self._expect_quarantine(env, "/v1/continue", {"max_new": 2},
+                                "unexpected line during GEN cont=1")
+        self._expect_dead(env, "GET", "/v1/session")
+
+
 class CliTests(unittest.TestCase):
     def test_cli_start_engine_end_to_end(self):
         command = [PYTHON, "-B", "-u", str(TOOLS / "score_api.py"),
@@ -310,6 +592,321 @@ class CliTests(unittest.TestCase):
         self.assertEqual(body["generated_tokens"], 0)
         self.assertEqual(len(body["logprobs"]), 5)
         self.assertEqual(body["pos"], 2)
+
+
+class ContinueSessionTests(unittest.TestCase):
+    """P2R-3c: keep=1 state-keeping score, /v1/continue and GET /v1/session (qwen35 stub)."""
+
+    def setUp(self):
+        self.env = StubService()
+        self.addCleanup(self.env.close)
+
+    def arm(self, ids=(1, 2, 3)):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": list(ids), "topk": 2, "keep": True})
+        self.assertEqual(status, 200, body)
+        return body
+
+    def session(self):
+        status, body, _ = self.env.get("/v1/session")
+        self.assertEqual(status, 200, body)
+        return body
+
+    def test_score_keep_true_arms_session(self):
+        body = self.arm([1, 2, 3])
+        self.assertIs(body["keep"], True)
+        session = self.session()
+        self.assertIs(session["armed"], True)
+        self.assertIs(session["engine_state"]["session"], True)
+        self.assertEqual(session["engine_state"]["origin"], "score-keep")
+        self.assertEqual(session["engine_state"]["pos"], 3)
+        self.assertIsNone(session["engine_state"]["path"])
+        self.assertIsNone(session["engine_state"]["file_bytes"])
+
+    def test_score_without_keep_clears_session(self):
+        self.arm()
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "topk": 1})
+        self.assertEqual(status, 200)
+        self.assertIs(body["keep"], False)
+        session = self.session()
+        self.assertIs(session["armed"], False)
+        self.assertIs(session["engine_state"]["session"], False)
+        self.assertIsNone(session["engine_state"]["origin"])
+        self.assertEqual(session["engine_state"]["pos"], 0)
+
+    def test_score_keep_requires_boolean(self):
+        for value in (1, 0, "true", None, [True]):
+            status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "keep": value})
+            self.assertEqual(status, 400, value)
+            self.assertIn("keep", body["error"])
+
+    def test_decisions_keep_true_keeps_payload_and_arms(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "yes_no", "prompt_ids": [1, 2],
+                                         "candidates": [[0], [1]], "keep": True})
+        self.assertEqual(status, 200)
+        self.assertIs(body["keep"], True)
+        self.assertIn("label_mass", body)
+        self.assertIs(body["calibrated"], False)
+        self.assertEqual(set(body["probability_scopes"]),
+                         {"full_vocab_probability", "conditional_probability", "business_confidence"})
+        for candidate in body["candidates"]:
+            self.assertIn("full_vocab_probability", candidate)
+            self.assertIn("conditional_probability", candidate)
+            self.assertIn("probability", candidate)
+        session = self.session()
+        self.assertIs(session["armed"], True)
+        self.assertEqual(session["engine_state"]["origin"], "score-keep")
+        self.assertEqual(session["engine_state"]["pos"], 2)
+
+    def test_decisions_without_keep_clears_session(self):
+        self.arm()
+        status, _, _ = self.env.post("/v1/decisions",
+                                     {"kind": "choice", "prompt_ids": [1], "candidates": [[0], [1]]})
+        self.assertEqual(status, 200)
+        self.assertIs(self.session()["armed"], False)
+
+    def test_decisions_keep_requires_boolean(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "choice", "prompt_ids": [1],
+                                         "candidates": [[0], [1]], "keep": "yes"})
+        self.assertEqual(status, 400)
+        self.assertIn("keep", body["error"])
+
+    def test_continue_pure_and_text_null_without_tokenizer(self):
+        self.arm([1, 2, 3])
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 5})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["tokens"], [0, 1, 2, 3, 4])
+        self.assertIsNone(body["text"])
+        self.assertEqual(body["finish"], "length")
+        self.assertEqual(body["reused"], 3)
+        self.assertEqual(body["prompt_read"], 0)
+        self.assertEqual(body["prompt_tokens"], 0)
+        self.assertEqual(body["generated_tokens"], 5)
+        self.assertEqual(body["usage"]["prompt_read"], 0)
+        self.assertIs(self.session()["armed"], True)
+
+    def test_continue_with_ids_appends_at_cursor(self):
+        self.arm([1, 2, 3])
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 2, "ids": [5, 6]})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["tokens"], [0, 1])
+        self.assertEqual(body["reused"], 3)
+        self.assertEqual(body["prompt_read"], 2)
+        self.assertEqual(body["prompt_tokens"], 2)
+        session = self.session()
+        self.assertIs(session["armed"], True)
+        self.assertEqual(session["engine_state"]["pos"], 3 + 2 + 2)
+
+    def test_continue_without_armed_session_is_422_verbatim(self):
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertEqual(body["error"], "cont=1 needs an armed session")
+
+    def test_continue_multi_round_stays_armed(self):
+        self.arm([1, 2, 3])
+        status, first, _ = self.env.post("/v1/continue", {"max_new": 4})
+        self.assertEqual(status, 200)
+        self.assertEqual(first["reused"], 3)
+        status, second, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 200)
+        self.assertEqual(second["reused"], 3 + 4)
+        self.assertIs(self.session()["armed"], True)
+
+    def test_continue_max_new_validation_400(self):
+        for payload in ({}, {"max_new": 0}, {"max_new": -1}, {"max_new": "4"}, {"max_new": True}):
+            status, body, _ = self.env.post("/v1/continue", payload)
+            self.assertEqual(status, 400, payload)
+            self.assertIn("max_new", body["error"])
+
+    def test_continue_sampling_fields_400(self):
+        for name, value in (("temperature", 0.7), ("seed", 1), ("top_p", 0.9), ("min_p", 0.1),
+                            ("top_k", 5)):
+            status, body, _ = self.env.post("/v1/continue", {"max_new": 1, name: value})
+            self.assertEqual(status, 400, name)
+            self.assertIn(name, body["error"])
+            self.assertIn("not implemented", body["error"])
+
+    def test_continue_unknown_field_400(self):
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1, "n": 2})
+        self.assertEqual(status, 400)
+        self.assertIn("unknown field", body["error"])
+
+    def test_continue_ids_validation_400(self):
+        for value in ("5", [True], [-1], {}):
+            status, body, _ = self.env.post("/v1/continue", {"max_new": 1, "ids": value})
+            self.assertEqual(status, 400, value)
+
+    def test_session_readonly_and_fresh_state(self):
+        fresh = self.session()
+        self.assertIs(fresh["armed"], False)
+        self.assertIs(fresh["engine_state"]["session"], False)
+        self.assertEqual(fresh["engine_state"]["pos"], 0)
+        self.assertEqual(self.session(), fresh)
+        self.arm([7, 8])
+        before = self.session()
+        self.assertEqual(self.session(), before)
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["reused"], 2)
+
+    def test_capabilities_expose_p2r3a_engine_fields(self):
+        status, body, _ = self.env.get("/v1/capabilities")
+        self.assertEqual(status, 200)
+        self.assertIs(body["state_keep_score"], True)
+        self.assertIs(body["session_continue"], True)
+
+
+ROUTES_501_TEXTS = {
+    "POST /v1/score": (
+        "/v1/score is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no SCORE command, so next-token logprobs cannot be read. This service refuses "
+        "explicitly instead of substituting another operation (it never degrades /v1/score into "
+        "generation). Use the qwen35_llama backend for /v1/score."),
+    "POST /v1/decisions": (
+        "/v1/decisions is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no SCORE command, so next-token logprobs cannot be read. This service refuses "
+        "explicitly instead of substituting another operation (it never degrades /v1/decisions "
+        "into generation). Use the qwen35_llama backend for /v1/decisions."),
+    "POST /v1/continue": (
+        "/v1/continue is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+        "continued nor reported. This service refuses explicitly instead of substituting another "
+        "operation. Use the qwen35_llama backend for /v1/continue."),
+    "GET /v1/session": (
+        "/v1/session is not implemented on the official_q36 backend: its protocol (GEN/STOP/QUIT) "
+        "has no session commands (no STATE, no 'GEN ... cont=1'), so a session can be neither "
+        "continued nor reported. This service refuses explicitly instead of substituting another "
+        "operation. Use the qwen35_llama backend for /v1/session."),
+}
+
+
+class RoutesDiscoveryTests(unittest.TestCase):
+    """P2R-5: GET /v1/routes - read-only service discovery over the declarative matrix."""
+
+    def setUp(self):
+        self.env = StubService(backend="qwen35_llama", stub=STUB)
+        self.addCleanup(self.env.close)
+
+    def test_routes_matches_capabilities_and_covers_both_backends(self):
+        status, routes, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        self.assertEqual(routes["active_backend"], "qwen35_llama")
+        self.assertEqual(routes["backend_source"], "unspecified")
+        items = routes["routes"]
+        expected = {(endpoint, backend) for endpoint in backend_adapters.ENDPOINTS
+                    for backend in backend_adapters.SUPPORTED_BACKENDS}
+        self.assertEqual({(item["endpoint"], item["backend"]) for item in items}, expected)
+        by_pair = {(item["endpoint"], item["backend"]): item for item in items}
+        qwen_service = (backend_adapters.SCORE_ENDPOINT, "qwen35_llama")
+        official_service = (backend_adapters.SCORE_ENDPOINT, "official_q36")
+        self.assertIs(by_pair[qwen_service]["supported"], True)
+        self.assertIs(by_pair[qwen_service]["in_service"], True)
+        self.assertIsNone(by_pair[qwen_service]["refusal_text"])
+        self.assertIs(by_pair[official_service]["supported"], False)
+        self.assertEqual(by_pair[official_service]["refusal_status"], 501)
+        self.assertEqual(by_pair[official_service]["refusal_text"], ROUTES_501_TEXTS["POST /v1/score"])
+        status, caps, _ = self.env.get("/v1/capabilities")
+        self.assertEqual(status, 200)
+        self.assertEqual(caps["active_backend"], routes["active_backend"])
+        self.assertEqual(caps["backend"], routes["active_backend"])
+
+    def test_routes_is_read_only(self):
+        status, _, _ = self.env.post("/v1/score", {"prompt_ids": [1, 2], "keep": True})
+        self.assertEqual(status, 200)
+        status, session_before, _ = self.env.get("/v1/session")
+        self.assertEqual(status, 200)
+        self.assertIs(session_before["armed"], True)
+        status, first, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        status, second, _ = self.env.get("/v1/routes")
+        self.assertEqual(second, first)
+        status, session_after, _ = self.env.get("/v1/session")
+        self.assertEqual(session_after, session_before)
+
+    def test_routes_get_only(self):
+        status, body, _ = self.env.post("/v1/routes", {})
+        self.assertEqual(status, 404)
+        self.assertIn("not found", body["error"])
+        status, body, _ = self.env.get("/v1/routes/extra")
+        self.assertEqual(status, 404)
+        self.assertIn("not found", body["error"])
+
+
+class OfficialRoutesTests(unittest.TestCase):
+    """P2R-5: the matrix on official_q36 - routes still 200, refused cells still exact 501s."""
+
+    def setUp(self):
+        self.env = StubService(backend="official_q36", stub=OFFICIAL_STUB)
+        self.addCleanup(self.env.close)
+
+    def test_routes_200_supported_false_and_501_spot_check(self):
+        status, routes, _ = self.env.get("/v1/routes")
+        self.assertEqual(status, 200)
+        self.assertEqual(routes["active_backend"], "official_q36")
+        by_pair = {(item["endpoint"], item["backend"]): item for item in routes["routes"]}
+        for endpoint in (backend_adapters.SCORE_ENDPOINT, backend_adapters.SCORE_CANDIDATES_ENDPOINT,
+                         backend_adapters.SCORE_KEEP_ENDPOINT, backend_adapters.DECISIONS_ENDPOINT,
+                         backend_adapters.CONTINUE_ENDPOINT, backend_adapters.SESSION_ENDPOINT):
+            with self.subTest(endpoint=endpoint):
+                item = by_pair[(endpoint, "official_q36")]
+                self.assertIs(item["supported"], False)
+                self.assertIs(item["in_service"], True)
+                self.assertEqual(item["refusal_status"], 501)
+        # Spot-check two refused cells through the real HTTP path.
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1]})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error"], by_pair[(backend_adapters.SCORE_ENDPOINT, "official_q36")]["refusal_text"])
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error"],
+                         by_pair[(backend_adapters.CONTINUE_ENDPOINT, "official_q36")]["refusal_text"])
+
+    def test_501_texts_exactly_unchanged(self):
+        cases = ((backend_adapters.SCORE_ENDPOINT, "POST", "/v1/score", {}),
+                 (backend_adapters.DECISIONS_ENDPOINT, "POST", "/v1/decisions", {}),
+                 (backend_adapters.CONTINUE_ENDPOINT, "POST", "/v1/continue", {}),
+                 (backend_adapters.SESSION_ENDPOINT, "GET", "/v1/session", None))
+        for endpoint, method, path, payload in cases:
+            with self.subTest(endpoint=endpoint):
+                if method == "GET":
+                    status, body, _ = self.env.get(path)
+                else:
+                    status, body, _ = self.env.post(path, payload)
+                self.assertEqual(status, 501)
+                self.assertEqual(body["error_source"], "service")
+                self.assertEqual(body["error"], ROUTES_501_TEXTS[endpoint])
+
+
+class OfficialBackendSessionTests(unittest.TestCase):
+    """P2R-3c: the official q36 protocol has no session commands -> explicit 501."""
+
+    def setUp(self):
+        self.env = StubService(backend="official_q36", stub=OFFICIAL_STUB)
+        self.addCleanup(self.env.close)
+
+    def test_continue_501(self):
+        status, body, _ = self.env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error_source"], "service")
+        self.assertIn("/v1/continue", body["error"])
+        self.assertIn("official_q36", body["error"])
+        self.assertIn("STATE", body["error"])
+
+    def test_session_501(self):
+        status, body, _ = self.env.get("/v1/session")
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error_source"], "service")
+        self.assertIn("/v1/session", body["error"])
+        self.assertIn("official_q36", body["error"])
+
+    def test_score_keep_501(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "keep": True})
+        self.assertEqual(status, 501)
+        self.assertEqual(body["error_source"], "service")
+        self.assertIn("/v1/score", body["error"])
+        self.assertIn("official_q36", body["error"])
 
 
 if __name__ == "__main__":
