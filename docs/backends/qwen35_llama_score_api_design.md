@@ -1,10 +1,20 @@
-# qwen35_llama score API - `/v1/score`, `/v1/capabilities` and a minimal `/v1/decisions` (P2-3 subset; P2R-1 payload semantics)
+# qwen35_llama score API - `/v1/score`, `/v1/capabilities`, a minimal `/v1/decisions` and the session endpoints (P2-3 subset; P2R-1 payload semantics; P2R-3c session endpoints)
 
 Phase-2 backend-interface work, task **P2-3** (branch `phase2/backend-interface`), extended by **P2R-1**
-(branch `phase2r/review-gaps`). This adds a **thin HTTP service of our own** that drives one existing
-serve-protocol engine process (`CAPS` / `SCORE`) and exposes three endpoints. It is a **documented subset,
-not a protocol-compatible server**: nothing here claims SGLang compatibility, concurrency, streaming or
-batching.
+and **P2R-3c** (branch `phase2r/review-gaps`). This adds a **thin HTTP service of our own** that drives one
+existing serve-protocol engine process (`CAPS` / `SCORE` / `GEN` / `STATE`) and exposes the endpoints below.
+It is a **documented subset, not a protocol-compatible server**: nothing here claims SGLang compatibility,
+concurrency, streaming or batching.
+
+P2R-3c changes (2026-10-15): the service exposes the P2R-3a engine session contract. `/v1/score` and
+`/v1/decisions` gain an optional **`keep`** (state-keeping score: no reset, the session stays armed), the new
+**`POST /v1/continue`** continues an armed session (`GEN <max_new> cont=1 [<ids>]` - the carried prefix is
+not re-prefilled), and the new read-only **`GET /v1/session`** reports the engine's `STATE` verbatim plus the
+service's `armed` view. The GPU service session for these paths ran 2026-10-15 (8/8 steps `200`, one `hold`
+lease + compensation; evidence `results/opencode-execution/strata-unified-p2r3c-service-keep/`; write-up
+"P2R-3c - score→continue over the service" in `docs/backends/qwen35_llama_score_api_e2e.md`); that session
+was terminated abnormally **after** its evidence was written and was **not re-run** - the evidence, the
+working-tree code and this document are the same version.
 
 P2R-1 changes (2026-10-15): `/v1/score` gains an optional `candidates` field (explicit token-id scoring,
 with no top-k dependency); `/v1/decisions` is re-specified around **three named probability scopes** - the
@@ -32,7 +42,9 @@ engine run, no lease). Real-engine verification then happened in two steps: **P2
 against the real engine on GPU (`docs/backends/qwen35_llama_score_api_e2e.md`) with the pre-P2R-1 payload,
 and **P2R-2 (2026-10-15)** validated the P2R-1 additions (explicit candidates, the always-present
 `label_mass` payload, byte-compat of `cand=`-free requests) on the live engine - it **passed**; each
-numeric claim below that originates from the stub capture remains labelled as such.
+numeric claim below that originates from the stub capture remains labelled as such. The P2R-3c session
+endpoints got their real-engine service session on 2026-10-15 as well (all 8 steps `200`; see the header
+note and the e2e write-up).
 
 ## 1. Running the service
 
@@ -94,7 +106,10 @@ engine answers its own 17-format whitelist, see
 `docs/backends/qwen35_llama_capabilities_and_score.md`). `engine_sha256` is the SHA-256 of the engine file:
 in start mode it is the executable the service spawned; in attach mode it is the `--engine` path **if one was
 given**, otherwise `null`. The SHA is computed once and cached. Semantics of every passthrough field are the
-P2-1/P2-2 contract; this endpoint adds nothing to them and never invents a value.
+P2-1/P2-2 contract; this endpoint adds nothing to them and never invents a value. P2R-3c: the engine's
+session fields (`state_keep_score`, `session_continue` - both `true` on the qwen35_llama engine, P2R-3a)
+are passed through unchanged; the service adds no capability of its own for the session endpoints, and its
+`/v1/continue` / `/v1/session` gating reads the backend's command surface, not a fabricated flag.
 
 ### `POST /v1/score`
 
@@ -106,14 +121,16 @@ Request (exactly one of `prompt_ids` / `prompt`):
 | `prompt` | string | text prompt; needs `--tokenizer-model`, otherwise refused `501` |
 | `topk` | int >= 0 | how many distribution entries to return; default 5 (the engine's own default). `topk=0` is legal only together with `candidates` (and then no distribution is requested) |
 | `candidates` | list of int | **P2R-1, optional**: explicit token ids to score (order preserved, `<= 2048`, pairwise distinct); orthogonal to `topk` |
+| `keep` | bool | **P2R-3c, optional** (default `false`): state-keeping score - the engine command gains `keep=1`, the answer keeps every existing field and adds `"keep": true`; the session stays armed (see the session lifecycle below). Not a boolean -> `400` |
 
 The service sends exactly one engine command - `SCORE <ids> topk=<topk>` or, with candidates,
-`SCORE <ids> topk=<topk> cand=<ids>` - waits for `LOGPROBS` + `CANDLOGPROBS` (only the lines that were
-requested) + `DONE ... score` (ignoring the engine's `PP` progress lines), and answers:
+`SCORE <ids> topk=<topk> cand=<ids>`, plus ` keep=1` when `keep` is true - waits for `LOGPROBS` +
+`CANDLOGPROBS` (only the lines that were requested) + `DONE ... score` (ignoring the engine's `PP` progress
+lines), and answers:
 
 ```json
 {"logprobs": [{"id": 0, "logprob": -0.9328}, {"id": 1, "logprob": -1.4328}], "pos": 0,
- "full_vocab_softmax": true, "generated_tokens": 0,
+ "full_vocab_softmax": true, "generated_tokens": 0, "keep": false,
  "usage": {"prompt_tokens": 1, "prompt_ms": 1.0, "prompt_read": 1}}
 ```
 
@@ -131,6 +148,11 @@ requested) + `DONE ... score` (ignoring the engine's `PP` progress lines), and a
 - `usage`: the engine's `DONE` envelope (`prompt_tokens`, `prompt_ms` = prefill milliseconds, `prompt_read`;
   `prompt_read < prompt_tokens` only when a cancel ended the read part-way - this service never sends `STOP`
   except after a timeout, see 5).
+- `keep` (**P2R-3c**): always present, the request's `keep` value (`false` when omitted; a keep-free response
+  is otherwise unchanged). With `keep: true` the engine command carries `keep=1`: the prompt is appended at
+  the armed session's cursor (from 0 when none was armed) **without a reset** and the session stays armed
+  (`GET /v1/session` then reports `origin="score-keep"`). The next `/v1/continue` (or another keep-score)
+  builds on that cursor; any non-keep score/decision later clears the session (lifecycle table below).
 - No service-side cap on `topk`: it is passed to the engine, whose `k = min(topk, n_vocab)` still applies.
 - An out-of-vocabulary id (prompt or candidate) or an over-context prompt arrives as the engine's own `ERR`
   and is answered `422` with the message verbatim, `"error_source": "engine"` (sample capture: `{"error": "a
@@ -153,10 +175,11 @@ Request:
 | `prompt_ids` | list of int | the prompt as token ids (there is no string `prompt` on this endpoint) |
 | `candidates` | list of lists of int | the token ids to score, in the caller's order (the caller owns labels, rendering and prompt construction) |
 | `topk` | int > 0 | optional, **deprecated for this endpoint**: still validated when present, but it no longer constrains or changes anything - scoring is explicit-id now (the old "topk must cover all candidates" refusal is deleted) |
+| `keep` | bool | **P2R-3c, optional** (default `false`): the decision is scored as a state-keeping score (`keep=1`) - **the decision and a later `/v1/continue` share one prefill**; not a boolean -> `400` |
 
-The service sends **one** `SCORE <ids> topk=0 cand=<ids>` - one prefill, **no top-k dependency**, so a
-candidate id is answered whatever its rank in the distribution - then answers (values from the stub capture;
-`...` elides digits):
+The service sends **one** `SCORE <ids> topk=0 cand=<ids>` (plus ` keep=1` when requested) - one prefill,
+**no top-k dependency**, so a candidate id is answered whatever its rank in the distribution - then answers
+(values from the stub capture; `...` elides digits):
 
 ```json
 {"kind": "choice",
@@ -169,7 +192,7 @@ candidate id is answered whatever its rank in the distribution - then answers (v
                 {"token_ids": [2], "logprob": -1.9328, "full_vocab_probability": 0.1447423...,
                  "conditional_probability": 0.186323...,
                  "probability": 0.1447423...}],
- "pos": 1, "full_vocab_softmax": true, "generated_tokens": 0,
+ "pos": 1, "full_vocab_softmax": true, "generated_tokens": 0, "keep": false,
  "usage": {"prompt_tokens": 2, "prompt_ms": 1.0, "prompt_read": 2},
  "label_mass": 0.7768326...,
  "label_mass_covers_distribution": false,
@@ -249,15 +272,100 @@ fixed arity.
 | `topk` request field | must be >= `len(candidates)` | accepted (positive int) for compatibility; no effect |
 | numeric equality for the same candidate ids | - | `logprob` and `probability` are the same values (same engine row; P2-4's 4dp parity claim is not re-derived here, and its GPU capture predates this payload) |
 
+### `POST /v1/continue` (P2R-3c)
+
+Continues an **armed** session: the engine command is `GEN <max_new> cont=1 [<ids>]`, so the carried prefix
+is **not re-prefilled** (the engine contract: `docs/backends/qwen35_llama_session_state.md` §3b). Decode is
+greedy; sampling is not implemented and its fields are refused rather than ignored.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `max_new` | int >= 1 | **required**; the generation budget. Missing / `0` / negative / non-integer -> `400` |
+| `ids` | list of int | optional, default `[]` = pure continuation; ids to append at the cursor first (non-negative integers; a pure continuation leaves the prompt untouched, an append variant reads exactly those ids) |
+
+Additional refusals (all `400`, `error_source: "service"`): the sampling fields `temperature`, `top_p`,
+`top_k`, `min_p`, `seed` - `"sampling is not implemented on /v1/continue: ... remove the field(s) instead of
+relying on them being ignored"`; any unknown field; `ids` not a list / negative / boolean.
+
+The service sends one `GEN <max_new> cont=1 [<ids>]`, collects `T` lines (ignoring `PP` progress lines)
+until `DONE`, checks `produced == number of T lines` (a mismatch is an `EngineProtocolError` -> `502`), and
+answers:
+
+```json
+{"tokens": [90, 198, 1, 78151, 763, 220, 15, 11, 198, 1, 9676, 33805, 763, 867, 198, 92],
+ "text": null, "finish": "length", "reused": 3896, "prompt_read": 0, "prompt_tokens": 0,
+ "generated_tokens": 16,
+ "usage": {"prompt_tokens": 0, "prompt_ms": 0.0, "prompt_read": 0}}
+```
+
+- `tokens`: the generated ids in generation order (the engine's `T` lines).
+- `text`: the tokens decoded with the same optional tokenizer `/v1/score` uses; **`null` whenever no
+  tokenizer is available** (or a decode fails) - this optional field is never an error and never a `500`.
+- `finish` / `reused` / `prompt_read` / `prompt_tokens`: the engine's `DONE` fields, unchanged: `reused` is
+  the cursor **before** the append, `prompt_read`/`prompt_tokens` are the tokens actually appended/read (both
+  `0` for a pure continuation). `prompt_ms` in `usage` is engine-reported and near-zero when nothing was
+  re-read - it is a state fact, not a speed claim.
+- No armed session: the engine answers `ERR cont=1 needs an armed session`; the service maps it to **`422`
+  with the message verbatim** and `"error_source": "engine"` (the same mapping as every engine `ERR`).
+- After the answer the session **stays armed** (multi-round continuation is legal; the cursor advances by
+  appended + generated tokens).
+- Official q36 backend: **`501`** - its protocol has no session commands; the refusal text names the
+  backend and the missing commands (never a silent substitution). See the boundary note below.
+
+### `GET /v1/session` (P2R-3c, read-only)
+
+One engine `STATE` round-trip; the engine's JSON is passed through **verbatim** as `engine_state`, and the
+service adds its own view as `armed` (the engine's own boolean `session` field, never invented):
+
+```json
+{"engine_state": {"loaded": false, "pos": 3896, "bytes": 145748276, "path": null,
+                  "covers": ["attn_kv", "gdn_state", "conv", "pos"], "session": true,
+                  "origin": "score-keep", "file_bytes": null, "max_context": 4096,
+                  "not_covered": ["logits", "sampler_rng_state", "expert_cache", "bridge_counters",
+                                  "rollback_history"]},
+ "armed": true}
+```
+
+(shown verbatim from the 2026-10-15 P2R-3c service session, step ③ - after a `keep` decision, before the
+first continuation; `pos`/`bytes`/`origin` are the engine's own values.)
+
+- **Read-only, by construction**: it sends exactly `STATE` and nothing else - no reset, no arm, no
+  generation; the full `STATE` JSON is identical immediately before and after (unit-tested: fresh and armed
+  states).
+- A `STATE` payload without a boolean `session` field is an `EngineProtocolError` -> `502` (no invented
+  `armed` value).
+- Official q36 backend: **`501`**, same boundary as `/v1/continue`.
+
+### Session lifecycle (P2R-3c)
+
+| Request | Effect on the armed session |
+|---|---|
+| `GET /v1/session` | **none** - read-only query |
+| `POST /v1/score` without `keep` | **clears** it (the engine's reset-before/after score semantics; the next request starts fresh, `reused=0`) |
+| `POST /v1/score` `keep=true` | arms at the prompt's end (`origin="score-keep"` after a fresh prompt; with an already-armed session the prompt is appended at the carried cursor) |
+| `POST /v1/decisions` without `keep` | **clears** it |
+| `POST /v1/decisions` `keep=true` | arms at the decision prompt's end - the decision and a later `/v1/continue` share one prefill |
+| `POST /v1/continue` | continues from the armed cursor and **stays armed** (multi-round); the cursor advances by appended + generated tokens |
+
+The engine-side failure semantics (failed/cancelled keep requests reset and clear the session rather than
+resuming a half-append) are the P2R-3a contract and are not changed by this service - it exposes them
+as-is, never repairs them.
+
+**Official q36 backend boundary**: the official protocol declares no session commands (no `STATE`, no
+`GEN ... cont=1`), so on that backend `/v1/continue` and `/v1/session` answer an explicit **`501`** whose
+text names the backend and the missing commands, and `/v1/score` with `keep` is already refused `501` by
+the pre-existing score gating (the official backend has no `SCORE` at all). Nothing is silently substituted
+and no endpoint pretends a session exists where the engine has none.
+
 ## 3. Errors
 
 | Status | `error_source` | When |
 |---|---|---|
-| 400 | service | body not a JSON object / invalid JSON / wrong field type / unknown field / both or neither of `prompt_ids`,`prompt` / empty or negative ids / boolean ids / `candidates` not a list / non-integer / negative / duplicated / more than 2048 |
+| 400 | service | body not a JSON object / invalid JSON / wrong field type / unknown field / both or neither of `prompt_ids`,`prompt` / empty or negative ids / boolean ids / `candidates` not a list / non-integer / negative / duplicated / more than 2048; `keep` not a boolean (P2R-3c); `/v1/continue`: missing or non-positive `max_new`, malformed `ids`, or a present sampling field (`temperature`/`top_p`/`top_k`/`min_p`/`seed` - explicitly refused, never ignored) |
 | 413 | service | body larger than 1 MiB |
 | 422 | service | semantic refusals: unknown `kind`; multi-token or duplicate candidates; `yes_no` arity; more than 2048 candidates (`/v1/decisions`); `topk=0` without `candidates` (`/v1/score`) |
-| 422 | engine | the engine answered `ERR <message>` - the message is passed through **verbatim** |
-| 501 | service | string `prompt` without a usable tokenizer |
+| 422 | engine | the engine answered `ERR <message>` - the message is passed through **verbatim** (e.g. `/v1/continue` without an armed session: `ERR cont=1 needs an armed session`) |
+| 501 | service | string `prompt` without a usable tokenizer; the session endpoints on the official q36 backend: `/v1/continue`, `/v1/session` (and `/v1/score` with `keep`, via the score gating) - its protocol has no session commands and nothing is silently substituted |
 | 502 | service | the engine link is dead (process exited, pipes closed) or violated the line protocol; after a failed timeout drain the service stays dead until restarted |
 | 503 | service | a request is already in flight (single engine, no queue) |
 | 504 | service | the engine did not answer within `--timeout` (default 600 s) |
@@ -268,8 +376,8 @@ refused (`400`) rather than ignored, so an SGLang request body fails loudly inst
 ## 4. Concurrency model: 503, never a queue
 
 The service drives **one** engine and keeps **one** request in flight. A second request that arrives while one
-is running (including `/v1/capabilities`) is answered `503` with `Retry-After: 1`; it is not queued, so a
-caller always knows when nothing was done on its behalf. `POST` handlers run on `ThreadingHTTPServer` threads
+is running (including `/v1/capabilities` and `/v1/session`) is answered `503` with `Retry-After: 1`; it is
+not queued, so a caller always knows when nothing was done on its behalf. `POST` handlers run on `ThreadingHTTPServer` threads
 so connections are accepted concurrently, but engine access is serialized by a non-blocking lock. This is the
 processing model SGLang's `batching=false` analog at our layer; continuous batching stays on the engine's
 unimplemented list.
@@ -278,7 +386,8 @@ unimplemented list.
 
 - Start: spawn, then wait for `READY` (`--start-timeout`). Attach: `CAPS` handshake.
 - Request: write one command; read lines until `LOGPROBS` + `DONE ... score` (or `ERR`). `PP` lines are
-  progress and are ignored.
+  progress and are ignored. `/v1/continue` applies the same rule to `T` lines (`T`* until `DONE`; an `ERR`
+  mid-request is the engine error), and `GET /v1/session` waits for the one `STATE` line.
 - Timeout (`--timeout`): answer `504`, then send `STOP` and drain to the engine's next `DONE`/`ERR` (bounded by
   an internal 10 s drain timeout) so the next request starts synchronized. If the drain also fails, the link is
   marked dead: every later request answers `502` until the service is restarted. This is deliberately
@@ -333,6 +442,11 @@ field is accepted with a different meaning than documented here.
 | `temperature` divides label logits; `prompt_format_version`, `return_prompt_token_ids`, `images`, `model` | none of these fields |
 | errors 400 with per-field reasons; runs alongside generation traffic on the same server | 4xx/422 refusals as in §3; a single serialized engine, no chat endpoint at all |
 
+P2R-3c note: `POST /v1/continue` and `GET /v1/session` have no SGLang counterpart in this subset - they
+expose this engine's own P2R-3a session contract (`GEN ... cont=1` / `STATE`) verbatim - and the `keep`
+flags are **additive optional fields** on the two endpoints above: no documented SGLang field changed
+meaning and no unlisted field is accepted.
+
 **There is no `POST /v1/chat/completions` here**: ordinary chat stays the official server's job
 (`serve/server.py`), unchanged.
 
@@ -340,28 +454,32 @@ field is accepted with a different meaning than documented here.
 
 | Not implemented | Today's behavior | Possible later step |
 |---|---|---|
-| real-engine verification of this service | never run against the engine (0 GPU by design) | P2-4: GPU end-to-end on the real model under the usual lease/neutral-cwd discipline |
+| real-engine verification of this service | **done**: P2-4 (base payload), P2R-2 (candidates/decisions) and P2R-3c (session endpoints) each ran the service on the real engine under the lease discipline; the P2R-3c session died after its evidence was written and was not re-run (evidence = same code version) | future tasks: re-run any new endpoint live before claiming it |
 | GPU verification of the P2R-1 additions | **done 2026-10-15 (P2R-2), passed**: explicit candidates byte-identical to the same-process `LOGPROBS`; out-of-top-k ids finite `<= 0` and the candidate-set union mass `<= 1`; `SCORE` top-1 == greedy `GEN 1` first token on both prompts; live `/v1/decisions` payload per §2 (always-present `label_mass`, three scopes, `calibrated:false`, no confidence field); old-vs-new exe `LOGPROBS` byte-identical at equal positions. P2R-2's remaining caveat (no observable near-tie in the top-5) was then **quantified by P2R-2b (2026-10-15)**: top-2000 class comparison - same-class repeats byte-identical, cross-class flips real for gaps up to 0.0383/0.0371 (band 0.0599/0.0713) | evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/` and `.../strata-unified-p2r2b-near-tie/`; write-up in `docs/backends/qwen35_llama_score_api_e2e.md` (§6 and §P2R-2b) |
 | server-side prompt rendering / labels / question descriptions | caller owns prompt construction (`prompt_ids`) | a rendering layer *above* this service; the service stays content-free |
 | streaming | none; one JSON response per request | incompatible with a single score answer; only relevant to future generation endpoints |
 | batching / concurrent requests | `503` while busy | engine-side continuous batching (P2-1 `batching=false`), then a scheduler above it |
-| session reuse / state export | every request resets; `reused=0` | engine `state_export` work (future phases); the service would gain a session key |
+| implicit session reuse (beyond the explicit session endpoints) | every non-keep request resets; `reused=0`; `prefix_cache=false` | P2R-3c exposes the explicit engine session contract (`keep` / `/v1/continue` / `GET /v1/session`); nothing automatic exists and a session key remains out of scope |
 | auth, TLS, multi-engine routing | localhost bind only | deployment concern, deliberately out of scope for the subset |
 
 ## 9. Unit tests (0 GPU)
 
 ```text
 cd <repo root>
-python backends/qwen35_llama/tools/test_score_api.py -v          # 34 tests (P2R-1)
-python backends/qwen35_llama/tools/test_backend_adapters.py -v   # 13 tests, unchanged and green
+python backends/qwen35_llama/tools/test_score_api.py -v          # 53 tests (P2R-3c)
+python backends/qwen35_llama/tools/test_backend_adapters.py -v   # 13 tests, green
 ```
 
 P2R-1 recorded run (2026-10-15): **34 tests, OK** (`Ran 34 tests in 22.879s`, Python 3.11.9, Windows; raw log
 `results/opencode-execution/strata-unified-p2r1-candidate-scoring/unit-tests-score-api.log` in the research
-repo), plus the P2-7 suite **13 tests, OK** (same directory, `unit-tests-backend-adapters.log`). Each test
+repo), plus the P2-7 suite **13 tests, OK** (same directory, `unit-tests-backend-adapters.log`).
+**P2R-3c re-run (2026-10-15): 53 tests, OK** (`Ran 53 tests in 33.365s`) and the P2-7 suite **13 tests, OK**
+(`Ran 13 tests in 3.197s`) - raw logs `results/opencode-execution/strata-unified-p2r3c2-finish/unit-tests-score-api.log`
+and `unit-tests-backend-adapters.log`; the 19 new cases are the `ContinueSessionTests` class (16) plus
+`OfficialBackendSessionTests` (3: `test_score_keep_501`, `test_session_501`, `test_continue_501`). Each test
 starts the test-only stub (`stub_engine.py`) as a real child process over pipes and an in-process HTTP server
 on `127.0.0.1:0`; no GPU, no lease, no engine, no writes outside the process pipes/sockets. Coverage (the
-P2-3 baseline plus P2R-1):
+P2-3 baseline plus P2R-1 plus P2R-3c):
 
 - `/v1/score`: normal fields (`generated_tokens=0`, `pos`, `full_vocab_softmax`, logprobs order), `topk`
   default and override;
@@ -389,7 +507,20 @@ P2-3 baseline plus P2R-1):
   completes `200`;
 - timeout: a stub that never answers -> `504` within ~1 s (test budget), next request `502` (dead link);
 - CLI: `--start-engine` with a real child process, `READY` + listening lines parsed, live `/v1/capabilities`
-  and `/v1/score` against it, clean terminate.
+  and `/v1/score` against it, clean terminate;
+- `/v1/score`/`/v1/decisions` `keep` (P2R-3c): the engine command carries `keep=1` and the response carries
+  `"keep": true` with the decisions payload otherwise unchanged (`label_mass`/three scopes still present);
+  `keep` not a boolean -> `400`; a keep-score arms the session and a non-keep score/decision clears it
+  (asserted through `/v1/session`); capabilities expose the engine's `state_keep_score`/`session_continue`;
+- `/v1/continue` (P2R-3c): pure and append variants (`ids=[90]`), tokens/`finish`/`reused`/`prompt_read`
+  passthrough, `text` null without a tokenizer (never `500`); multi-round stays armed; without a session the
+  engine's `ERR cont=1 needs an armed session` is passed through verbatim as `422` with
+  `error_source=engine`; missing/zero/negative `max_new` -> `400`; every sampling field -> `400`; unknown
+  field -> `400`; malformed `ids` -> `400`;
+- `GET /v1/session` (P2R-3c): read-only (engine state before == after), `armed` mirrors the stub's `STATE`
+  boolean, fresh state reported honestly (`session=false`, `pos=0`);
+- official backend (P2R-3c): `/v1/continue` and `/v1/session` -> `501` explicit (`keep` on `/v1/score` ->
+  `501` via the score gating) - no silent substitution.
 
 Changed P2-3-era tests (P2R-1 semantic changes only, listed in the task evidence): "candidate outside top-k ->
 422" became "candidate outside top-k -> 200 scored", and the two `label_mass_omitted` assertions became
@@ -417,4 +548,15 @@ history, not as the current contract.
   sensitivity the P2R-2 caveat left open: same-class repeat lines byte-equal; cross-class max|Δ|
   5.99e-2 / 7.13e-2 with real adjacent-pair flips for gaps up to 0.0383 / 0.0371 and min flipped gap
   0.0000 (scoped to this host / this IQ3_S quant / this exe).
+- P2R-3c (2026-10-15): edited `backends/qwen35_llama/tools/{score_api.py,stub_engine.py,test_score_api.py}`
+  (+497/-24) and four docs; the engine source (`qwen35_serve.cpp`) and every frozen artifact are untouched.
+  Unit re-run 53 + 13 green (logs in `results/opencode-execution/strata-unified-p2r3c2-finish/`). Real-engine
+  service session: one `hold` lease + compensation evidence, exe `7c441a94…` (preflight SHA/size match),
+  `READY` in the service log, 8/8 HTTP steps `200`, engine diagnostics 4 lines (`keep=1`; `cont=1` twice;
+  non-keep reset), continuations `prompt_read` 0/1 with `reused` 3896/3911 and `prompt_ms` 0.0/27.3 against
+  full prefills 3711.5/2723.3 ms, and steps ④⑤ token-identical 16/16 to the P2R-3b-2 sequences (cross-run,
+  different process). The session terminated abnormally **after** its evidence was written (no
+  `completion.json`) and was **not** re-run; the supervisor cleaned the three orphan processes (lock `\x00`,
+  no fence, no residue). Not covered live: decoded `text` (the session ran without `--tokenizer-model`),
+  the official-q36 endpoints (unit-only `501`), and any re-run of the session.
 - No performance claim of any kind is made for the real engine; P2-4 owns that.

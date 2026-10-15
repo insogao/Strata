@@ -9,7 +9,10 @@ prompt-dependent offset, over a configurable vocabulary size.
 
     python stub_engine.py --vocab 64        # speaks READY on stdout, answers on stdin
 
-Only what the P2-3 tests need exists here: no GEN, no tokenizer, no real model.
+P2R-3c additions (test-only, same grammar as the engine's P2R-3a contract): `SCORE ... keep=1`
+keeps/arms the session, `GEN <max_new> cont=1 [<ids>]` continues an armed session and answers
+deterministic `T` lines, `STATE` answers one JSON line of session bookkeeping. No tokenizer,
+no timings, no real model.
 """
 import argparse
 import json
@@ -51,12 +54,26 @@ def main() -> int:
         "logits_read": True,
         "score_explicit_candidate_ids": True,
         "score_max_candidate_ids": 2048,
+        "state_keep_score": True,
+        "session_continue": True,
         "state_export": False,
         "disk_kv": False,
         "vision": False,
     }
     emit("READY %d stop" % args.context)
     dropped = 0
+    session = {"armed": False, "origin": None, "pos": 0}
+
+    def state_json():
+        # Engine-shaped STATE subset (docs/backends/qwen35_llama_session_state.md): `session` is
+        # the arming fact; `armed` is carried as the same-value alias mentioned by the task spec.
+        return {"loaded": False, "pos": session["pos"], "bytes": 2216, "path": None,
+                "covers": ["attn_kv", "gdn_state", "conv", "pos"],
+                "session": session["armed"], "origin": session["origin"], "file_bytes": None,
+                "max_context": args.context,
+                "not_covered": ["logits", "sampler_rng_state", "expert_cache", "bridge_counters",
+                                "rollback_history"],
+                "armed": session["armed"]}
 
     def log_softmax(values):
         top = max(values)
@@ -83,6 +100,8 @@ def main() -> int:
             topk = 5
             cand = None
             cand_seen = False
+            keep = False
+            keep_seen = False
             problem = None
             for token in rest.split():
                 if token.startswith("topk="):
@@ -90,6 +109,15 @@ def main() -> int:
                         problem = "topk must be a non-negative decimal integer"
                         break
                     topk = int(token[5:])
+                elif token.startswith("keep="):
+                    if keep_seen:
+                        problem = "duplicate keep key"
+                        break
+                    keep_seen = True
+                    if token != "keep=1":
+                        problem = "keep must be the literal 1"
+                        break
+                    keep = True
                 elif token.startswith("cand="):
                     if cand_seen:
                         problem = "duplicate cand key"
@@ -126,6 +154,20 @@ def main() -> int:
                 continue
             if args.score_delay_ms:
                 time.sleep(args.score_delay_ms / 1000.0)
+            # P2R-3a/P2R-3c session semantics: keep=1 appends at an armed cursor and stays
+            # armed (origin "score-keep" when this request armed it); without keep=1 the (b)
+            # reset clears the session before and after the answer.
+            if keep:
+                reused = session["pos"] if session["armed"] else 0
+                if not session["armed"]:
+                    session["armed"] = True
+                    session["origin"] = "score-keep"
+                session["pos"] = reused + len(ids)
+            else:
+                reused = 0
+                session["armed"] = False
+                session["origin"] = None
+                session["pos"] = 0
             salt = sum(ids) + len(ids)
             logprobs = log_softmax([-(0.5 * i) - 0.125 * (salt % 7) for i in range(args.vocab)])
             pos = len(ids) - 1
@@ -145,10 +187,64 @@ def main() -> int:
                     emit(line)
             elif args.cand_mode == "unsolicited":
                 emit("CANDLOGPROBS %d 1 0:%.4f" % (pos, logprobs[0]))
-            emit("DONE 0 %d 1.0 0.0 score 0 0 0 0 0 0 0 0.0 %d 0" % (len(ids), len(ids)))
+            emit("DONE 0 %d 1.0 0.0 score 0 0 %d 0 0 0 0 0.0 %d 0"
+                 % (len(ids), reused, len(ids)))
             continue
-        emit("ERR expected: CAPS | SCORE <id,id,...> [topk=N] [cand=id,id,...] | "
-             "GEN <max_new> [key=value ...] <id,id,...>")
+        if head == "STATE" and not rest.strip():
+            emit("STATE " + json.dumps(state_json(), separators=(",", ":")))
+            continue
+        if head == "GEN":
+            max_new = None
+            cont = False
+            cont_seen = False
+            ids = None
+            problem = None
+            for token in rest.split():
+                if token == "cont=1":
+                    if cont_seen:
+                        problem = "duplicate cont key"
+                        break
+                    cont_seen = True
+                    cont = True
+                elif token.startswith("cont="):
+                    problem = "cont must be the literal 1"
+                    break
+                elif token and token.replace(",", "").isdigit() and max_new is None:
+                    max_new = int(token)
+                elif token and token.replace(",", "").isdigit():
+                    if ids is not None:
+                        problem = "two id lists"
+                        break
+                    ids = [int(part) for part in token.split(",")]
+                else:
+                    problem = "unknown key %r" % token
+                    break
+            if problem is None and max_new is None:
+                problem = "missing max_new"
+            if problem is not None:
+                emit("ERR bad request: %s" % problem)
+                continue
+            if not cont:
+                # This stub implements only the explicit-continuation form the P2R-3c
+                # service drives; a plain GEN is out of scope here.
+                emit("ERR bad request: cont is required in this stub (only cont=1 is implemented)")
+                continue
+            if not session["armed"]:
+                emit("ERR cont=1 needs an armed session")
+                continue
+            appended = ids or []
+            if any(token_id < 0 or token_id >= args.vocab for token_id in appended):
+                emit("ERR a token id is outside the vocabulary")
+                continue
+            cursor = session["pos"]
+            for index in range(max_new):
+                emit("T %d" % (index % args.vocab))
+            emit("DONE %d %d 0.0 1.0 length 0 0 %d 0 0 0 0 0.0 %d 0"
+                 % (max_new, len(appended), cursor, len(appended)))
+            session["pos"] = cursor + len(appended) + max_new
+            continue
+        emit("ERR expected: CAPS | STATE | SCORE <id,id,...> [topk=N] [cand=id,id,...] "
+             "[keep=1] | GEN <max_new> cont=1 [<id,id,...>]")
     return 0
 
 

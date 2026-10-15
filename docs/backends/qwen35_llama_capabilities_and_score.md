@@ -93,7 +93,12 @@ reference **token-for-token 16/16**. The pre-registered reference schedule itsel
 *immediately following* `GEN <P_long>`) is **not executable at ctx4096** - a plain `GEN` continues an
 armed session and its P_long append overflows; those pairwise comparisons are recorded as FAIL-as-written
 in `qwen35_llama_score_api_e2e.md` §P2R-3b, and a corrected-sequence re-check is a separate dispatch. The
-service exposure is P2R-3c.
+service exposure is **P2R-3c, done 2026-10-15**: the thin service now exposes `/v1/score` and
+`/v1/decisions` with `keep`, `POST /v1/continue` and read-only `GET /v1/session`, and passes these two
+capability fields through unchanged (`docs/backends/qwen35_llama_score_api_design.md` §2); the real-engine
+service session ran 8/8 steps `200` (evidence
+`results/opencode-execution/strata-unified-p2r3c-service-keep/`; write-up "P2R-3c - score→continue over the
+service" in `qwen35_llama_score_api_e2e.md`). P2R-3c changed no engine code.
 
 ### expert_formats roles
 
@@ -257,6 +262,13 @@ P2R-1 note: the service now exists (P2-3, `tools/score_api.py`). It maps `/v1/sc
 `SCORE <ids> topk=N cand=...` and `/v1/decisions` to `SCORE <ids> topk=0 cand=...` (one prefill, no top-k
 dependency); the payload semantics (`full_vocab_probability` / `conditional_probability` / always-present
 `label_mass` / no business confidence) are specified in `docs/backends/qwen35_llama_score_api_design.md`.
+
+P2R-3c note: the service also exposes this document's session commands - `/v1/score` and `/v1/decisions`
+accept `keep` (engine `SCORE ... keep=1`), `POST /v1/continue` maps to `GEN <max_new> cont=1 [<ids>]`, and
+`GET /v1/session` maps to one read-only `STATE`. `/v1/capabilities` still passes `state_keep_score` /
+`session_continue` through unchanged. On the official q36 backend, whose protocol declares no session
+commands, those endpoints answer an explicit `501` (never a silent substitution). Full contract: session
+endpoints, lifecycle table and error mapping in `docs/backends/qwen35_llama_score_api_design.md` §2.
 
 ## Build record (P2-1)
 

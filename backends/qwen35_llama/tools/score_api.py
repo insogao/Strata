@@ -6,8 +6,14 @@ engine process through a documented stdin/stdout protocol and exposes:
 
     GET  /v1/capabilities   the backend's capability table (engine CAPS passthrough for
                             qwen35_llama; framework-synthesized for official_q36) + service fields
-    POST /v1/score          read-only top-k log-softmax of one prompt
-    POST /v1/decisions      minimal choice / score / yes_no candidate scoring
+    POST /v1/score          read-only top-k log-softmax of one prompt (optional keep=true:
+                            state-keeping score, no reset, session stays armed)
+    POST /v1/decisions      minimal choice / score / yes_no candidate scoring (optional
+                            keep=true: a decision and its explanation share one prefill)
+    POST /v1/continue       P2R-3c: continue an armed session (engine `GEN <max_new> cont=1
+                            [<ids>]`), no re-prefill of the carried prefix
+    GET  /v1/session        P2R-3c: read-only engine `STATE` passthrough + the service's
+                            `armed` view; never mutates (no reset/arm)
 
 Two backends are selectable with --backend (or the config field "backend"; P2-7, see
 tools/backend_adapters.py): `qwen35_llama` (the in-repo backend: CAPS/SCORE/GEN/SAVE/LOAD/
@@ -21,7 +27,15 @@ docs/backends/qwen35_llama_backend_adapters.md.
 One engine, one in-flight request: a concurrent request is answered 503 (no queue). There is
 no chat/completions, no streaming, no batching, and the engine source is untouched. String
 `prompt` input needs an optional tokenizer (--tokenizer-model); without it the request is
-refused with an explanation instead of being guessed at.
+refused with an explanation instead of being guessed at - except `/v1/continue`, whose `text`
+is `null` when no tokenizer is available (never an error).
+
+P2R-3c note (session endpoints): `keep` / `/v1/continue` / `GET /v1/session` speak the
+P2R-3a engine contract (`docs/backends/qwen35_llama_session_state.md` §3b). They exist only
+on a backend whose command surface has the session commands (`STATE`); the official q36
+protocol has none of this, so `/v1/continue` and `/v1/session` answer an explicit 501 there,
+and `/v1/score` with `keep` is already refused by the existing score gating - never a silent
+substitution.
 
 Tests (0 GPU, stub engines): tools/test_score_api.py (qwen35 protocol) and
 tools/test_backend_adapters.py (both backends); test-only stubs: tools/stub_engine.py,
@@ -58,6 +72,9 @@ LABEL_MASS_TOLERANCE = 1e-3
 MAX_BODY_BYTES = 1 << 20
 MAX_EXPLICIT_CANDIDATES = 2048
 DECISION_KINDS = ("choice", "score", "yes_no")
+# Sampling parameters that exist on `GEN` but are NOT implemented on /v1/continue: their
+# presence is an explicit 400 refusal (never a silent ignore).
+SAMPLING_FIELDS = ("temperature", "top_p", "top_k", "min_p", "seed")
 
 _EOF = object()
 
@@ -114,6 +131,12 @@ class ScoreResult:
     pairs: list
     done: dict
     cand_pairs: list = None
+
+
+@dataclass(frozen=True)
+class GenerationResult:
+    tokens: list
+    done: dict
 
 
 def _parse_logprobs(line: str):
@@ -246,12 +269,14 @@ class EngineLink:
                 raise EngineError(line[4:])
             raise EngineProtocolError("unexpected line while waiting for CAPS: %r" % line)
 
-    def score(self, ids, topk, timeout, candidates=None) -> ScoreResult:
+    def score(self, ids, topk, timeout, candidates=None, keep=False) -> ScoreResult:
         command = "SCORE " + ",".join(str(int(i)) for i in ids)
         if topk is not None:
             command += " topk=%d" % topk
         if candidates is not None:
             command += " cand=" + ",".join(str(int(c)) for c in candidates)
+        if keep:
+            command += " keep=1"
         self.send(command)
         deadline = time.monotonic() + timeout
         pos = None
@@ -302,6 +327,52 @@ class EngineLink:
             if line.startswith("T "):
                 raise EngineProtocolError("SCORE generated a token (%r); the engine contract forbids it" % line)
             raise EngineProtocolError("unexpected line during SCORE: %r" % line)
+
+    def generate_continue(self, max_new, ids, timeout) -> GenerationResult:
+        """P2R-3c: engine `GEN <max_new> cont=1 [<ids>]` - continue an armed session."""
+        command = "GEN %d cont=1" % max_new
+        if ids:
+            command += " " + ",".join(str(int(i)) for i in ids)
+        self.send(command)
+        deadline = time.monotonic() + timeout
+        tokens = []
+        while True:
+            line = self._take_until(deadline, timeout)
+            if line.startswith("PP "):
+                continue
+            if line.startswith("T "):
+                try:
+                    tokens.append(int(line[2:].strip()))
+                except ValueError:
+                    raise EngineProtocolError("malformed T line during GEN cont=1: %r" % line)
+                continue
+            if line.startswith("DONE "):
+                done = _parse_done(line)
+                if done["produced"] != len(tokens):
+                    raise EngineProtocolError("GEN cont=1 finished with produced=%d but %d T lines"
+                                              % (done["produced"], len(tokens)))
+                return GenerationResult(tokens=tokens, done=done)
+            if line.startswith("ERR "):
+                raise EngineError(line[4:])
+            raise EngineProtocolError("unexpected line during GEN cont=1: %r" % line)
+
+    def state(self, timeout) -> dict:
+        """P2R-5/P2R-3c: one `STATE` round-trip; the engine's bookkeeping JSON, parsed."""
+        self.send("STATE")
+        deadline = time.monotonic() + timeout
+        while True:
+            line = self._take_until(deadline, timeout)
+            if line.startswith("STATE "):
+                try:
+                    payload = json.loads(line[6:])
+                except ValueError as exc:
+                    raise EngineProtocolError("STATE line is not JSON: %s" % exc)
+                if not isinstance(payload, dict):
+                    raise EngineProtocolError("STATE payload is not a JSON object")
+                return payload
+            if line.startswith("ERR "):
+                raise EngineError(line[4:])
+            raise EngineProtocolError("unexpected line while waiting for STATE: %r" % line)
 
     def cancel_and_drain(self, timeout: float) -> bool:
         while True:
@@ -404,6 +475,19 @@ def _parse_prompt_ids(value):
             raise BadRequest("prompt_ids[%d] is not an integer" % index)
         if item < 0:
             raise BadRequest("prompt_ids[%d]=%d is negative" % (index, item))
+        ids.append(item)
+    return ids
+
+
+def _parse_continue_ids(value):
+    if not isinstance(value, list):
+        raise BadRequest("ids must be a list of token ids (omit it or pass [] for a pure continuation)")
+    ids = []
+    for index, item in enumerate(value):
+        if isinstance(item, bool) or not isinstance(item, int):
+            raise BadRequest("ids[%d] is not an integer" % index)
+        if item < 0:
+            raise BadRequest("ids[%d]=%d is negative" % (index, item))
         ids.append(item)
     return ids
 
@@ -515,14 +599,34 @@ class ScoreService:
         except UnsupportedBackendOperation as exc:
             raise NotImplementedFeature(str(exc))
 
+    def _require_backend_session(self, endpoint):
+        # The session endpoints need the backend's session commands (`STATE`, the `GEN ...
+        # cont=1` continuation). The official q36 protocol declares neither, so it answers an
+        # explicit 501 - never a silent substitution.
+        if "STATE" not in self.backend.client_commands:
+            raise NotImplementedFeature(
+                "%s is not implemented on the %s backend: its protocol (%s) has no session "
+                "commands (no STATE, no 'GEN ... cont=1'), so a session can be neither continued "
+                "nor reported. This service refuses explicitly instead of substituting another "
+                "operation. Use the qwen35_llama backend for %s."
+                % (endpoint, self.backend.name, "/".join(self.backend.client_commands), endpoint))
+
+    @staticmethod
+    def _keep_field(body):
+        keep = body.get("keep", False)
+        if not isinstance(keep, bool):
+            raise BadRequest("keep must be a boolean (true/false)")
+        return keep
+
     def score_request(self, body):
         body = _require_object(body)
         self._require_backend_score("/v1/score")
-        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates"})
+        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates", "keep"})
         if ("prompt_ids" in body) == ("prompt" in body):
             raise BadRequest("exactly one of prompt_ids or prompt is required")
         topk = _nonnegative_int(body.get("topk", DEFAULT_TOPK), "topk")
         candidates = _parse_explicit_candidates(body["candidates"]) if "candidates" in body else None
+        keep = self._keep_field(body)
         if topk == 0 and candidates is None:
             raise Unprocessable("topk=0 answers only explicit candidates; pass candidates (or topk >= 1)")
         if "prompt" in body:
@@ -534,10 +638,17 @@ class ScoreService:
                 raise Unprocessable("the prompt encoded to zero tokens")
         else:
             ids = _parse_prompt_ids(body["prompt_ids"])
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
-                                                              candidates=candidates))
+        if keep:
+            # backend_adapters.py is frozen this round and its score() has no keep flag; the
+            # keep form is issued on the link directly, after the same backend gate above
+            # (keep exists only on qwen35_llama; official_q36 was refused 501 already).
+            result = self._engine_call(lambda: self.link.score(ids, topk, self.timeout,
+                                                               candidates=candidates, keep=True))
+        else:
+            result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
+                                                                  candidates=candidates))
         payload = {"logprobs": result.pairs or [], "pos": result.pos, "full_vocab_softmax": True,
-                   "generated_tokens": 0, "usage": _usage(result.done)}
+                   "generated_tokens": 0, "usage": _usage(result.done), "keep": keep}
         if candidates is not None:
             payload["candidates"] = result.cand_pairs
         return 200, payload
@@ -551,7 +662,7 @@ class ScoreService:
     def decisions_request(self, body):
         body = _require_object(body)
         self._require_backend_score("/v1/decisions")
-        _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk"})
+        _reject_unknown_fields(body, {"kind", "prompt_ids", "candidates", "topk", "keep"})
         kind = body.get("kind")
         if kind not in DECISION_KINDS:
             raise Unprocessable("kind must be one of %s" % ", ".join(DECISION_KINDS))
@@ -567,8 +678,15 @@ class ScoreService:
             # Accepted for backward compatibility only: scoring is explicit-id now, so topk no longer
             # constrains anything (the old "topk must cover all candidates" refusal is gone).
             _positive_int(topk, "topk")
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
-                                                              candidates=flat))
+        keep = self._keep_field(body)
+        if keep:
+            # Same engine as /v1/score: `SCORE <ids> topk=0 cand=<ids> keep=1` - the decision and
+            # a later /v1/continue share this one prefill (link-issued; see score_request).
+            result = self._engine_call(lambda: self.link.score(ids, 0, self.timeout,
+                                                               candidates=flat, keep=True))
+        else:
+            result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
+                                                                  candidates=flat))
         by_id = {pair["id"]: pair["logprob"] for pair in result.cand_pairs}
         logprobs = [by_id[token_id] for token_id in flat]
         full_probs = [math.exp(logprob) for logprob in logprobs]
@@ -592,6 +710,7 @@ class ScoreService:
             "full_vocab_softmax": True,
             "generated_tokens": 0,
             "usage": _usage(result.done),
+            "keep": keep,
             # Always returned, whatever the mass: the candidate set's share of the full distribution.
             "label_mass": mass,
             "label_mass_covers_distribution": abs(mass - 1.0) <= LABEL_MASS_TOLERANCE,
@@ -610,6 +729,57 @@ class ScoreService:
         }
         return 200, payload
 
+    def _try_decode(self, tokens):
+        # /v1/continue `text`: decoded only when a tokenizer is available; no tokenizer (or a
+        # decode failure) answers `null` - never an error for this optional field.
+        try:
+            tokenizer = self._get_tokenizer()
+        except NotImplementedFeature:
+            return None
+        try:
+            return tokenizer.decode(tokens)
+        except Exception:
+            return None
+
+    def continue_request(self, body):
+        body = _require_object(body)
+        self._require_backend_session("/v1/continue")
+        sampling = sorted(set(body) & set(SAMPLING_FIELDS))
+        if sampling:
+            raise BadRequest("sampling is not implemented on /v1/continue: %s; this endpoint always "
+                             "decodes greedily from the armed session - remove the field(s) instead "
+                             "of relying on them being ignored"
+                             % ", ".join(repr(name) for name in sampling))
+        _reject_unknown_fields(body, {"max_new", "ids"})
+        if "max_new" not in body:
+            raise BadRequest("max_new is required (a positive integer)")
+        max_new = _positive_int(body["max_new"], "max_new")
+        ids = _parse_continue_ids(body.get("ids", []))
+        result = self._engine_call(lambda: self.link.generate_continue(max_new, ids, self.timeout))
+        payload = {
+            "tokens": result.tokens,
+            "text": self._try_decode(result.tokens),
+            "finish": result.done["finish"],
+            "reused": result.done["reused"],
+            "prompt_read": result.done["prompt_read"],
+            "prompt_tokens": result.done["prompt_tokens"],
+            "generated_tokens": len(result.tokens),
+            "usage": _usage(result.done),
+        }
+        return 200, payload
+
+    def session_request(self):
+        # Read-only: one STATE query, no reset, no arm. The engine's own `session` field is the
+        # arming fact (docs/backends/qwen35_llama_session_state.md); a STATE payload without it
+        # is a protocol error, never an invented value.
+        self._require_backend_session("/v1/session")
+        state = self._engine_call(lambda: self.link.state(self.timeout))
+        armed = state.get("session")
+        if not isinstance(armed, bool):
+            raise EngineProtocolError("the engine STATE JSON has no boolean 'session' field: %r"
+                                      % sorted(state))
+        return 200, {"engine_state": state, "armed": armed}
+
 
 class _Handler(BaseHTTPRequestHandler):
     service: ScoreService
@@ -619,9 +789,12 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/v1/capabilities":
             self._dispatch(lambda: self.service.capabilities_request())
+        elif path == "/v1/session":
+            self._dispatch(lambda: self.service.session_request())
         else:
-            self._send_json(404, {"error": "not found: %s; this service implements GET /v1/capabilities, "
-                                           "POST /v1/score and POST /v1/decisions" % path,
+            self._send_json(404, {"error": "not found: %s; this service implements GET "
+                                           "/v1/capabilities, GET /v1/session, POST /v1/score, "
+                                           "POST /v1/decisions and POST /v1/continue" % path,
                                   "error_source": "service"})
 
     def do_POST(self):
@@ -630,9 +803,12 @@ class _Handler(BaseHTTPRequestHandler):
             self._dispatch(lambda: self.service.score_request(self._read_json()))
         elif path == "/v1/decisions":
             self._dispatch(lambda: self.service.decisions_request(self._read_json()))
+        elif path == "/v1/continue":
+            self._dispatch(lambda: self.service.continue_request(self._read_json()))
         else:
-            self._send_json(404, {"error": "not found: %s; this service implements GET /v1/capabilities, "
-                                           "POST /v1/score and POST /v1/decisions" % path,
+            self._send_json(404, {"error": "not found: %s; this service implements GET "
+                                           "/v1/capabilities, GET /v1/session, POST /v1/score, "
+                                           "POST /v1/decisions and POST /v1/continue" % path,
                                   "error_source": "service"})
 
     def _read_json(self):

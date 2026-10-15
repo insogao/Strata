@@ -424,3 +424,80 @@ reproduced in both families (cont first 16 == ref first 16; the append chain's 1
 16-family pair both end at `length` (16 tokens, no EOS), matching their kept-state counterparts exactly. The corrected run thereby closes the P2R-3b open item (1): the
 plain-`SCORE`-reset schedule makes all three pairwise identities executable and they hold token-for-token
 at ctx4096.
+
+### P2R-3c - score→continue over the service
+
+Run 2026-10-15 on branch `phase2r/review-gaps`: the new service endpoints (`/v1/score`+`/v1/decisions`
+`keep`, `POST /v1/continue`, `GET /v1/session`) driven through the real HTTP service against the real
+engine. **One service session** (11:25:24-11:28:21 +08:00), one `hold` lease (owner pid 41000, acquired
+`11:25:24.593`; `DENY_BASENAMES` - the service spawns the engine as a grandchild), engine exe
+`7c441a944cf9c7cf2189d6d024ea04ca1e606a0c3c4ce167e472da638f2d0f1d` (preflight SHA/size recomputed before
+the lease: 139,258,368 B, match), engine argv = the §1 form (ctx4096 / t8 / slots3200 / ubatch4096, the
+three production gates, `models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf` + `models/pack`, cwd `D:\work\StrataUnified`),
+service on `http://127.0.0.1:8097`. Service argv and the engine stderr capture are in
+`service/service-argv.json` / `service/engine-stderr-full.txt`. The service ran **without
+`--tokenizer-model`**, so both `/v1/continue` answers exercised the documented `text: null` path. Pre-state
+recorded (`state/p2r3c-pre-N1.json`: lock `\x00`, no cleanup marker, RAM 16.1 GiB, GPU 1272 MiB / 0 %, no
+`strata.exe`), capacity self-check written before the run (`raw/capacity-selfcheck.json`: all rows < 4096,
+e.g. 3896+16=3912, 3912+1+16=3929). Evidence:
+`results/opencode-execution/strata-unified-p2r3c-service-keep/`.
+
+Steps (HTTP originals in `client/http-evidence.jsonl`, per-step checks in `client/client-checks.json`;
+`P_long` = the same 3896-id fixture as P2R-3b/3b-2):
+
+| Step | Request | Status | Key recorded facts |
+|---|---|---|---|
+| ① | `GET /v1/capabilities` | 200 | `engine_sha256` = `7c441a94…` (matches preflight); `state_keep_score=true`; `session_continue=true` |
+| ② | `POST /v1/decisions` `yes_no` `[[9542]]`/`[[874]]`, `keep: true` | 200 | response `keep: true`; `label_mass=6.447390833977799e-09`; logprobs `9542:-22.9597` / `874:-18.8763` |
+| ③ | `GET /v1/session` | 200 | `armed=true`; engine_state `session=true`, `origin="score-keep"`, `pos=3896`, `bytes=145748276`, `loaded=false`, `path`/`file_bytes` null |
+| ④ | `POST /v1/continue` `{max_new:16}` | 200 | `reused=3896`, `prompt_read=0`, `prompt_tokens=0`, `prompt_ms=0.0`; `finish=length`; 16 tokens; `text=null` |
+| ⑤ | `POST /v1/continue` `{max_new:16, ids:[90]}` | 200 | `reused=3911`, `prompt_read=1`, `prompt_tokens=1`, `prompt_ms=27.3`; `finish=stop` (EOS `248046`); `text=null` |
+| ⑥ | `GET /v1/session` | 200 | still armed: `armed=true`, `origin="score-keep"`, `pos=3927`, `bytes=146383900` |
+| ⑦ | `POST /v1/score` `P_long` `topk=5` (non-keep) | 200 | `keep: false`; `pos=3895` (fresh full prefill) |
+| ⑧ | `GET /v1/session` | 200 | `armed=false`; engine_state `session=false`, `origin=null`, `pos=0`, `bytes=748` |
+
+The service log records every request as `200` (the eight steps plus two `GET /v1/capabilities` probes by
+the client itself, `service/service.log`); `READY 4096 stop` is the service's own spelling of the engine
+handshake before listening. The engine's stderr diagnostics, verbatim
+(`service/engine-stderr-full.txt`):
+
+```text
+serve: req 1 finish=score produced=0 prompt_ms=3711.5 decode_ms=0.0 topk=0 cand=2 keep=1
+serve: req 2 finish=length produced=16 prompt_ms=0.0 decode_ms=712.9 cont=1
+serve: req 3 finish=stop produced=16 prompt_ms=27.3 decode_ms=507.4 cont=1
+serve: req 4 finish=score produced=0 prompt_ms=2723.3 decode_ms=0.0 topk=5
+```
+
+Reading: the two continuations (`cont=1`) report `prompt_read` 0/1 and `prompt_ms` 0.0/27.3 against the
+same session's full prefills 3711.5 (decisions, `cand=2 keep=1`) / 2723.3 (non-keep score) ms - i.e. the
+3896-token prefix was **not re-prefilled** for either continuation; the last line is the non-keep score
+(topk=5, no `keep`, no `cont`), which resets exactly as step ⑧ reports.
+
+**Token comparison vs P2R-3b-2** (`client/p2r3c-compare.json`, `identical: true`, `first_divergence: null`):
+
+| Comparison | Result |
+|---|---|
+| ④ (`/v1/continue max_new=16`, pure) vs P2R-3b-2 B3 (`GEN 16 cont=1` == `GEN 16 <P_long>`) | **16/16 token-identical**: `90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92` |
+| ⑤ (`/v1/continue max_new=16 ids=[90]`) vs P2R-3b-2 B2 (`GEN 128 cont=1 90` == `GEN 128 <P_long>,90`) | **16/16 token-identical**: `198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92,248046` |
+
+The comparison is **cross-run, different engine process** (and for ⑤ cross-state by construction: the
+service appended 90 after ④'s 16 generated tokens, cursor 3912, while B2 appended 90 to the fresh kept
+`P_long`, cursor 3896) - recorded exactly as such, at the same greedy-decode semantics; the reference
+sequences themselves are quoted in §P2R-3b-2.
+
+**Honest scope statement for this section**: the evidence above comes from this **one** service session
+(11:25-11:28), driven by the service under a `hold` lease with compensation evidence (preflight SHA, pre
+state, `READY` handshake, all-200 HTTP log). The session **terminated abnormally after the evidence was
+written** (dispatch exit 1, no `completion.json`); the E2E was **not re-run**, and the supervisor later
+terminated its three orphaned processes (engine/service/hold) after verifying lock `\x00`, no cleanup
+fence, no residue. The working-tree code committed for P2R-3c **is the same version that produced this
+evidence**; the unit tests were re-run on it (53 + 13 green, logs in
+`results/opencode-execution/strata-unified-p2r3c2-finish/`). No source file was changed while producing
+this section.
+
+Unexplained / not covered: (1) the cause of the dispatch session's post-evidence abnormal termination was
+not investigated here (out of this task's scope; the orphan cleanup was the supervisor's); (2) decoded
+`text` was not exercised live (the session ran without `--tokenizer-model` - `text: null` was the observed,
+documented path); (3) the official-q36 `501` boundaries are unit-verified only; (4) `prompt_ms 0.0` on a
+pure continuation is a property of the reused state, **not** a product speed claim - no performance claims
+of any kind are made here.
