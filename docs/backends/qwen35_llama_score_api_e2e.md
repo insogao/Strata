@@ -325,6 +325,17 @@ A1–A8 as evaluated on the raw log:
 - **A8 PASS**: 1 native, one lease, serial, rc=0, no cleanup fence, lock released, no residual process;
   pre/post states recorded.
 
+**Update (2026-10-15, P2R-3b-2):** the A1/A2/A3 FAIL-as-written records above are **kept exactly** and are
+attributed to the pre-registered *reference schedule* (the supervisor's own diagnosis in the P2R-3b-2
+dispatch: the request sequence was defective - after `keep=1` the session stays armed, so each `GEN
+<P_long>` intended as a reference was an armed append and overflowed ctx4096, producing the five `ERR`s,
+not a fresh full prefill). The corrected-sequence re-run (next section) re-inserts a plain `SCORE
+<P_long> topk=1` reset before every reference and thereby passes the comparisons A2/A3 intended:
+`GEN 128 cont=1` ≡ `GEN 128 <P_long>` (17/17 tokens incl. EOS), `GEN 128 cont=1 90` ≡
+`GEN 128 <P_long>,90` (16/16), `GEN 16 cont=1` ≡ `GEN 16 <P_long>` (16/16); the A1 substance also holds under the
+corrected schedule (continuations `prompt_read` 0/1/0, `reused` 3896 each, `prompt_ms` 0.0/27.9/0.0 vs
+2663.6-4732.5 ms references, no 3896-token `PP`). A4-A8 results stand unchanged.
+
 Same-run facts the raw log *does* provide (post-hoc; **not** the pre-registered A2/A3 comparison; recorded,
 no root-cause claim): the round-1 kept-state continuation (`GEN 16 cont=1`, cursor 3896) produced
 `T 90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92` — and the **fresh full-prefill
@@ -343,3 +354,73 @@ fresh-process reference) is a new dispatch and was deliberately not re-run here;
 kept-state vs reset+full-prefill in one process — P2R-2b measured cross-class logprob drift up to 0.0713
 on this host/quant while the greedy tokens here were identical (fact only, no general claim); (3) no
 service leg (P2R-3c) and no performance/TPS claims are part of this task.
+
+#### P2R-3b-2 - corrected-sequence run
+
+Run 2026-10-15 on branch `phase2r/review-gaps`: **one native** (cap 2; no tool failure, no re-run), new
+exe `7c441a94…` (SHA/size recomputed before the lease; 139,258,368 B), one `gpu-lock run` lease with the
+engine as declared binary, rc=0, 39.0 s; ctx4096/t8/slots3200/ubatch4096; static stdin = the task's 13
+lines (task.md section 1, byte-for-byte): `SCORE <P_long> topk=5 keep=1` / `GEN 128 cont=1` / plain
+`SCORE <P_long> topk=1` / `GEN 128 <P_long>` / `SCORE <P_long> topk=5 keep=1` / `GEN 128 cont=1 90` /
+plain `SCORE <P_long> topk=1` / `GEN 128 <P_long>,90` / `SCORE <P_long> topk=5 keep=1` / `GEN 16 cont=1` /
+plain `SCORE <P_long> topk=1` / `GEN 16 <P_long>` / `QUIT` (SHA `e13f7f14aa95354c344a9a9ae4f1696cf9b26dd8fb33471f13549879f0de9773`; **no `SAVE`/`LOAD`**). Capacity self-check written
+**before** the run: `3896+128=4024`, `3896+128=4024`, `3896+1+128=4025`, `3896+1+128=4025`,
+`3896+16=3912`, `3896+16=3912` - all <= 4096. Evidence:
+`results/opencode-execution/strata-unified-p2r3b2-identity/` (raw stdout+stderr under `native1/raw/`,
+pre/post states, `client/p2r3b2-compare.json`, `final-report.md`).
+
+**Result: B1-B6 PASS; B0 FAIL-as-written on two literal task-text counts with substance PASS; 12/12
+requests `DONE`; zero `ERR`; zero `exceeds the context` anywhere.** The per-request raw originals:
+
+| # | request | key raw stdout (verbatim) |
+|---|---|---|
+| 1 | keep-SCORE #1 | `PP 3896 3896 4725 825.1` / `LOGPROBS 3895 5 90:-0.1161 4754:-2.2489 13215:-6.1388 1:-7.3719 5202:-8.6075` / `DONE 0 3896 4732.5 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 2 | `GEN 128 cont=1` | `DONE 17 0 0.0 945.6 stop 0 0 3896 0 0 0 0 0.0 0 0` |
+| 3 | plain SCORE #1 | `PP 3896 3896 2762 1411.3` / `LOGPROBS 3895 1 90:-0.1160` / `DONE 0 3896 2763.9 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 4 | `GEN 128 <P_long>` | `PP 3896 3896 2675 1456.8` / `DONE 17 3896 2677.7 405.2 stop 0 0 0 0 0 0 0 0.0 3896 0` |
+| 5 | keep-SCORE #2 | `PP 3896 3896 2775 1404.5` / `LOGPROBS 3895 5 90:-0.1160 4754:-2.2494 13215:-6.1471 1:-7.3827 5202:-8.6236` / `DONE 0 3896 2777.1 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 6 | `GEN 128 cont=1 90` | `PP 1 1 28 36.4` / `DONE 16 1 27.9 338.3 stop 0 0 3896 0 0 0 0 0.0 1 0` |
+| 7 | plain SCORE #2 | `PP 3896 3896 2695 1446.1` / `LOGPROBS 3895 1 90:-0.1160` / `DONE 0 3896 2697.1 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 8 | `GEN 128 <P_long>,90` | `PP 3897 3897 2730 1428.6` / `DONE 16 3897 2731.8 342.1 stop 0 0 0 0 0 0 0 0.0 3897 0` |
+| 9 | keep-SCORE #3 | `PP 3896 3896 2662 1464.2` / `LOGPROBS 3895 5 90:-0.1160 4754:-2.2494 13215:-6.1471 1:-7.3827 5202:-8.6236` / `DONE 0 3896 2663.9 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 10 | `GEN 16 cont=1` | `DONE 16 0 0.0 332.8 length 0 0 3896 0 0 0 0 0.0 0 0` |
+| 11 | plain SCORE #3 | `PP 3896 3896 2661 1464.3` / `LOGPROBS 3895 1 90:-0.1160` / `DONE 0 3896 2663.6 0.0 score 0 0 0 0 0 0 0 0.0 3896 0` |
+| 12 | `GEN 16 <P_long>` | `PP 3896 3896 2689 1449.4` / `DONE 16 3896 2691.3 333.5 length 0 0 0 0 0 0 0 0.0 3896 0` |
+
+B0-B6 as evaluated on the raw log:
+
+- **B0 FAIL-as-written, substance PASS** (two literal deviations, both recorded; nothing adjusted):
+  (a) the executed sequence **is** task.md section 1 and contains **3** keep-SCOREs + **3** plain SCOREs
+  (6 SCORE `DONE`s, all present, all `finish=score`); the B0 text's "4 keep-SCORE" cannot describe that
+  sequence (task-text slip); (b) the `GEN 128 <P_long>,90` reference reports `prompt_read=3897` because
+  its prompt is `P_long,90` = 3897 ids and it read all of them fresh (single `PP 3897 3897`,
+  `reused=0`) - the literal 3896 is met by the other two references and not by this one. All substance
+  conditions hold: every reference `reused=0` and full-read; **zero** `ERR session … exceeds the
+  context`; zero `ERR` of any kind.
+- **B1 PASS**: `GEN 128 cont=1` T == `GEN 128 <P_long>` T ==
+  `90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92,248046` (17 tokens incl. EOS; both
+  `finish=stop`, `produced=17`); first divergence n/a.
+- **B2 PASS**: `GEN 128 cont=1 90` T == `GEN 128 <P_long>,90` T ==
+  `198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92,248046` (16 tokens incl. EOS; both
+  `finish=stop`, `produced=16`); first divergence n/a.
+- **B3 PASS**: `GEN 16 cont=1` T == `GEN 16 <P_long>` T ==
+  `90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92` (16 tokens; both `finish=length`,
+  `produced=16`); first divergence n/a.
+- **B4 PASS**: continuation `prompt_read` = 0/1/0 (pure / appended-90 / pure), `reused` =
+  3896/3896/3896, `prompt_ms` = 0.0/27.9/0.0 vs same-run references 2763.9/2697.1/2663.6 (plain SCOREs)
+  and 2677.7/2731.8/2691.3 (reference GENs), plus the cold keep #1 at 4732.5 - every continuation is
+  >=95x shorter; no continuation prints a 3896-token `PP` (two print none at all, the append prints only
+  `PP 1 1 28 36.4`).
+- **B5 PASS**: `GEN 16 cont=1` first token `T 90` = top-1 of the preceding keep-SCORE #3
+  (`LOGPROBS 3895 5 90:-0.1160 …`). The `90` used by both 90-requests is P_Long top-1 in this run: the
+  keep #2 and plain #2 lines both start `90:-0.1160`.
+- **B6 PASS**: 1 native, one lease, serial, rc=0, no cleanup fence, lock released (`\x00`), 0 residual
+  `strata.exe`; pre/post recorded (RAM 15.72->16.44 GiB, GPU 1338->1338 MiB / 0%); stdin SHA
+  `e13f7f14…`, no `SAVE`/`LOAD`.
+
+Same-run auxiliary facts only (not the pre-registered checks): the keep-round token identity is
+reproduced in both families (cont first 16 == ref first 16; the append chain's 16 tokens == the
+`P_long,90` reference's 16 tokens); the 128-family pair both run to `stop` with EOS at token 17 and the
+16-family pair both end at `length` (16 tokens, no EOS), matching their kept-state counterparts exactly. The corrected run thereby closes the P2R-3b open item (1): the
+plain-`SCORE`-reset schedule makes all three pairwise identities executable and they hold token-for-token
+at ctx4096.
