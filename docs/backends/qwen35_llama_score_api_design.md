@@ -1,9 +1,19 @@
-# qwen35_llama score API - `/v1/score`, `/v1/capabilities` and a minimal `/v1/decisions` (P2-3 subset)
+# qwen35_llama score API - `/v1/score`, `/v1/capabilities` and a minimal `/v1/decisions` (P2-3 subset; P2R-1 payload semantics)
 
-Phase-2 backend-interface work, task **P2-3** (branch `phase2/backend-interface`). This adds a **thin HTTP
-service of our own** that drives one existing serve-protocol engine process (`CAPS` / `SCORE`) and exposes three
-endpoints. It is a **documented subset, not a protocol-compatible server**: nothing here claims SGLang
-compatibility, concurrency, streaming or batching.
+Phase-2 backend-interface work, task **P2-3** (branch `phase2/backend-interface`), extended by **P2R-1**
+(branch `phase2r/review-gaps`). This adds a **thin HTTP service of our own** that drives one existing
+serve-protocol engine process (`CAPS` / `SCORE`) and exposes three endpoints. It is a **documented subset,
+not a protocol-compatible server**: nothing here claims SGLang compatibility, concurrency, streaming or
+batching.
+
+P2R-1 changes (2026-10-15): `/v1/score` gains an optional `candidates` field (explicit token-id scoring,
+with no top-k dependency); `/v1/decisions` is re-specified around **three named probability scopes** - the
+full-vocabulary probability, the conditional probability within the candidate set, and an explicit statement
+that **no calibrated business confidence is provided** - and now **always returns `label_mass`** (the old
+`label_mass_omitted` field and the "candidate outside the returned top-k -> 422" refusal are **deleted**).
+The engine side is the P2R-1 `SCORE ... [cand=...]` / `topk=0` extension
+(`docs/backends/qwen35_llama_capabilities_and_score.md`); GPU verification of the new paths is **P2R-2**
+(pending). The payload-difference checklist vs the P2-3/P2-4 payload is at the end of §2.
 
 Files (all new; official files, the engine and every frozen artifact are untouched):
 
@@ -16,7 +26,8 @@ Files (all new; official files, the engine and every frozen artifact are untouch
 
 Status of verification: **0 GPU, no engine run, no lease.** Everything measured below was measured with the stub
 engine on CPU. Running the service against the real engine (real model, GPU lease, neutral cwd) is **P2-4** and
-has not been done yet.
+has not been done yet. The P2R-1 additions (explicit candidates, the new decisions payload) have **no
+real-engine evidence yet** - that is P2R-2; this document does not claim any.
 
 ## 1. Running the service
 
@@ -88,10 +99,12 @@ Request (exactly one of `prompt_ids` / `prompt`):
 |---|---|---|
 | `prompt_ids` | list of int | the prompt as token ids (the same grammar `GEN`/`SCORE` use) |
 | `prompt` | string | text prompt; needs `--tokenizer-model`, otherwise refused `501` |
-| `topk` | int > 0 | how many distribution entries to return; default 5 (the engine's own default) |
+| `topk` | int >= 0 | how many distribution entries to return; default 5 (the engine's own default). `topk=0` is legal only together with `candidates` (and then no distribution is requested) |
+| `candidates` | list of int | **P2R-1, optional**: explicit token ids to score (order preserved, `<= 2048`, pairwise distinct); orthogonal to `topk` |
 
-The service sends exactly one engine command, `SCORE <ids> topk=<topk>`, waits for `LOGPROBS` + `DONE ... score`
-(ignoring the engine's `PP` progress lines), and answers:
+The service sends exactly one engine command - `SCORE <ids> topk=<topk>` or, with candidates,
+`SCORE <ids> topk=<topk> cand=<ids>` - waits for `LOGPROBS` + `CANDLOGPROBS` (only the lines that were
+requested) + `DONE ... score` (ignoring the engine's `PP` progress lines), and answers:
 
 ```json
 {"logprobs": [{"id": 0, "logprob": -0.9328}, {"id": 1, "logprob": -1.4328}], "pos": 0,
@@ -102,6 +115,11 @@ The service sends exactly one engine command, `SCORE <ids> topk=<topk>`, waits f
 - `logprobs`: the engine's `LOGPROBS` line, unchanged: the `k` largest logits of the last prompt position, and
   `logprob = logit - logsumexp(all logits)` over the **full vocabulary** (`%.4f` as printed by the engine; no
   top-k renormalization). `full_vocab_softmax: true` states that denominator, which P2-1/P2-2 verified.
+  Empty `[]` when `topk=0` was requested (nothing was asked for; never an invented value).
+- `candidates` (**P2R-1**, only when the request carried `candidates`): the engine's `CANDLOGPROBS` line as
+  `[{"id":..., "logprob":...}, ...]`, **in the request's order**, values from the same last-position row and
+  the same full-vocab lse as `logprobs` (the engine contract: one prefill, no second forward). Ids outside
+  the distribution's top-k are answered like any other id.
 - `pos`: 0-based position of the last prompt token (`prompt_tokens - 1`).
 - `generated_tokens: 0`: hard state - SCORE generates no token (P2-2: no `T` line between `PP` and
   `DONE`, `produced=0`, `finish=score`).
@@ -109,11 +127,18 @@ The service sends exactly one engine command, `SCORE <ids> topk=<topk>`, waits f
   `prompt_read < prompt_tokens` only when a cancel ended the read part-way - this service never sends `STOP`
   except after a timeout, see 5).
 - No service-side cap on `topk`: it is passed to the engine, whose `k = min(topk, n_vocab)` still applies.
-- An out-of-vocabulary id or an over-context prompt arrives as the engine's own `ERR` and is answered `422`
-  with the message verbatim, `"error_source": "engine"` (sample capture: `{"error": "a token id is outside the
-  vocabulary", "error_source": "engine"}`).
+- An out-of-vocabulary id (prompt or candidate) or an over-context prompt arrives as the engine's own `ERR`
+  and is answered `422` with the message verbatim, `"error_source": "engine"` (sample capture: `{"error": "a
+  token id is outside the vocabulary", "error_source": "engine"}`).
+- Candidate validation (all refusals, never a silent fix): not a list / empty / non-integer / boolean /
+  negative -> `400`; more than 2048 ids -> `400`; duplicated ids -> `400`; `topk=0` without `candidates` ->
+  `422` (the engine has no answer to give); `candidates` with `topk>=1` is fine (both answers are returned).
+- A malformed `CANDLOGPROBS` from the engine (short, bad pairs, declared-vs-actual count mismatch, appearing
+  twice, appearing although no `candidates` were requested, or ids not in request order) is an
+  `EngineProtocolError` -> `502`; a `LOGPROBS` line on a `topk=0` request is a `502` too. Lines are parsed
+  strictly, never best-effort.
 
-### `POST /v1/decisions` (minimal subset)
+### `POST /v1/decisions` (minimal subset; P2R-1 payload)
 
 Request:
 
@@ -122,21 +147,34 @@ Request:
 | `kind` | string | `"choice"`, `"score"` or `"yes_no"`; anything else is refused `422` (no business kinds, no thresholds anywhere) |
 | `prompt_ids` | list of int | the prompt as token ids (there is no string `prompt` on this endpoint) |
 | `candidates` | list of lists of int | the token ids to score, in the caller's order (the caller owns labels, rendering and prompt construction) |
-| `topk` | int > 0 | optional; must be at least `len(candidates)` |
+| `topk` | int > 0 | optional, **deprecated for this endpoint**: still validated when present, but it no longer constrains or changes anything - scoring is explicit-id now (the old "topk must cover all candidates" refusal is deleted) |
 
-The service sends **one** `SCORE` with `topk = max(5, len(candidates), request.topk)` so every candidate shares
-the same full-vocabulary denominator, then answers (values from the sample capture):
+The service sends **one** `SCORE <ids> topk=0 cand=<ids>` - one prefill, **no top-k dependency**, so a
+candidate id is answered whatever its rank in the distribution - then answers (values from the stub capture;
+`...` elides digits):
 
 ```json
 {"kind": "choice",
- "candidates": [{"token_ids": [0], "logprob": -0.9328, "probability": 0.393450505...},
-                {"token_ids": [1], "logprob": -1.4328, "probability": 0.238639794...},
-                {"token_ids": [2], "logprob": -1.9328, "probability": 0.144742351...}],
+ "candidates": [{"token_ids": [0], "logprob": -0.9328, "full_vocab_probability": 0.3934505...,
+                 "conditional_probability": 0.50647...,
+                 "probability": 0.3934505...},
+                {"token_ids": [1], "logprob": -1.4328, "full_vocab_probability": 0.2386397...,
+                 "conditional_probability": 0.30720...,
+                 "probability": 0.2386397...},
+                {"token_ids": [2], "logprob": -1.9328, "full_vocab_probability": 0.1447423...,
+                 "conditional_probability": 0.186323...,
+                 "probability": 0.1447423...}],
  "pos": 1, "full_vocab_softmax": true, "generated_tokens": 0,
  "usage": {"prompt_tokens": 2, "prompt_ms": 1.0, "prompt_read": 2},
- "label_mass_omitted": "the candidate set is not a closed, mutually exclusive cover of the next-token
-   distribution (total candidate probability 0.776833, tolerance 0.001); the per-candidate probabilities are
-   returned un-renormalized"}
+ "label_mass": 0.7768326...,
+ "label_mass_covers_distribution": false,
+ "label_mass_tolerance": 0.001,
+ "calibrated": false,
+ "probability_scopes": {
+   "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable across requests; the sum over this candidate set is at most 1.",
+   "conditional_probability": "full_vocab_probability / label_mass: meaningful only within this candidate set; not comparable across different candidate sets.",
+   "business_confidence": "not provided: no calibration exists, so these numbers are not confidences; e.g. a label_mass of 0.31 means about 69% of the distribution mass lies outside the candidate set."
+ }}
 ```
 
 Validation (all refusals name the offending index/id; nothing is silently dropped):
@@ -148,39 +186,71 @@ Validation (all refusals name the offending index/id; nothing is silently droppe
 - candidate ids must be pairwise **distinct** (mutual exclusivity); duplicates are refused `422`;
 - `choice`/`score` need at least two candidates; `yes_no` needs exactly two (the caller's yes/no token pair -
   the service never hardcodes a word or language);
-- every candidate must appear in the engine's returned top-k, otherwise `422` with the reason (the `SCORE`
-  command has no explicit-id scoring; raise `topk` if the ids are plausible). This is the one **hard engine
-  limitation** of the subset and it is a refusal, never an invented value.
+- more than 2048 candidates are refused `422` (the engine's explicit-candidate cap);
+- an out-of-vocabulary id is the engine's own `ERR`, mapped to `422` with `"error_source": "engine"`;
+- there is **no top-k membership requirement anymore** (P2R-1): the old refusal "candidate id(s) ... are outside
+  the engine's returned top-N logprobs" is deleted, together with the `topk >= len(candidates)` check.
 
-Per candidate the response carries `logprob` (full-vocab log-softmax) and `probability = exp(logprob)` -
-**un-renormalized**; renormalizing over the labels is left to the caller (a one-line sum).
+#### The three probability scopes (P2R-1, P0-2)
+
+The payload distinguishes exactly three quantities and never presents one as another:
+
+1. **Full-vocabulary probability** - `full_vocab_probability = exp(logprob)`, where `logprob` is the
+   log-softmax over **all** `n_vocab` logits of the last prompt position (the same row/lse the engine's
+   `LOGPROBS` line uses; one prefill). Group property: the sum over any candidate set is `<= 1`, and values
+   are **comparable across requests** (same denominator, no renormalization).
+2. **Candidate-set conditional probability** - `conditional_probability = full_vocab_probability /
+   label_mass`. It answers "if the next token is one of these candidates, which one?" - meaningful **only
+   within this candidate set** and **not comparable across different candidate sets** (a different set gets a
+   different denominator). `null` when `label_mass` is 0 (nothing to condition on).
+3. **Business confidence** - **not provided**. No calibration exists anywhere in this chain, so no field,
+   threshold or verdict here is a confidence. `calibrated: false` and the `probability_scopes` text state
+   this explicitly; a low `label_mass` (e.g. ~0.31 means about 69% of the mass is outside the candidate set)
+   never triggers any "high confidence" field, and no confidence/threshold field exists to trigger.
+
+`probability` is kept as a **deprecated alias** of `full_vocab_probability` (identical value; downstream
+compatibility) and will be documented as such wherever the payload is described.
 
 #### `label_mass`
 
-`label_mass` is emitted only when it is a **verified quantity** at this layer:
-
-1. the candidates are mutually exclusive (enforced: distinct single-token ids), and
-2. they **cover the full next-token distribution**: `sum(candidate probabilities) = 1` within a tolerance of
-   `1e-3` (the engine prints logprobs at `%.4f`, so a full cover can only be read back within that precision).
-
-When both hold, `label_mass` is that sum (sample capture, stub vocabulary of 4: `1.0000386724460892`). When they
-do not - the normal case for real decisions - the field is **omitted** and `label_mass_omitted` explains why
-with the computed partial mass. The service cannot verify that a partial candidate list is the complete set of
-a decision, and it does not pretend to: a partial mass is conveyed as text in the omission reason, not as a
-field with `label_mass`'s name.
+`label_mass` is **always returned** (P2R-1; the old `label_mass_omitted` is deleted): it is the sum of the
+candidates' `full_vocab_probability`, i.e. the share of the full next-token distribution the candidate set
+covers - a **reported measurement**, not a gate. `label_mass_covers_distribution` is the explicit check
+`|label_mass - 1| <= label_mass_tolerance` (`label_mass_tolerance = 1e-3`; the engine prints logprobs at
+`%.4f`, so a full cover can only be read back within that precision), and `label_mass_tolerance` carries the
+number itself. `label_mass = 1` within tolerance means the candidates are a closed cover; any other value
+simply says how much mass lies elsewhere (the residual is not distributed to the candidates - the reported
+per-candidate numbers are always un-renormalized full-vocab values).
 
 The three kinds share this one scoring core. `choice` and `score` are accepted but not differentiated beyond
 validation: the distinction in SGLang comes from server-side rendering and label aggregation (argmax option,
 probability-weighted level), neither of which exists here. `yes_no` is the same two-candidate scoring with a
 fixed arity.
 
+#### Differences vs the P2-3/P2-4 decisions payload (what changed, field by field)
+
+| Field | P2-3/P2-4 payload | P2R-1 payload |
+|---|---|---|
+| engine command | `SCORE <ids> topk=max(5, len(candidates), topk)` (candidates had to fall in the top-k) | `SCORE <ids> topk=0 cand=<ids>` (one prefill, explicit ids) |
+| per candidate `logprob` | full-vocab log-softmax | unchanged (same row/lse semantics) |
+| per candidate `probability` | `exp(logprob)`, un-renormalized | unchanged value, now documented as **deprecated alias** of `full_vocab_probability` |
+| per candidate `full_vocab_probability` / `conditional_probability` | did not exist | new; conditional is `full/mass`, `null` at mass 0 |
+| top-level `label_mass` | only when `abs(mass-1) <= 1e-3` | **always** returned |
+| top-level `label_mass_omitted` | text explaining omission | **deleted** |
+| top-level `label_mass_covers_distribution` / `label_mass_tolerance` | did not exist | new |
+| top-level `calibrated` / `probability_scopes` | did not exist | new (`false` / three scoped strings) |
+| `kind` / `pos` / `full_vocab_softmax` / `generated_tokens` / `usage` | | unchanged |
+| refusal "candidate outside the returned top-k" (422) | existed | **deleted** (explicit scoring has no top-k dependency) |
+| `topk` request field | must be >= `len(candidates)` | accepted (positive int) for compatibility; no effect |
+| numeric equality for the same candidate ids | - | `logprob` and `probability` are the same values (same engine row; P2-4's 4dp parity claim is not re-derived here, and its GPU capture predates this payload) |
+
 ## 3. Errors
 
 | Status | `error_source` | When |
 |---|---|---|
-| 400 | service | body not a JSON object / invalid JSON / wrong field type / unknown field / both or neither of `prompt_ids`,`prompt` / empty or negative ids / boolean ids |
+| 400 | service | body not a JSON object / invalid JSON / wrong field type / unknown field / both or neither of `prompt_ids`,`prompt` / empty or negative ids / boolean ids / `candidates` not a list / non-integer / negative / duplicated / more than 2048 |
 | 413 | service | body larger than 1 MiB |
-| 422 | service | semantic refusals: unknown `kind`; multi-token or duplicate candidates; `yes_no` arity; `topk` smaller than the candidate count; candidate outside the returned top-k |
+| 422 | service | semantic refusals: unknown `kind`; multi-token or duplicate candidates; `yes_no` arity; more than 2048 candidates (`/v1/decisions`); `topk=0` without `candidates` (`/v1/score`) |
 | 422 | engine | the engine answered `ERR <message>` - the message is passed through **verbatim** |
 | 501 | service | string `prompt` without a usable tokenizer |
 | 502 | service | the engine link is dead (process exited, pipes closed) or violated the line protocol; after a failed timeout drain the service stays dead until restarted |
@@ -242,9 +312,9 @@ field is accepted with a different meaning than documented here.
 | SGLang | This subset |
 |---|---|
 | `query` + `items` (text or token ids), items scored in a batch | one `prompt_ids` per request; no `query`/`items`, no batch |
-| `label_token_ids` (one list per item) - arbitrary ids are scored | no explicit-id scoring; only the distribution's top-k is returned (a candidate outside it is `422`) |
-| `apply_softmax` (renormalize over labels), `item_first`, `temperature`, `return_token_logprobs` | none of these fields; `logprob` is only ever the full-vocabulary log-softmax, and unknown fields are refused |
-| `scores`: linear probabilities in label order | `logprobs`: `{id, logprob}` pairs of the top-k, in the engine's descending order; no probabilities in this endpoint |
+| `label_token_ids` (one list per item) - arbitrary ids are scored | `candidates` (P2R-1) scores one explicit id list per request, in request order; arbitrary ids are answered whatever their top-k rank; still no batch across items |
+| `apply_softmax` (renormalize over labels), `item_first`, `temperature`, `return_token_logprobs` | none of these fields; `logprob` is only ever the full-vocabulary log-softmax, and unknown fields are refused; candidate answers are never renormalized |
+| `scores`: linear probabilities in label order | `logprobs`: `{id, logprob}` pairs of the top-k, in the engine's descending order (`[]` for `topk=0`); optional `candidates`: `{id, logprob}` pairs in the caller's order; no probabilities in this endpoint |
 | cross-encoder/rerank semantics, `model` selection | none; one engine, no model routing |
 
 ### `/v1/decisions`
@@ -253,8 +323,8 @@ field is accepted with a different meaning than documented here.
 |---|---|
 | `input` text + typed `questions` with `options`/`levels`/descriptions; server renders the chat template, chooses labels (A-Z, 0-9, yes/no), checks each label is one token at the answer position | the caller builds the prompt and passes `prompt_ids` + candidate token ids; no rendering, no labels, no questions text, no reasoning-block handling |
 | requests are answered in one server-side batch of prefills; questions answered independently | one `kind` + one candidate list per request; no batch, no multi-question |
-| `probabilities` renormalized over the labels (sum 1), `choice` (top option) and `score` (weighted mean level) aggregates | per-candidate `logprob` + un-renormalized `probability`; no aggregate fields |
-| `label_mass` returned for text models whenever labels are scored | `label_mass` only when the candidate set is a **verified closed cover** (`sum = 1` within `1e-3`); otherwise omitted with the reason |
+| `probabilities` renormalized over the labels (sum 1), `choice` (top option) and `score` (weighted mean level) aggregates | per-candidate `logprob`, `full_vocab_probability`, candidate-set `conditional_probability` and the deprecated `probability` alias; no aggregate fields, no renormalized probability field |
+| `label_mass` returned for text models whenever labels are scored | `label_mass` **always** returned, with `label_mass_covers_distribution` stating whether it is a closed cover (P2R-1); never omitted, never gated |
 | `temperature` divides label logits; `prompt_format_version`, `return_prompt_token_ids`, `images`, `model` | none of these fields |
 | errors 400 with per-field reasons; runs alongside generation traffic on the same server | 4xx/422 refusals as in §3; a single serialized engine, no chat endpoint at all |
 
@@ -266,7 +336,7 @@ field is accepted with a different meaning than documented here.
 | Not implemented | Today's behavior | Possible later step |
 |---|---|---|
 | real-engine verification of this service | never run against the engine (0 GPU by design) | P2-4: GPU end-to-end on the real model under the usual lease/neutral-cwd discipline |
-| explicit-id scoring (score ids outside the top-k) | refused `422` | engine-side `SCORE` extension (new key, P2-1 protocol precedent); removes the top-k candidate limitation |
+| GPU verification of the P2R-1 additions | not run (0 GPU): explicit candidates, the always-present `label_mass` payload and the byte-compat cross-check of `cand=`-free requests against the P2-1 exe have **no real-engine evidence yet** | P2R-2 (registered follow-up): same-request old/new exe diff + `CANDLOGPROBS` vs `LOGPROBS` identity on GPU |
 | server-side prompt rendering / labels / question descriptions | caller owns prompt construction (`prompt_ids`) | a rendering layer *above* this service; the service stays content-free |
 | streaming | none; one JSON response per request | incompatible with a single score answer; only relevant to future generation endpoints |
 | batching / concurrent requests | `503` while busy | engine-side continuous batching (P2-1 `batching=false`), then a scheduler above it |
@@ -277,39 +347,62 @@ field is accepted with a different meaning than documented here.
 
 ```text
 cd <repo root>
-python backends/qwen35_llama/tools/test_score_api.py -v
+python backends/qwen35_llama/tools/test_score_api.py -v          # 34 tests (P2R-1)
+python backends/qwen35_llama/tools/test_backend_adapters.py -v   # 13 tests, unchanged and green
 ```
 
-Result of the recorded run: **19 tests, OK** (`Ran 19 tests in 14.300s`, Python 3.11.9, Windows; raw log:
-research repo `results/opencode-execution/strata-unified-p2-3-score-api/unit-tests.log`). Each test starts the
-test-only stub (`stub_engine.py`) as a real child process over pipes and an in-process HTTP server on
-`127.0.0.1:0`; no GPU, no lease, no engine, no writes outside the process pipes/sockets. Coverage:
+P2R-1 recorded run (2026-10-15): **34 tests, OK** (`Ran 34 tests in 22.879s`, Python 3.11.9, Windows; raw log
+`results/opencode-execution/strata-unified-p2r1-candidate-scoring/unit-tests-score-api.log` in the research
+repo), plus the P2-7 suite **13 tests, OK** (same directory, `unit-tests-backend-adapters.log`). Each test
+starts the test-only stub (`stub_engine.py`) as a real child process over pipes and an in-process HTTP server
+on `127.0.0.1:0`; no GPU, no lease, no engine, no writes outside the process pipes/sockets. Coverage (the
+P2-3 baseline plus P2R-1):
 
 - `/v1/score`: normal fields (`generated_tokens=0`, `pos`, `full_vocab_softmax`, logprobs order), `topk`
   default and override;
+- `/v1/score` `candidates` (P2R-1): order preservation and value identity with the `LOGPROBS` row (same
+  stub distribution), a candidate outside the top-k answered (old 422 regression -> 200), `topk=0` +
+  candidates -> `logprobs: []` and candidates only, `topk=0` without candidates -> `422`, candidates+topk
+  coexist, duplicate -> `400`, 2049 ids -> `400`, out-of-vocabulary -> engine `ERR` -> `422`;
+- `CANDLOGPROBS` protocol discipline (P2R-1, stub distortion modes): declared-vs-actual count mismatch ->
+  `502`, unsolicited line -> `502`, line twice -> `502`, swapped id order -> `502`;
 - `/v1/capabilities`: passthrough equality of engine fields plus `service`/`engine_sha256` (SHA of the declared
   engine file, verified against `hashlib`);
-- engine `ERR` -> `422` + verbatim text + `error_source=engine`;
+- engine `ERR` -> `422` + verbatim text + `error_source=engine` (prompt id and candidate id paths);
 - `prompt` string without a tokenizer -> `501` + explanation, and with an unloadable `--tokenizer-model` the
   same refusal with the load error;
 - bad bodies -> `400` (invalid JSON, both/neither of `prompt_ids`/`prompt`, unknown field, empty ids, boolean
   ids); unknown path -> `404`;
 - `/v1/decisions`: all three kinds' normal paths, multi-token candidate refusal, duplicate-candidate refusal,
-  unknown kind refusal (no business kinds), candidate outside top-k refusal, `label_mass` omitted on a partial
-  set and present on a verified full cover (stub vocabulary 4, mass `1.00004`);
+  unknown kind refusal (no business kinds); candidate outside top-k **scored** (P2R-1);
+- `/v1/decisions` payload (P2R-1): `label_mass` always present and equal to the probability sum,
+  `label_mass_covers_distribution` false on a partial set / true on the closed cover (stub vocabulary 4,
+  conditional probabilities summing to 1), `label_mass_tolerance`, `calibrated: false`,
+  `probability_scopes` with exactly the three texts, deprecated `probability` == `full_vocab_probability`,
+  `conditional_probability` == `full/mass`, low mass (~0.27) -> no confidence/threshold field anywhere;
 - concurrency: a second request during an in-flight score gets `503` + `Retry-After: 1`, and the first still
   completes `200`;
 - timeout: a stub that never answers -> `504` within ~1 s (test budget), next request `502` (dead link);
 - CLI: `--start-engine` with a real child process, `READY` + listening lines parsed, live `/v1/capabilities`
   and `/v1/score` against it, clean terminate.
 
-The raw HTTP samples quoted in §2 are in `sample-responses.jsonl` (same directory; captured by
-`p2-3-capture.py`).
+Changed P2-3-era tests (P2R-1 semantic changes only, listed in the task evidence): "candidate outside top-k ->
+422" became "candidate outside top-k -> 200 scored", and the two `label_mass_omitted` assertions became
+"`label_mass` always present" assertions (with the new fields checked). The P2-3 sample responses
+(`sample-responses.jsonl` in the P2-3 evidence directory) predate the P2R-1 decisions payload and are kept as
+history, not as the current contract.
 
 ## 10. Verification boundary of this task
 
-- 0 GPU, no engine binary run, no lease, no model touched: every number above was produced by the stub engine
-  on CPU, except the P2-2 transcript facts which are quoted with their source.
-- Official files and engine source: zero edits (this task adds files only; the commit shows additions in
-  `backends/qwen35_llama/tools/` and `docs/backends/`).
+- P2-3 baseline: 0 GPU, no engine binary run, no lease, no model touched: every number above was produced by
+  the stub engine on CPU, except the P2-2 transcript facts which are quoted with their source.
+- P2R-1 (2026-10-15): edited `backends/qwen35_llama/src/program/qwen35_serve.cpp` (the `cand=`/`topk=0`
+  SCORE extension and the two `score_*` CAPS fields), `tools/score_api.py`, `tools/backend_adapters.py`
+  (signature passthrough), `tools/stub_engine.py`, `tools/test_score_api.py`, and the four docs. The engine
+  change is **compile-verified only** (build.ps1 exit 0; new exe
+  `sha256=d0321a98ab1908ef3c0f0d91b1b6e6c42758d79594222c6def425bf406a4bc09`, 139,257,344 B) - no engine was
+  started, no model loaded, no GPU touched; the same-request byte-compat check against the old exe
+  (`6dee0c66...`) and the GPU identity check are **P2R-2**.
+- Official files and frozen artifacts: zero edits (P2R-1 touches only the files listed above; no `main`
+  merge, no vendor change).
 - No performance claim of any kind is made for the real engine; P2-4 owns that.

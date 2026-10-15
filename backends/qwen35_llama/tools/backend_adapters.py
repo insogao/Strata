@@ -65,7 +65,7 @@ class BackendAdapter:
     def capabilities(self, link, timeout):
         raise NotImplementedError
 
-    def score(self, link, ids, topk, timeout):
+    def score(self, link, ids, topk, timeout, candidates=None):
         raise UnsupportedBackendOperation("the %s backend has no SCORE command" % self.name)
 
 
@@ -73,8 +73,8 @@ class Qwen35LlamaAdapter(BackendAdapter):
     name = "qwen35_llama"
     protocol = "strata-serve-v1"
     client_commands = ("CAPS", "SCORE", "GEN", "SAVE", "LOAD", "STATE", "STOP", "QUIT")
-    engine_lines = ("READY", "PP", "T", "LOGPROBS", "DONE", "CAPS", "SAVED", "LOADED",
-                    "STATE", "ERR")
+    engine_lines = ("READY", "PP", "T", "LOGPROBS", "CANDLOGPROBS", "DONE", "CAPS", "SAVED",
+                    "LOADED", "STATE", "ERR")
     supports_score = True
     caps_handshake = True
 
@@ -87,8 +87,8 @@ class Qwen35LlamaAdapter(BackendAdapter):
             payload["batching_contract"] = BATCHING_CONTRACT_VERSION
         return payload
 
-    def score(self, link, ids, topk, timeout):
-        return link.score(ids, topk, timeout)
+    def score(self, link, ids, topk, timeout, candidates=None):
+        return link.score(ids, topk, timeout, candidates=candidates)
 
 
 class OfficialQ36Adapter(BackendAdapter):

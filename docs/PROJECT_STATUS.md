@@ -3,7 +3,7 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-14（**阶段 1 完成**：四项门槛自测达成，交付汇总见 `docs/PHASE1_DELIVERY.md`；阶段 2 下一步）
+更新时间：2026-10-15（**阶段 2 收尾＋PR#2 评审补强 P2R-1**：见 §4.0b；阶段 1 交付汇总见 `docs/PHASE1_DELIVERY.md`）
 
 ## 0. 一句话状态
 
@@ -74,6 +74,7 @@
 | P2-6 `SAVE`/`LOAD` GPU parity | 完成 | commit `596e936f`（同进程/跨进程逐 id 全等；失败不半恢复；可重入字节相等；`state_export` 保持 true） |
 | P2-7 双 Backend 适配器＋Batching 契约 | 完成 | commit `17c9ea1f`（官方后端能力表如实 false；不支持端点 501；契约 v1；既有 19＋新 13 单测全绿） |
 | 阶段 2 交付汇总 | 完成 | `docs/PHASE2_DELIVERY.md` |
+| P2R-1 `SCORE cand=` 显式候选评分＋`/v1/decisions` 三概率语义（PR#2 评审 P0-1/P0-2 的 0-GPU 部分；分支 `phase2r/review-gaps`） | 完成（0 GPU；**GPU 对拍待 P2R-2**） | 同一分支首个提交 `P2R-1: ...`（作者 insogao）；新 exe `d0321a98…`（139,257,344 B，旧 `6dee0c66…`）；`test_score_api.py` **34 全绿**（新增 ≥12 用例）＋`test_backend_adapters.py` **13 全绿**（未改）；`CANDLOGPROBS`＝同一 prefill/行/lse，无第二次 forward；无 `cand=` 请求 stdout 逐字节兼容（唯一改动＝兜底 `ERR expected:` 加 `[cand=…]` 提示）；decisions 恒返 `label_mass`＋`covers`/`tolerance`/`calibrated:false`/`probability_scopes`，删 `label_mass_omitted`；低 mass 无任何置信/阈值字段 |
 
 ### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
 

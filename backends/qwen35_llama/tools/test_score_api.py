@@ -55,12 +55,14 @@ def raw_post(port, path, data):
 
 class StubService:
     def __init__(self, vocab=64, drop_scores=0, score_delay_ms=0, timeout=30.0,
-                 drain_timeout=1.0, tokenizer_model=None):
+                 drain_timeout=1.0, tokenizer_model=None, cand_mode=None):
         argv = [PYTHON, "-B", "-u", str(STUB), "--vocab", str(vocab)]
         if drop_scores:
             argv += ["--drop-scores", str(drop_scores)]
         if score_delay_ms:
             argv += ["--score-delay-ms", str(score_delay_ms)]
+        if cand_mode:
+            argv += ["--cand-mode", cand_mode]
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=str(TOOLS))
         self.link = score_api.EngineLink(self.proc.stdin, self.proc.stdout, proc=self.proc)
         self.link.wait_ready(15.0)
@@ -161,6 +163,101 @@ class ScoreTests(unittest.TestCase):
         self.assertIn("not found", body["error"])
 
 
+class CandidateScoreTests(unittest.TestCase):
+    """P2R-1: the optional explicit `candidates` field of /v1/score."""
+
+    def setUp(self):
+        self.env = StubService()
+        self.addCleanup(self.env.close)
+
+    def test_candidates_order_preserved_and_same_row(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1, 2], "topk": 64, "candidates": [5, 1, 3]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [5, 1, 3])
+        top = {pair["id"]: pair["logprob"] for pair in body["logprobs"]}
+        for candidate in body["candidates"]:
+            # the same row and the same full-vocab lse as LOGPROBS: the values are identical
+            self.assertEqual(candidate["logprob"], top[candidate["id"]])
+
+    def test_candidate_outside_topk_still_returned(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "topk": 2, "candidates": [50]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [50])
+        self.assertLess(body["candidates"][0]["logprob"], body["logprobs"][-1]["logprob"])
+
+    def test_topk0_with_candidates_answers_only_candidates(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [3], "topk": 0, "candidates": [2, 4]})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["logprobs"], [])
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [2, 4])
+        self.assertEqual(body["pos"], 0)
+
+    def test_topk0_without_candidates_422(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "topk": 0})
+        self.assertEqual(status, 422)
+        self.assertIn("candidates", body["error"])
+
+    def test_candidates_and_topk_coexist(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "topk": 3, "candidates": [10]})
+        self.assertEqual(status, 200)
+        self.assertEqual(len(body["logprobs"]), 3)
+        self.assertEqual([candidate["id"] for candidate in body["candidates"]], [10])
+
+    def test_candidates_duplicate_400(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "candidates": [2, 2]})
+        self.assertEqual(status, 400)
+        self.assertIn("distinct", body["error"])
+
+    def test_candidates_over_limit_400(self):
+        status, body, _ = self.env.post("/v1/score",
+                                        {"prompt_ids": [1], "candidates": list(range(2049))})
+        self.assertEqual(status, 400)
+        self.assertIn("2048", body["error"])
+
+    def test_candidates_outside_vocabulary_engine_422(self):
+        status, body, _ = self.env.post("/v1/score", {"prompt_ids": [1], "candidates": [999999]})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIn("outside the vocabulary", body["error"])
+
+
+class CandidateProtocolViolationTests(unittest.TestCase):
+    """P2R-1: a malformed CANDLOGPROBS answer is a protocol violation, never passed on."""
+
+    def _env(self, mode):
+        env = StubService(cand_mode=mode)
+        self.addCleanup(env.close)
+        return env
+
+    def test_count_mismatch_502(self):
+        env = self._env("count-bump")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3]})
+        self.assertEqual(status, 502)
+        self.assertIn("CANDLOGPROBS", body["error"])
+
+    def test_unsolicited_line_502(self):
+        env = self._env("unsolicited")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1]})
+        self.assertEqual(status, 502)
+        self.assertIn("unrequested", body["error"])
+
+    def test_two_lines_502(self):
+        env = self._env("twice")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3]})
+        self.assertEqual(status, 502)
+        self.assertIn("two CANDLOGPROBS", body["error"])
+
+    def test_wrong_id_order_502(self):
+        env = self._env("swap")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1], "candidates": [3, 9]})
+        self.assertEqual(status, 502)
+        self.assertIn("order", body["error"])
+
+
 class DecisionsTests(unittest.TestCase):
     def setUp(self):
         self.env = StubService()
@@ -184,7 +281,7 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(status, 422)
         self.assertIn("distinct", body["error"])
 
-    def test_choice_normal_omits_label_mass(self):
+    def test_choice_normal_label_mass_always_returned(self):
         status, body, _ = self.env.post("/v1/decisions",
                                         {"kind": "choice", "prompt_ids": [1, 2], "candidates": [[0], [1], [2]]})
         self.assertEqual(status, 200)
@@ -194,11 +291,45 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(body["pos"], 1)
         self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[0], [1], [2]])
         for candidate in body["candidates"]:
-            self.assertAlmostEqual(candidate["probability"], math.exp(candidate["logprob"]), places=12)
+            self.assertAlmostEqual(candidate["full_vocab_probability"], math.exp(candidate["logprob"]),
+                                   places=12)
+            self.assertAlmostEqual(candidate["probability"], candidate["full_vocab_probability"], places=15)
             self.assertLessEqual(candidate["logprob"], 0.0)
-        self.assertNotIn("label_mass", body)
-        self.assertIn("label_mass_omitted", body)
-        self.assertIn("not a closed", body["label_mass_omitted"])
+        mass = body["label_mass"]
+        self.assertAlmostEqual(mass, sum(candidate["full_vocab_probability"] for candidate in body["candidates"]),
+                               places=12)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertEqual(body["label_mass_tolerance"], score_api.LABEL_MASS_TOLERANCE)
+        self.assertIs(body["calibrated"], False)
+        self.assertNotIn("label_mass_omitted", body)
+        for candidate in body["candidates"]:
+            self.assertAlmostEqual(candidate["conditional_probability"],
+                                   candidate["full_vocab_probability"] / mass, places=12)
+        scopes = body["probability_scopes"]
+        self.assertEqual(set(scopes), {"full_vocab_probability", "conditional_probability",
+                                       "business_confidence"})
+        for text in scopes.values():
+            self.assertIsInstance(text, str)
+            self.assertTrue(text)
+
+    def test_low_mass_has_no_confidence_fields(self):
+        # mass ~= 0.27 for ids 1 and 5 in the stub's fixed distribution: clearly below the tolerance,
+        # and the payload must say so without inventing any confidence or threshold.
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "choice", "prompt_ids": [1], "candidates": [[1], [5]]})
+        self.assertEqual(status, 200)
+        self.assertLess(body["label_mass"], 0.5)
+        self.assertGreater(body["label_mass"], 0.0)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertIs(body["calibrated"], False)
+        for candidate in body["candidates"]:
+            self.assertIsNotNone(candidate["conditional_probability"])
+            self.assertGreater(candidate["conditional_probability"], candidate["full_vocab_probability"])
+        for key in body:
+            self.assertNotIn("confidence", key)
+            self.assertNotIn("threshold", key)
+        for candidate in body["candidates"]:
+            self.assertNotIn("confidence", " ".join(candidate))
 
     def test_score_normal(self):
         status, body, _ = self.env.post("/v1/decisions",
@@ -207,7 +338,27 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(body["kind"], "score")
         self.assertEqual(len(body["candidates"]), 2)
         self.assertEqual(body["generated_tokens"], 0)
-        self.assertIn("label_mass_omitted", body)
+        self.assertIn("label_mass", body)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertNotIn("label_mass_omitted", body)
+
+    def test_yes_no_payload_mass_and_scopes(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "yes_no", "prompt_ids": [7], "candidates": [[0], [1]]})
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[0], [1]])
+        self.assertIn("label_mass", body)
+        self.assertFalse(body["label_mass_covers_distribution"])
+        self.assertIs(body["calibrated"], False)
+        self.assertEqual(len(body["probability_scopes"]), 3)
+
+    def test_candidate_outside_vocabulary_422(self):
+        status, body, _ = self.env.post("/v1/decisions",
+                                        {"kind": "choice", "prompt_ids": [1],
+                                         "candidates": [[999999], [1]]})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIn("outside the vocabulary", body["error"])
 
     def test_yes_no_normal_and_arity(self):
         status, body, _ = self.env.post("/v1/decisions",
@@ -220,11 +371,14 @@ class DecisionsTests(unittest.TestCase):
         self.assertEqual(status, 422)
         self.assertIn("exactly two", body["error"])
 
-    def test_candidate_outside_topk_rejected(self):
+    def test_candidate_outside_topk_still_scored(self):
+        # P2R-1 semantic change: explicit candidate scoring has no top-k dependency, so ids outside the
+        # distribution's top-k are answered (the old "outside the engine's returned top-N" 422 is gone).
         status, body, _ = self.env.post("/v1/decisions",
                                         {"kind": "choice", "prompt_ids": [1], "candidates": [[7], [8]]})
-        self.assertEqual(status, 422)
-        self.assertIn("top-", body["error"])
+        self.assertEqual(status, 200)
+        self.assertEqual([candidate["token_ids"] for candidate in body["candidates"]], [[7], [8]])
+        self.assertIn("label_mass", body)
 
 
 class FullCoverTests(unittest.TestCase):
@@ -241,6 +395,9 @@ class FullCoverTests(unittest.TestCase):
         self.assertIn("label_mass", body)
         self.assertNotIn("label_mass_omitted", body)
         self.assertLessEqual(abs(body["label_mass"] - 1.0), score_api.LABEL_MASS_TOLERANCE)
+        self.assertIs(body["label_mass_covers_distribution"], True)
+        total_conditional = sum(candidate["conditional_probability"] for candidate in body["candidates"])
+        self.assertAlmostEqual(total_conditional, 1.0, places=9)
 
 
 class BusyTests(unittest.TestCase):

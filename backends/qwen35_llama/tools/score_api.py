@@ -56,6 +56,7 @@ DEFAULT_START_TIMEOUT = 600.0
 DEFAULT_DRAIN_TIMEOUT = 10.0
 LABEL_MASS_TOLERANCE = 1e-3
 MAX_BODY_BYTES = 1 << 20
+MAX_EXPLICIT_CANDIDATES = 2048
 DECISION_KINDS = ("choice", "score", "yes_no")
 
 _EOF = object()
@@ -112,6 +113,7 @@ class ScoreResult:
     pos: int
     pairs: list
     done: dict
+    cand_pairs: list = None
 
 
 def _parse_logprobs(line: str):
@@ -129,6 +131,24 @@ def _parse_logprobs(line: str):
         raise EngineProtocolError("malformed LOGPROBS line: %r (%s)" % (line, exc))
     if len(pairs) != count:
         raise EngineProtocolError("LOGPROBS declares %d pairs but has %d: %r" % (count, len(pairs), line))
+    return pos, pairs
+
+
+def _parse_candlogprobs(line: str):
+    parts = line.split()
+    if len(parts) < 4:
+        raise EngineProtocolError("short CANDLOGPROBS line: %r" % line)
+    try:
+        pos = int(parts[1])
+        count = int(parts[2])
+        pairs = []
+        for token in parts[3:]:
+            token_id, _, logprob = token.partition(":")
+            pairs.append({"id": int(token_id), "logprob": float(logprob)})
+    except ValueError as exc:
+        raise EngineProtocolError("malformed CANDLOGPROBS line: %r (%s)" % (line, exc))
+    if len(pairs) != count:
+        raise EngineProtocolError("CANDLOGPROBS declares %d pairs but has %d: %r" % (count, len(pairs), line))
     return pos, pairs
 
 
@@ -226,14 +246,17 @@ class EngineLink:
                 raise EngineError(line[4:])
             raise EngineProtocolError("unexpected line while waiting for CAPS: %r" % line)
 
-    def score(self, ids, topk, timeout: float) -> ScoreResult:
+    def score(self, ids, topk, timeout, candidates=None) -> ScoreResult:
         command = "SCORE " + ",".join(str(int(i)) for i in ids)
         if topk is not None:
             command += " topk=%d" % topk
+        if candidates is not None:
+            command += " cand=" + ",".join(str(int(c)) for c in candidates)
         self.send(command)
         deadline = time.monotonic() + timeout
         pos = None
         pairs = None
+        cand_pairs = None
         while True:
             line = self._take_until(deadline, timeout)
             if line.startswith("PP "):
@@ -241,16 +264,39 @@ class EngineLink:
             if line.startswith("LOGPROBS "):
                 if pairs is not None:
                     raise EngineProtocolError("two LOGPROBS lines for one SCORE")
+                if topk is not None and topk == 0:
+                    raise EngineProtocolError("LOGPROBS for a topk=0 SCORE (only explicit candidates "
+                                              "were requested, none may be answered)")
                 pos, pairs = _parse_logprobs(line)
+                continue
+            if line.startswith("CANDLOGPROBS "):
+                if candidates is None:
+                    raise EngineProtocolError("unrequested CANDLOGPROBS line (no cand= was sent): %r" % line)
+                if cand_pairs is not None:
+                    raise EngineProtocolError("two CANDLOGPROBS lines for one SCORE")
+                cand_pos, cand_pairs = _parse_candlogprobs(line)
+                if pos is None:
+                    pos = cand_pos
+                elif cand_pos != pos:
+                    raise EngineProtocolError("CANDLOGPROBS pos %d differs from LOGPROBS pos %d"
+                                              % (cand_pos, pos))
                 continue
             if line.startswith("DONE "):
                 done = _parse_done(line)
-                if pairs is None:
+                if (topk != 0) and pairs is None:
                     raise EngineProtocolError("SCORE finished without a LOGPROBS line")
+                if candidates is not None:
+                    if cand_pairs is None:
+                        raise EngineProtocolError("SCORE finished without the requested CANDLOGPROBS line")
+                    if [pair["id"] for pair in cand_pairs] != [int(c) for c in candidates]:
+                        raise EngineProtocolError("CANDLOGPROBS ids %s do not match the requested candidates %s "
+                                                  "(the answer must be in request order)"
+                                                  % ([pair["id"] for pair in cand_pairs],
+                                                     [int(c) for c in candidates]))
                 if done["produced"] != 0 or done["finish"] != "score":
                     raise EngineProtocolError("SCORE ended with produced=%d finish=%s"
                                               % (done["produced"], done["finish"]))
-                return ScoreResult(pos=pos, pairs=pairs, done=done)
+                return ScoreResult(pos=pos, pairs=pairs, done=done, cand_pairs=cand_pairs)
             if line.startswith("ERR "):
                 raise EngineError(line[4:])
             if line.startswith("T "):
@@ -321,6 +367,32 @@ def _positive_int(value, what):
     return value
 
 
+def _nonnegative_int(value, what):
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise BadRequest("%s must be a non-negative integer" % what)
+    return value
+
+
+def _parse_explicit_candidates(value):
+    if not isinstance(value, list) or not value:
+        raise BadRequest("candidates must be a non-empty list of token ids")
+    if len(value) > MAX_EXPLICIT_CANDIDATES:
+        raise BadRequest("candidates has %d ids; the engine's explicit-candidate limit is %d"
+                         % (len(value), MAX_EXPLICIT_CANDIDATES))
+    ids = []
+    for index, item in enumerate(value):
+        if isinstance(item, bool) or not isinstance(item, int):
+            raise BadRequest("candidates[%d] is not an integer" % index)
+        if item < 0:
+            raise BadRequest("candidates[%d]=%d is negative" % (index, item))
+        ids.append(item)
+    if len(set(ids)) != len(ids):
+        duplicates = sorted({t for t in ids if ids.count(t) > 1})
+        raise BadRequest("candidates ids must be pairwise distinct; duplicated: %s"
+                         % ", ".join(str(t) for t in duplicates))
+    return ids
+
+
 def _parse_prompt_ids(value):
     if not isinstance(value, list):
         raise BadRequest("prompt_ids must be a list of token ids")
@@ -358,6 +430,9 @@ def _parse_candidates(value):
         duplicates = sorted({t for t in flat if flat.count(t) > 1})
         raise Unprocessable("candidate ids must be pairwise distinct (mutually exclusive labels); duplicated: %s"
                             % ", ".join(str(t) for t in duplicates))
+    if len(flat) > MAX_EXPLICIT_CANDIDATES:
+        raise Unprocessable("candidates has %d ids; the engine's explicit-candidate limit is %d"
+                            % (len(flat), MAX_EXPLICIT_CANDIDATES))
     return flat
 
 
@@ -443,10 +518,13 @@ class ScoreService:
     def score_request(self, body):
         body = _require_object(body)
         self._require_backend_score("/v1/score")
-        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk"})
+        _reject_unknown_fields(body, {"prompt_ids", "prompt", "topk", "candidates"})
         if ("prompt_ids" in body) == ("prompt" in body):
             raise BadRequest("exactly one of prompt_ids or prompt is required")
-        topk = _positive_int(body.get("topk", DEFAULT_TOPK), "topk")
+        topk = _nonnegative_int(body.get("topk", DEFAULT_TOPK), "topk")
+        candidates = _parse_explicit_candidates(body["candidates"]) if "candidates" in body else None
+        if topk == 0 and candidates is None:
+            raise Unprocessable("topk=0 answers only explicit candidates; pass candidates (or topk >= 1)")
         if "prompt" in body:
             text = body["prompt"]
             if not isinstance(text, str) or not text:
@@ -456,9 +534,13 @@ class ScoreService:
                 raise Unprocessable("the prompt encoded to zero tokens")
         else:
             ids = _parse_prompt_ids(body["prompt_ids"])
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout))
-        return 200, {"logprobs": result.pairs, "pos": result.pos, "full_vocab_softmax": True,
-                     "generated_tokens": 0, "usage": _usage(result.done)}
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, topk, self.timeout,
+                                                              candidates=candidates))
+        payload = {"logprobs": result.pairs or [], "pos": result.pos, "full_vocab_softmax": True,
+                   "generated_tokens": 0, "usage": _usage(result.done)}
+        if candidates is not None:
+            payload["candidates"] = result.cand_pairs
+        return 200, payload
 
     def capabilities_request(self):
         payload = dict(self._engine_call(lambda: self.backend.capabilities(self.link, self.timeout)))
@@ -482,30 +564,50 @@ class ScoreService:
             raise Unprocessable("%s requires at least two candidates, got %d" % (kind, len(flat)))
         topk = body.get("topk")
         if topk is not None:
-            topk = _positive_int(topk, "topk")
-            if topk < len(flat):
-                raise Unprocessable("topk=%d cannot cover all %d candidates" % (topk, len(flat)))
-        engine_topk = max(DEFAULT_TOPK, len(flat), topk or 0)
-        result = self._engine_call(lambda: self.backend.score(self.link, ids, engine_topk, self.timeout))
-        by_id = {pair["id"]: pair["logprob"] for pair in result.pairs}
-        missing = [token_id for token_id in flat if token_id not in by_id]
-        if missing:
-            raise Unprocessable("candidate id(s) %s are outside the engine's returned top-%d logprobs; this "
-                                "subset scores only ids that appear in the distribution's top-k (the SCORE "
-                                "command has no explicit-id scoring yet) - raise topk if the ids are plausible"
-                                % (", ".join(str(t) for t in missing), engine_topk))
-        candidates = [{"token_ids": [token_id], "logprob": by_id[token_id],
-                       "probability": math.exp(by_id[token_id])} for token_id in flat]
-        mass = sum(candidate["probability"] for candidate in candidates)
-        payload = {"kind": kind, "candidates": candidates, "pos": result.pos, "full_vocab_softmax": True,
-                   "generated_tokens": 0, "usage": _usage(result.done)}
-        if abs(mass - 1.0) <= LABEL_MASS_TOLERANCE:
-            payload["label_mass"] = mass
-        else:
-            payload["label_mass_omitted"] = (
-                "the candidate set is not a closed, mutually exclusive cover of the next-token distribution "
-                "(total candidate probability %.6f, tolerance %g); the per-candidate probabilities are returned "
-                "un-renormalized" % (mass, LABEL_MASS_TOLERANCE))
+            # Accepted for backward compatibility only: scoring is explicit-id now, so topk no longer
+            # constrains anything (the old "topk must cover all candidates" refusal is gone).
+            _positive_int(topk, "topk")
+        result = self._engine_call(lambda: self.backend.score(self.link, ids, 0, self.timeout,
+                                                              candidates=flat))
+        by_id = {pair["id"]: pair["logprob"] for pair in result.cand_pairs}
+        logprobs = [by_id[token_id] for token_id in flat]
+        full_probs = [math.exp(logprob) for logprob in logprobs]
+        mass = sum(full_probs)
+        candidates = []
+        for token_id, logprob, full_prob in zip(flat, logprobs, full_probs):
+            candidates.append({
+                "token_ids": [token_id],
+                "logprob": logprob,
+                # Full-vocabulary probability: exp(logprob) under the log-softmax over ALL n_vocab logits.
+                "full_vocab_probability": full_prob,
+                # Conditional on this candidate set only: meaningful within the set, never across sets.
+                "conditional_probability": (full_prob / mass) if mass > 0 else None,
+                # Deprecated alias of full_vocab_probability (kept for downstream compatibility).
+                "probability": full_prob,
+            })
+        payload = {
+            "kind": kind,
+            "candidates": candidates,
+            "pos": result.pos,
+            "full_vocab_softmax": True,
+            "generated_tokens": 0,
+            "usage": _usage(result.done),
+            # Always returned, whatever the mass: the candidate set's share of the full distribution.
+            "label_mass": mass,
+            "label_mass_covers_distribution": abs(mass - 1.0) <= LABEL_MASS_TOLERANCE,
+            "label_mass_tolerance": LABEL_MASS_TOLERANCE,
+            # These numbers are uncalibrated; nothing here is a business confidence.
+            "calibrated": False,
+            "probability_scopes": {
+                "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable "
+                                          "across requests; the sum over this candidate set is at most 1.",
+                "conditional_probability": "full_vocab_probability / label_mass: meaningful only within "
+                                           "this candidate set; not comparable across different candidate sets.",
+                "business_confidence": "not provided: no calibration exists, so these numbers are not "
+                                       "confidences; e.g. a label_mass of 0.31 means about 69% of the "
+                                       "distribution mass lies outside the candidate set.",
+            },
+        }
         return 200, payload
 
 

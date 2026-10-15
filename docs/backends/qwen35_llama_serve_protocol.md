@@ -8,7 +8,10 @@ changes. **P2-1** adds two commands the current server does not send yet: `CAPS`
 `SCORE` (read-only candidate logits); their contract is
 `docs/backends/qwen35_llama_capabilities_and_score.md`. **P2-5** adds the single-session state
 export/import commands `SAVE <path>` / `LOAD <path>` / `STATE` (the full contract, boundaries and the P2-6
-GPU parity plan: `docs/backends/qwen35_llama_session_state.md`).
+GPU parity plan: `docs/backends/qwen35_llama_session_state.md`). **P2R-1** extends `SCORE` with the optional
+`cand=<id,...>` key (explicit candidate ids, answered whatever their top-k rank) and `topk=0`
+(candidates only, no `LOGPROBS` line); a request without `cand=` is answered byte-identically to the P2-1
+engine, except for the `ERR expected:` hint spelled out below.
 
 Implementation: `src/program/qwen35_serve.cpp` (wired from `src/program/generate.cpp`; the one-shot CLI path
 without `--serve` is untouched). This is a **phase-1 protocol shell**: it is the substrate for the later
@@ -60,7 +63,8 @@ Notes:
 | `READY <ctx> stop` | printed once after the model + context + expert service are up; `<ctx>` is the actual context requests are checked against; `stop` declares this engine honours `STOP` |
 | `PP <done> <total> <ms> <tok/s>` | once per prefill chunk: tokens read so far, total prompt tokens, ms since the prompt read started, this chunk's fresh tokens/s |
 | `T <id>` | one generated token; an EOS token is printed too, then the request ends (official EOS counting) |
-| `LOGPROBS <pos> <k> <id>:<logprob> <id>:<logprob> ...` | **P2-1**: `SCORE`'s answer - the top-k of the full-vocabulary log-softmax of the last prompt position (`pos` = 0-based last prompt position, `logprob = logit - logsumexp(all logits)` at `%.4f`). One line per `SCORE`, always followed by its `DONE ... score` |
+| `LOGPROBS <pos> <k> <id>:<logprob> <id>:<logprob> ...` | **P2-1**: `SCORE`'s answer - the top-k of the full-vocabulary log-softmax of the last prompt position (`pos` = 0-based last prompt position, `logprob = logit - logsumexp(all logits)` at `%.4f`). One line per `SCORE`, followed by its `DONE ... score`; **P2R-1**: absent when the request asked `topk=0` (explicit candidates only) |
+| `CANDLOGPROBS <pos> <n> <id>:<logprob> <id>:<logprob> ...` | **P2R-1**: `SCORE`'s `cand=` answer - the requested ids, **in request order** (no sort, no dedup) with `logprob = logit - logsumexp`, printed at `%.4f` from the **same last-position row and the same full-vocab lse** as `LOGPROBS` (<pos> is the same; no second forward/prefill). One line per `SCORE` that carried `cand=`, after `LOGPROBS` (if any) and before `DONE ... score` |
 | `DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused> <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>` | one per completed request; field order is the official engine's (`serve/server.py::_parse_done`) |
 | `CAPS <json>` | **P2-1**: the answer to `CAPS` - the backend capability table, the same one-line JSON `--capabilities` prints (see `docs/backends/qwen35_llama_capabilities_and_score.md`) |
 | `SAVED <bytes> <pos> <ms>` | **P2-5**: `SAVE`'s answer - the state blob size, the cursor (`pos`, occupied positions of sequence 0) and the elapsed ms |
@@ -88,30 +92,34 @@ serve: req <i> finish=<stop|length|cancel|nonfinite|score> produced=<n> prompt_m
 ```
 
 `<i>` is the 1-based index of completed requests of this process, in the same order as the `DONE` lines; the
-other fields repeat the `DONE` values. A `SCORE` line appends its actual `k` as `topk=<k>`. The official
+other fields repeat the `DONE` values. A `SCORE` line appends its actual `k` as `topk=<k>`; when the request
+carried `cand=`, one more field `cand=<n>` is appended (`... topk=5 cand=4`, and `... topk=0 cand=4` for a
+candidates-only request), and without `cand=` the line is byte-identical to the P2-1 engine. The official
 server does not read engine stderr, so this line survives server-side stdout handling - it is the engine's own
 statement of why each request ended (`cancel` = a live `STOP` ended the request; a `STOP` read before the
 request started stays stale and never reaches this line). Added by task 365b; stdout protocol and every
-judgement are unchanged (P2-1 added `score`/`topk=<k>` for the new command).
+judgement are unchanged (P2-1 added `score`/`topk=<k>` for the new command; P2R-1 added `cand=<n>`).
 
 ### Client -> engine
 
 | Line | Meaning |
 |---|---|
 | `GEN <max_new> [key=value ...] <id,id,...>` | one request. Keys implemented: `temperature`, `top_p`, `top_k`, `min_p`, `seed`. `temperature` absent/0 = greedy. **A non-default `penalty_*` or a `logit_bias` is REFUSED with `ERR`** (`penalty_last_n`/`penalty_repeat`/`penalty_freq`/`penalty_present`), never silently ignored. Unknown keys are skipped like the official engine skips them (the conversation-cache keys `ckpt`/`pin`/`cvec`/`pcie_frac`/`spec_min_p`/`aux_cpus`/`img_keys` have no effect here). |
-| `SCORE <id,id,...> [topk=N]` | **P2-1**: read-only candidate logits. The prompt is read through the same prefill path as `GEN` (PP lines included) and **no token is generated**; the answer is one `LOGPROBS <pos> <k> <id>:<logprob> ...` line (full-vocabulary log-softmax, default `topk` 5) followed by `DONE ... score` with `produced=0`. Every key other than `topk` is REFUSED with `ERR`. State semantics **(b) independent**: the session is reset before the request and again after it, so the next request starts fresh. Full contract: `docs/backends/qwen35_llama_capabilities_and_score.md`. |
+| `SCORE <id,id,...> [topk=N] [cand=id,id,...]` | **P2-1 / P2R-1**: read-only logits. The prompt is read through the same prefill path as `GEN` (PP lines included) and **no token is generated**; the answer is `LOGPROBS <pos> <k> <id>:<logprob> ...` (full-vocabulary log-softmax, default `topk` 5) followed by `DONE ... score` with `produced=0`. Keys other than `topk`/`cand` are REFUSED with `ERR`. **P2R-1** — `cand=id,id,...`: comma-separated **explicit candidate ids** answered from the same row/lse as the top-k, whatever their rank, as one `CANDLOGPROBS <pos> <n> <id>:<logprob> ...` line in request order. Rules (all refusals `ERR`, the engine keeps serving): ids must be decimal and non-negative; **duplicates are refused** (never silently deduplicated); **more than 2048 ids are refused** (use `topk=` for a wide distribution); a **repeated `cand=` key is refused** (unlike `topk`, which keeps last-value-wins); an id outside `[0, n_vocab)` answers the same `ERR a token id is outside the vocabulary` as a prompt id. `topk=0` is now legal **only together with `cand=`**: it suppresses `LOGPROBS` and answers the candidates alone; `topk=0` without `cand=` is refused (`ERR bad request: topk`, the legacy text). A request without `cand=` is answered **byte-identically** to the P2-1 engine (stdout, `DONE` and the stderr diagnostic). State semantics **(b) independent**: the session is reset before the request and again after it, so the next request starts fresh. Full contract: `docs/backends/qwen35_llama_capabilities_and_score.md`; the GPU byte-compat cross-check against the P2-1 exe is **P2R-2** (pending, not claimed here). |
 | `CAPS` | **P2-1**: answer the capability table as `CAPS <json>` (the `--capabilities` JSON) and keep serving. |
 | `SAVE <path>` | **P2-5**: export the current sequence-0 session state (attention KV + GDN conv/SSM planes + positions, the raw `llama_state_seq_get_data` bytes) to `<path>` (absolute, printable ASCII, no `..`; optional allow-list `STRATA_QWEN35_SESSION_ROOTS`). Replaces an existing file atomically (`<path>.tmp` + replace). On success the session is armed and the next `GEN` continues it. Full contract: `docs/backends/qwen35_llama_session_state.md`. |
 | `LOAD <path>` | **P2-5**: import a state file. The blob is imported into a TEMPORARY context first and swapped in only after the import fully succeeded, so a bad path/file/foreign blob answers `ERR` and leaves the live session untouched. On success the session is armed (`STATE`: `loaded=true`). |
 | `STATE` | **P2-5**: answer one JSON line (`STATE <json>`) describing the session bookkeeping; never touches the state. |
-| `STOP` | cancel the running request: the decode loop checks the flag before every token (and between prefill chunks); the engine answers `DONE ... cancel` and keeps serving (a `SCORE` cancelled during the read answers `DONE ... cancel` with no `LOGPROBS`). A `STOP` that arrives between requests is stale and is dropped at the next request's start. |
+| `STOP` | cancel the running request: the decode loop checks the flag before every token (and between prefill chunks); the engine answers `DONE ... cancel` and keeps serving (a `SCORE` cancelled during the read answers `DONE ... cancel` with neither `LOGPROBS` nor `CANDLOGPROBS`). A `STOP` that arrives between requests is stale and is dropped at the next request's start. |
 | `QUIT` | exit 0 (the server's shutdown path; stdin EOF also exits 0) |
 
 Empty lines are ignored. Any other line (e.g. `BGEN`, `RESTORE`, `VRAM`, `ENC`, `GENI`) answers
-`ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | SCORE <id,id,...> [topk=N] | GEN <max_new>
-[key=value ...] <id,id,...>` and the loop continues - unknown input never exits or crashes the engine.
-(`RESTORE` is the official engine's own session command and is **not** implemented here; P2-5's `LOAD` is the
-command of this engine - see the session-state doc.)
+`ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | SCORE <id,id,...> [topk=N] [cand=id,id,...] |
+GEN <max_new> [key=value ...] <id,id,...>` and the loop continues - unknown input never exits or crashes the
+engine. (P2R-1 added the `[cand=id,id,...]` hint to this fallback line - the **only** pre-existing text this
+task changes; every other old-client answer stays byte-identical. `RESTORE` is the official engine's own
+session command and is **not** implemented here; P2-5's `LOAD` is the command of this engine - see the
+session-state doc.)
 
 ## Request lifecycle and state isolation
 

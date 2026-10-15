@@ -7,7 +7,7 @@
 //
 //   client -> engine:
 //     GEN <max_new> [key=value ...] <id,id,...>   one request, sampled greedy unless temperature>0
-//     SCORE <id,id,...> [topk=N]                  read-only candidate logits: prefill, generate nothing
+//     SCORE <id,id,...> [topk=N] [cand=id,id,..]  read-only logits: prefill, generate nothing
 //     CAPS                                        print the capability table (one JSON line), keep serving
 //     SAVE <path>                                 P2-5: export the current session state to a file
 //     LOAD <path>                                 P2-5: import a session state; GEN then continues it
@@ -18,6 +18,8 @@
 //     PP <done> <total> <ms> <fresh tok/s>        once per prefill chunk (ubatch-sized)
 //     T <id>                                      one generated token, EOS included
 //     LOGPROBS <pos> <k> <id>:<logprob> ...       SCORE's answer: top-k of the FULL-vocabulary log-softmax
+//     CANDLOGPROBS <pos> <n> <id>:<logprob> ...   P2R-1: SCORE's `cand=` answer - the requested ids, in
+//                                                 request order, from the same row/lse as LOGPROBS
 //     DONE <produced> <prompt_tokens> <prompt_ms> <decode_ms> <finish> <accepted> <offered> <reused>
 //          <hits> <lookups> <ram_blobs> <file_blobs> <file_mb> <prompt_read> <offloaded>
 //     CAPS <json>                                 the --capabilities JSON (P2-1)
@@ -29,9 +31,13 @@
 // SCORE (P2-1) reads a prompt through the SAME prefill path as GEN (ubatch chunks, PP lines) and then takes
 // the last position's logits: it emits no token.  It answers `LOGPROBS <pos> <k> <id>:<logprob> ...` where
 // pos is the 0-based last prompt position and logprob is the log-softmax over EVERY logit of the vocabulary
-// (no top-k normalization), followed by `DONE ... score` with produced=0.  State semantics are (b)
-// independent, by construction: SCORE starts from `llama_memory_clear` like GEN and resets the session again
-// after printing, so the next request - GEN or SCORE - always starts fresh (reuse stays 0).
+// (no top-k normalization), followed by `DONE ... score` with produced=0.  P2R-1 adds the optional
+// `cand=<id,...>` key: the same row and the same logsumexp answer every requested id - whatever its top-k
+// rank - as `CANDLOGPROBS <pos> <n> <id>:<logprob> ...` in request order (after LOGPROBS, before DONE), and
+// `topk=0` (legal only together with `cand=`) suppresses the LOGPROBS line.  A request without `cand=` is
+// byte-identical to the P2-1 engine.  State semantics are (b) independent, by construction: SCORE starts
+// from `llama_memory_clear` like GEN and resets the session again after printing, so the next request -
+// GEN or SCORE - always starts fresh (reuse stays 0).
 // CAPS answers the same JSON as `--capabilities` (see qwen35_capabilities_json and
 // docs/backends/qwen35_llama_capabilities_and_score.md).
 //
@@ -230,19 +236,49 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     return parse_id_list(ids, ids_end, req.ids, err);
 }
 
-/// One parsed SCORE request (P2-1): a prompt and the number of candidate logits to report (default 5).
+/// P2R-1: the hard cap of explicit `cand=` ids per SCORE (refused above it; `topk` covers wide dumps).
+constexpr size_t kScoreMaxCand = 2048;
+
+/// One parsed SCORE request (P2-1; `cand=` is P2R-1): a prompt, the number of candidate logits to report
+/// (default 5; 0 = answer only `cand`, no LOGPROBS line) and the optional explicit candidate token ids.
 struct ScoreRequest {
     std::vector<llama_token> ids;
     int32_t topk = 5;
+    bool cand_present = false;
+    std::vector<llama_token> cand;
 };
 
-/// `SCORE <id,id,...> [topk=N]`: the only non-key token is the id list (it may come before or after the keys).
-/// `topk` is the only key; any other key is refused - a silently ignored `topk` typo would answer a different
-/// question than the one asked.  `topk` must be a positive integer (the run clamps it to the vocabulary size).
+/// Does the line carry a `cand=` key?  Pass 1 of the two-pass parse: `topk=0` is legal only together with
+/// `cand=`, but the `topk` token may come first, so the `cand` presence has to be knowable when `topk` is
+/// checked - and a request without `cand=` must keep the legacy key-error order and texts byte-for-byte.
+bool score_line_has_cand_key(const std::string& line) {
+    const char* p = line.c_str() + 5;   // past "SCORE"
+    for (;;) {
+        while (*p == ' ') ++p;
+        if (*p == '\0') return false;
+        const char* start = p;
+        while (*p != '\0' && *p != ' ') ++p;
+        const std::string tok(start, (size_t) (p - start));
+        const size_t eq = tok.find('=');
+        if (eq != std::string::npos && eq == 4 && tok.compare(0, 4, "cand") == 0) return true;
+    }
+}
+
+/// `SCORE <id,id,...> [topk=N] [cand=id,id,...]`: the only non-key token is the id list (it may come before
+/// or after the keys).  `topk` and `cand` are the only keys; any other key is refused - a silently ignored
+/// key typo would answer a different question than the one asked.  `topk` must be a non-negative integer
+/// (the run clamps it to the vocabulary size); `topk=0` answers only the explicit candidates and therefore
+/// needs a `cand=` list.  A repeated `topk` takes the last value (unchanged); a repeated `cand=` key is
+/// refused - a silently dropped id list would be worse than an error.  `cand=` ids must be decimal,
+/// non-negative, pairwise distinct (duplicates are refused, never deduplicated silently) and at most 2048
+/// many; whether they are inside the model's vocabulary is checked by the caller, exactly like the prompt
+/// ids and with the same error text.
 bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& err) {
     const char* p = line.c_str() + 5;   // past "SCORE"
     const char* ids = nullptr;
     const char* ids_end = nullptr;
+    const bool has_cand = score_line_has_cand_key(line);
+    bool cand_seen = false;
     for (;;) {
         while (*p == ' ') ++p;
         if (*p == '\0') break;
@@ -258,14 +294,53 @@ bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& e
         }
         const std::string key = tok.substr(0, eq);
         const std::string val = tok.substr(eq + 1);
-        if (key != "topk") { err = "bad request: unknown key " + key; return false; }
-        char* ve = nullptr;
-        const long long v = std::strtoll(val.c_str(), &ve, 10);
-        if (!parse_scalar(val, ve) || v < 1 || v > std::numeric_limits<int32_t>::max()) {
-            err = "bad request: topk";
-            return false;
+        if (key == "topk") {
+            char* ve = nullptr;
+            const long long v = std::strtoll(val.c_str(), &ve, 10);
+            if (!parse_scalar(val, ve) || v < 0 || v > std::numeric_limits<int32_t>::max() ||
+                (v == 0 && !has_cand)) {
+                err = "bad request: topk";
+                return false;
+            }
+            req.topk = (int32_t) v;
+            continue;
         }
-        req.topk = (int32_t) v;
+        if (key == "cand") {
+            if (cand_seen) { err = "bad request: duplicate cand key"; return false; }
+            cand_seen = true;
+            req.cand_present = true;
+            if (val.empty()) { err = "bad request: cand"; return false; }
+            for (size_t q = 0;;) {
+                const char* at = val.c_str() + q;
+                char* ie = nullptr;
+                const long long v = std::strtoll(at, &ie, 10);
+                if (ie == at || v < 0 || v > std::numeric_limits<llama_token>::max()) {
+                    err = "bad request: cand";
+                    return false;
+                }
+                req.cand.push_back((llama_token) v);
+                const size_t adv = (size_t) (ie - val.c_str());
+                if (adv == val.size()) break;
+                if (val[adv] != ',' || adv + 1 == val.size()) { err = "bad request: cand"; return false; }
+                q = adv + 1;
+            }
+            if (req.cand.size() > kScoreMaxCand) {
+                err = "bad request: cand has more than " + std::to_string(kScoreMaxCand) +
+                      " ids (use topk= for a wide distribution)";
+                return false;
+            }
+            std::vector<llama_token> sorted(req.cand);
+            std::sort(sorted.begin(), sorted.end());
+            for (size_t i = 1; i < sorted.size(); ++i) {
+                if (sorted[i] == sorted[i - 1]) {
+                    err = "bad request: duplicate cand id " + std::to_string(sorted[i]);
+                    return false;
+                }
+            }
+            continue;
+        }
+        err = "bad request: unknown key " + key;
+        return false;
     }
     if (ids == nullptr) { err = "bad request: no token ids"; return false; }
     return parse_id_list(ids, ids_end, req.ids, err);
@@ -560,9 +635,10 @@ std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_
                   "\"state_isolation\":true,\"prefix_cache\":false,\"batching\":false,"
                   "\"mtp\":{\"available\":%s,\"enabled\":%s,\"default\":false,\"k\":null},"
                   "\"expert_formats\":[%s],\"context_max\":%lld,\"logits_read\":true,"
+                  "\"score_explicit_candidate_ids\":true,\"score_max_candidate_ids\":%lld,"
                   "\"state_export\":true,\"disk_kv\":false,\"vision\":false}",
                   mtp_available ? "true" : "false", env_is_exactly_one("STRATA_QWEN35_MTP") ? "true" : "false",
-                  fmts.c_str(), (long long) context_max);
+                  fmts.c_str(), (long long) context_max, (long long) kScoreMaxCand);
     return std::string(buf);
 }
 
@@ -919,6 +995,9 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             for (size_t i = 0; i < sreq.ids.size() && !bad_id; ++i) {
                 if (sreq.ids[i] < 0 || (int64_t) sreq.ids[i] >= n_vocab) bad_id = true;
             }
+            for (size_t i = 0; i < sreq.cand.size() && !bad_id; ++i) {
+                if (sreq.cand[i] < 0 || (int64_t) sreq.cand[i] >= n_vocab) bad_id = true;
+            }
             if (bad_id) {
                 std::printf("ERR a token id is outside the vocabulary\n");
                 std::fflush(stdout);
@@ -972,6 +1051,8 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             }
             // log_softmax over the FULL vocabulary: logprob = logit - (max + log(sum exp(logit - max))).  The
             // denominator is all n_vocab logits; the top-k below selects from it, it does not renormalize.
+            // P2R-1: the explicit candidates are answered from this SAME row and this SAME lse - they never
+            // trigger a second forward, and their logprob is exactly `logits[id] - lse` as printed here.
             float mx = logits[0];
             for (int64_t i = 1; i < n_vocab; ++i) {
                 if (logits[i] > mx) mx = logits[i];
@@ -980,30 +1061,50 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             for (int64_t i = 0; i < n_vocab; ++i) sum += std::exp((double) logits[i] - (double) mx);
             const double lse = (double) mx + std::log(sum);
             const int64_t k = std::min<int64_t>(sreq.topk, n_vocab);
-            // Top-k by (logit desc, id asc): an exact tie answers the same order every run.
-            score_idx.resize((size_t) n_vocab);
-            std::iota(score_idx.begin(), score_idx.end(), 0);
-            std::partial_sort(score_idx.begin(), score_idx.begin() + (size_t) k, score_idx.end(),
-                              [logits](int32_t a, int32_t b) {
-                                  return logits[a] != logits[b] ? logits[a] > logits[b] : a < b;
-                              });
-            std::printf("LOGPROBS %lld %lld", (long long) (total - 1), (long long) k);
-            for (int64_t j = 0; j < k; ++j) {
-                const int32_t id = score_idx[(size_t) j];
-                std::printf(" %d:%.4f", (int) id, (double) logits[id] - lse);
+            if (sreq.topk > 0) {
+                // Top-k by (logit desc, id asc): an exact tie answers the same order every run.  `topk=0`
+                // (legal only with `cand=`) skips this line entirely - an empty LOGPROBS would be no answer.
+                score_idx.resize((size_t) n_vocab);
+                std::iota(score_idx.begin(), score_idx.end(), 0);
+                std::partial_sort(score_idx.begin(), score_idx.begin() + (size_t) k, score_idx.end(),
+                                  [logits](int32_t a, int32_t b) {
+                                      return logits[a] != logits[b] ? logits[a] > logits[b] : a < b;
+                                  });
+                std::printf("LOGPROBS %lld %lld", (long long) (total - 1), (long long) k);
+                for (int64_t j = 0; j < k; ++j) {
+                    const int32_t id = score_idx[(size_t) j];
+                    std::printf(" %d:%.4f", (int) id, (double) logits[id] - lse);
+                }
+                std::printf("\n");
             }
-            std::printf("\n");
+            if (sreq.cand_present) {
+                // Request order, no sort and no dedup (duplicates were refused at parse time): the answer
+                // mirrors the question.
+                std::printf("CANDLOGPROBS %lld %lld", (long long) (total - 1), (long long) sreq.cand.size());
+                for (const llama_token id : sreq.cand) {
+                    std::printf(" %d:%.4f", (int) id, (double) logits[id] - lse);
+                }
+                std::printf("\n");
+            }
             std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
                         0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
                         0.0, (long long) pre.read_n, 0LL);
             std::fflush(stdout);
-            std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 topk=%lld\n",
-                         ++serve_reqs, pre.prompt_ms, (long long) k);
+            if (sreq.cand_present) {
+                std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
+                                     "topk=%lld cand=%lld\n",
+                             ++serve_reqs, pre.prompt_ms, (long long) k, (long long) sreq.cand.size());
+            } else {
+                std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
+                                     "topk=%lld\n",
+                             ++serve_reqs, pre.prompt_ms, (long long) k);
+            }
             reset_session(ctx.get());
             continue;
         }
         if (line.rfind("GEN ", 0) != 0) {
-            std::printf("ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | SCORE <id,id,...> [topk=N] | "
+            std::printf("ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | "
+                        "SCORE <id,id,...> [topk=N] [cand=id,id,...] | "
                         "GEN <max_new> [key=value ...] <id,id,...>\n");
             std::fflush(stdout);
             continue;
