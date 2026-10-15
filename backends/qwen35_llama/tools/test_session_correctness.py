@@ -6,7 +6,7 @@ split-token/state parity is a separately leased hardware test (see delivery repo
 import json
 import threading
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import score_api as api
 from test_score_api import StubService, raw_post
@@ -107,6 +107,74 @@ class SessionOwnershipTests(unittest.TestCase):
         for value in (2**31, 2**63 - 1, 2**63, 10**100):
             self.assertEqual(self.env.post("/v1/continue", {"max_new": value, "session": owner})[0], 400)
         self.assertEqual(self.state(), before)
+
+
+class GenerationDoneTests(unittest.TestCase):
+    @staticmethod
+    def link(produced, finish, emitted=None):
+        # Test the actual operation parser with a finite, already-framed transport.
+        link = object.__new__(api.EngineLink)
+        link.send = Mock()
+        tokens = produced if emitted is None else emitted
+        rows = ['T %d' % i for i in range(tokens)]
+        rows.append('DONE %d 0 0.0 1.0 %s 0 0 3 0 0 0 0 0.0 0 0' % (produced, finish))
+        link._take_until = Mock(side_effect=rows)
+        return link
+
+    def test_legal_length_eos_and_cancel_counts(self):
+        for produced, finish in ((2, 'length'), (1, 'stop'), (2, 'stop'),
+                                 (0, 'cancel'), (1, 'cancel'), (2, 'cancel')):
+            with self.subTest(produced=produced, finish=finish):
+                link = self.link(produced, finish)
+                result = link.generate_continue(2, [], 1)
+                self.assertEqual(len(result.tokens), produced)
+                self.assertEqual(result.done['finish'], finish)
+                link.send.assert_called_once_with('GEN 2 cont=1')
+
+    def test_score_finish_is_legal_generically_but_illegal_for_generation(self):
+        row = 'DONE 0 0 0.0 0.0 score 0 0 0 0 0 0 0 0.0 0 0'
+        self.assertEqual(api._parse_done(row)['finish'], 'score')
+        with self.assertRaisesRegex(api.EngineProtocolError, 'invalid finish=score'):
+            self.link(0, 'score').generate_continue(2, [], 1)
+
+    def test_done_cannot_exceed_requested_limit_even_with_matching_tokens(self):
+        # Matching counter/T rows used to pass. Reject the extra T immediately,
+        # without waiting for DONE or accumulating an unbounded response.
+        link = self.link(3, 'length')
+        with self.assertRaisesRegex(api.EngineProtocolError, 'more than max_new=2'):
+            link.generate_continue(2, [], 1)
+        self.assertEqual(link._take_until.call_count, 3)
+
+    def test_done_counter_cannot_claim_more_than_requested_limit(self):
+        with self.assertRaisesRegex(api.EngineProtocolError, 'exceeding max_new=2'):
+            self.link(3, 'stop', emitted=2).generate_continue(2, [], 1)
+
+    def test_short_length_empty_eos_and_mismatched_counters_are_illegal(self):
+        for produced, finish, emitted, message in ((1, 'length', 1, 'finished length'),
+                                                 (0, 'stop', 0, 'without an EOS'),
+                                                 (1, 'stop', 0, 'but 0 T lines')):
+            with self.subTest(produced=produced, finish=finish, emitted=emitted):
+                with self.assertRaisesRegex(api.EngineProtocolError, message):
+                    self.link(produced, finish, emitted).generate_continue(2, [], 1)
+
+    def test_operation_violations_quarantine_real_pipe_and_http(self):
+        for mode in ('gen-score-done', 'gen-over-limit-done', 'gen-short-length',
+                     'gen-empty-stop', 'gen-extra-token'):
+            with self.subTest(mode=mode):
+                env = StubService(fault_mode=mode)
+                try:
+                    status, body, _ = env.post('/v1/score', {'prompt_ids': [1, 2], 'keep': True})
+                    self.assertEqual(status, 200, body)
+                    status, body, _ = env.post('/v1/continue', {'max_new': 2, 'session': body['session']})
+                    self.assertEqual(status, 502, body)
+                    self.assertTrue(body['quarantined'])
+                    self.assertTrue(env.service._dead)
+                    self.assertTrue(env.link.dead)
+                    with patch.object(env.link, 'send', wraps=env.link.send) as sent:
+                        self.assertEqual(env.get('/v1/session')[0], 502)
+                        sent.assert_not_called()
+                finally:
+                    env.close()
 
 
 class ProbabilityBoundaryTests(unittest.TestCase):

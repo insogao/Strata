@@ -32,6 +32,7 @@ def verify(plan, raw, state_files=None):
     r = parse(plan, raw)
     p = plan['prompt_tokens']
     full = r['full']['tokens']
+    replay = {}
     gates = {'actual_512_length': len(full) == 512 and done(r['full'])['finish'] == 'length',
              'full_committed_cursor': r['full_state']['state']['pos'] == p + len(full)}
     if plan.get('requires_decode_warmup'):
@@ -45,35 +46,43 @@ def verify(plan, raw, state_files=None):
             gates[f'seg{n}_{k}_actual_length'] = len(a['tokens']) == chunk and done(a)['finish'] == 'length'
             gates[f'seg{n}_{k}_cursor'] = r[f'seg{n}_{k}_state']['state']['pos'] == p + len(combined)
             gates[f'seg{n}_{k}_no_prefill_replay'] = done(a)['prompt_read'] == 0 and done(a)['reused'] == p + k * chunk
-        gates[f'seg{n}_equals_single_prefix'] = len(full) >= n and combined == full[:n]
+        gates[f'seg{n}_actual_total_length'] = len(combined) == n
+        replay[f'seg{n}_equals_single_prefix'] = combined == full[:n]
     singles = []
     for k in range(16):
         singles += r[f'one{k}']['tokens']
         gates[f'one{k}_actual_token_cursor'] = (len(r[f'one{k}']['tokens']) == 1 and
                                                r[f'one{k}_state']['state']['pos'] == p + k + 1)
     singles += r['one_tail']['tokens']
-    gates['single_token_boundaries_equal_128'] = len(singles) == 128 and singles == full[:128]
+    gates['one_tail_actual_112'] = len(r['one_tail']['tokens']) == 112 and done(r['one_tail'])['finish'] == 'length'
+    gates['single_token_boundaries_actual_128'] = len(singles) == 128
+    replay['single_token_boundaries_equal_128'] = singles == full[:128]
     gates['single_token_final_cursor'] = r['one_final_state']['state']['pos'] == p + len(singles)
     gates['length_error_refused'] = any(s.startswith('ERR ') for s in r['length_error']['lines'])
     gates['length_error_state_unchanged'] = r['error_before']['state'] == r['error_after']['state']
-    gates['long_save_prefix_actual_128'] = len(r['state_prefix']['tokens']) == 128 and r['state_prefix']['tokens'] == full[:128]
+    gates['long_save_prefix_actual_128'] = (len(r['state_prefix']['tokens']) == 128 and
+                                           done(r['state_prefix'])['finish'] == 'length')
+    replay['long_save_prefix_equals_single_prefix'] = r['state_prefix']['tokens'] == full[:128]
     for name, prefix in [('save', 'SAVED '), ('load', 'LOADED '), ('resave', 'SAVED '),
                          ('reload', 'LOADED '), ('resave2', 'SAVED ')]:
         gates[name + '_succeeded'] = any(s.startswith(prefix) for s in r[name]['lines'])
     gates['load_pure_refused'] = any('no logits' in s for s in r['load_pure']['lines'])
     gates['load_refusal_state_unchanged'] = r['load_before']['state'] == r['load_after']['state']
-    gates['restored_append_actual_32'] = len(r['restored_append']['tokens']) == len(r['live_append']['tokens']) == 32
-    gates['restored_append_equals_live'] = r['restored_append']['tokens'] == r['live_append']['tokens']
+    gates['restored_append_actual_32'] = (len(r['restored_append']['tokens']) == len(r['live_append']['tokens']) == 32 and
+                                         done(r['restored_append'])['finish'] == done(r['live_append'])['finish'] == 'length')
+    replay['restored_append_equals_live'] = r['restored_append']['tokens'] == r['live_append']['tokens']
     gates['restored_append_cursor'] = (r['live_append_state']['state']['pos'] ==
                                       r['restored_append_state']['state']['pos'] == p + 128 + 4 + 32)
     canceled = r['cancel']['tokens']
     continued = canceled + r['after_cancel']['tokens']
     gates['actual_mid_decode_cancel'] = 8 <= len(canceled) < 512 and done(r['cancel'])['finish'] == 'cancel'
     gates['cancel_cursor'] = r['cancel_state']['state']['pos'] == p + len(canceled)
-    gates['after_cancel_matches_single_prefix'] = len(full) >= len(continued) and continued == full[:len(continued)]
+    gates['after_cancel_actual_120'] = len(r['after_cancel']['tokens']) == 120 and done(r['after_cancel'])['finish'] == 'length'
+    replay['after_cancel_matches_single_prefix'] = continued == full[:len(continued)]
     gates['after_cancel_cursor'] = r['after_cancel_state']['state']['pos'] == p + len(continued)
-    gates['fresh_after_error_cancel_matches_128'] = (len(r['fresh_after_error_cancel']['tokens']) == 128 and
-                                                    r['fresh_after_error_cancel']['tokens'] == full[:128])
+    gates['fresh_after_error_cancel_actual_128'] = (len(r['fresh_after_error_cancel']['tokens']) == 128 and
+                                                  done(r['fresh_after_error_cancel'])['finish'] == 'length')
+    replay['fresh_after_error_cancel_matches_128'] = r['fresh_after_error_cancel']['tokens'] == full[:128]
     gates['fresh_after_error_cancel_cursor'] = r['fresh_after_error_cancel_state']['state']['pos'] == p + 128
     gates['real_short_eos'] = done(r['short_eos'])['finish'] == 'stop' and bool(r['short_eos']['tokens'])
     gates['eos_committed_cursor'] = (r['short_eos_state']['state']['pos'] ==
@@ -88,17 +97,16 @@ def verify(plan, raw, state_files=None):
         blobs = [p.read_bytes() for p in paths] if exports_ok and existing else []
         gates['container_roundtrips_byte_equal'] = len(blobs) == 3 and blobs[0] == blobs[1] == blobs[2]
         container_checks = {str(p): hashlib.sha256(b).hexdigest() for p, b in zip(paths, blobs)}
-    replay_names = {f'seg{n}_equals_single_prefix' for n in (128, 256, 512)} | {
-        'single_token_boundaries_equal_128', 'long_save_prefix_actual_128',
-        'after_cancel_matches_single_prefix', 'fresh_after_error_cancel_matches_128'}
     # Identical text across independent prefills is a useful numeric diagnostic,
     # not a product correctness requirement. Cursor/control/container checks stay
     # separate. Neither group certifies business quality or tensor equivalence.
-    return {'registered_all_checks_pass': all(gates.values()),
-            'structural_checks_pass': all(v for k, v in gates.items() if k not in replay_names),
-            'exact_replay_diagnostics_pass': all(gates[k] for k in replay_names),
-            'exact_replay_diagnostic_names': sorted(replay_names),
-            'gates': gates, 'responses': r,
+    return {'registered_all_checks_pass': all(gates.values()) and all(replay.values()),
+            'structural_checks_pass': all(gates.values()),
+            'exact_replay_diagnostics_pass': all(replay.values()),
+            'structural_checks': gates,
+            'exact_replay_diagnostics': replay,
+            'exact_replay_diagnostic_names': sorted(replay),
+            'gates': {**gates, **replay}, 'responses': r,
             'container_checks': container_checks,
             'scope': 'greedy structural checks and exact replay diagnostics; seeded append after LOAD; not numerical tensor equivalence or product quality',
             'container_gate_checked': state_files is not None}

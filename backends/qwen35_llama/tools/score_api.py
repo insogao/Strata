@@ -391,12 +391,24 @@ class EngineLink:
                     tokens.append(token)
                 except ValueError:
                     raise EngineProtocolError("malformed T line during GEN cont=1: %r" % line)
+                if len(tokens) > max_new:
+                    raise EngineProtocolError("GEN cont=1 emitted more than max_new=%d T lines" % max_new)
                 continue
             if line.startswith("DONE "):
                 done = _parse_done(line)
+                if done["finish"] not in {"length", "stop", "cancel"}:
+                    raise EngineProtocolError("GEN cont=1 ended with invalid finish=%s" % done["finish"])
+                if done["produced"] > max_new:
+                    raise EngineProtocolError("GEN cont=1 finished with produced=%d exceeding max_new=%d"
+                                              % (done["produced"], max_new))
                 if done["produced"] != len(tokens):
                     raise EngineProtocolError("GEN cont=1 finished with produced=%d but %d T lines"
                                               % (done["produced"], len(tokens)))
+                if done["finish"] == "length" and done["produced"] != max_new:
+                    raise EngineProtocolError("GEN cont=1 finished length with produced=%d but max_new=%d"
+                                              % (done["produced"], max_new))
+                if done["finish"] == "stop" and done["produced"] == 0:
+                    raise EngineProtocolError("GEN cont=1 finished stop without an EOS token")
                 return GenerationResult(tokens=tokens, done=done)
             if line.startswith("ERR "):
                 raise EngineError(line[4:])

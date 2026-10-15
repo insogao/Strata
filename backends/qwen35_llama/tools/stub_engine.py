@@ -42,7 +42,9 @@ def main() -> int:
     parser.add_argument("--fault-mode",
                         choices=("none", "short-logprobs", "junk-logprobs", "short-done",
                                  "extra-line", "late-legal", "gen-extra-line", "nan-logprobs",
-                                 "positive-logprobs", "nan-candidates"),
+                                 "positive-logprobs", "nan-candidates", "gen-score-done",
+                                 "gen-over-limit-done", "gen-short-length", "gen-empty-stop",
+                                 "gen-extra-token"),
                         default="none",
                         help="test-only P2R-4b protocol-error injection: short-logprobs (fewer LOGPROBS "
                              "pairs than declared), junk-logprobs (non-numeric logprob), short-done "
@@ -279,11 +281,23 @@ def main() -> int:
             cursor = session["pos"]
             if args.fault_mode == "gen-extra-line":
                 emit("LOGPROBS 0 1 0:-0.1000")
-            for index in range(max_new):
+            # P1 operation-scoped GEN faults, test-only. Default remains unchanged.
+            produced = max_new
+            finish = "length"
+            if args.fault_mode == "gen-short-length":
+                produced = max(0, max_new - 1)
+            elif args.fault_mode == "gen-empty-stop":
+                produced, finish = 0, "stop"
+            elif args.fault_mode == "gen-score-done":
+                finish = "score"
+            elif args.fault_mode == "gen-extra-token":
+                produced += 1
+            for index in range(produced):
                 emit("T %d" % (index % args.vocab))
-            emit("DONE %d %d 0.0 1.0 length 0 0 %d 0 0 0 0 0.0 %d 0"
-                 % (max_new, len(appended), cursor, len(appended)))
-            session["pos"] = cursor + len(appended) + max_new
+            reported = max_new + 1 if args.fault_mode == "gen-over-limit-done" else produced
+            emit("DONE %d %d 0.0 1.0 %s 0 0 %d 0 0 0 0 0.0 %d 0"
+                 % (reported, len(appended), finish, cursor, len(appended)))
+            session["pos"] = cursor + len(appended) + produced
             continue
         emit("ERR expected: CAPS | STATE | SCORE <id,id,...> [topk=N] [cand=id,id,...] "
              "[keep=1] | GEN <max_new> cont=1 [<id,id,...>]")

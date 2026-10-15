@@ -79,6 +79,45 @@ class LongEvidenceTests(unittest.TestCase):
         self.assertTrue(result['gates']['actual_512_length'])
         self.assertFalse(result['gates']['seg512_equals_single_prefix'])
 
+    def test_actual_length_checks_are_never_classified_as_replay(self):
+        structural = self.report['structural_checks']
+        replay = self.report['exact_replay_diagnostics']
+        self.assertTrue(set(structural).isdisjoint(replay))
+        for key in ('single_token_boundaries_actual_128', 'long_save_prefix_actual_128',
+                    'fresh_after_error_cancel_actual_128', 'after_cancel_actual_120',
+                    'one_tail_actual_112', 'restored_append_actual_32'):
+            self.assertIn(key, structural)
+            self.assertTrue(structural[key])
+        self.assertIn('long_save_prefix_equals_single_prefix', replay)
+        self.assertIn('restored_append_equals_live', replay)
+        self.assertEqual(self.report['structural_checks_pass'], all(structural.values()))
+
+    def test_consistently_reported_short_output_still_fails_structure(self):
+        # Drop one actual T and lower DONE.produced too: a consistent short answer
+        # must not pass merely because exact replay no longer controls acceptance.
+        cases = (('state_prefix', 'long_save_prefix_actual_128'),
+                 ('one_tail', 'one_tail_actual_112'),
+                 ('fresh_after_error_cancel', 'fresh_after_error_cancel_actual_128'),
+                 ('after_cancel', 'after_cancel_actual_120'),
+                 ('seg128_0', 'seg128_0_actual_length'),
+                 ('live_append', 'restored_append_actual_32'))
+        for name, gate in cases:
+            with self.subTest(response=name):
+                answers = copy.deepcopy(self.report['responses'])
+                lines = answers[name]['lines']
+                last_t = max(i for i, s in enumerate(lines) if s.startswith('T '))
+                del lines[last_t]
+                for i, s in enumerate(lines):
+                    if s.startswith('DONE '):
+                        parts = s.split()
+                        parts[1] = str(int(parts[1]) - 1)
+                        lines[i] = ' '.join(parts)
+                raw = '\n'.join(s for c in self.plan['commands'] if c['command'] != 'QUIT'
+                                for s in answers[c['name']]['lines'])
+                result = verify(self.plan, raw)
+                self.assertFalse(result['structural_checks'][gate])
+                self.assertFalse(result['structural_checks_pass'])
+
 
 if __name__ == '__main__':
     unittest.main()

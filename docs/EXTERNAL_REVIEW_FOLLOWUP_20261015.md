@@ -1,9 +1,11 @@
 # External review follow-up: real long output and acceptance scope
 
-This supplements [PR #5](https://github.com/insogao/Strata/pull/5), based on
-`1e9e5780`, after the independent PR #1–#5 review. It changes evidence tooling,
-tests and documentation only. No new engine build, kernel/vendor edits, model
-replacement, default changes or production/main merge are included.
+This supplements [PR #5](https://github.com/insogao/Strata/pull/5) after the
+independent PR #1–#5 review. It adds long-output evidence and CPU-only service
+protocol guards, verifier checks, tests and documentation. No new engine build,
+kernel/vendor edits, model replacement, default changes or production/main merge
+are included. The long native evidence used `1e9e5780`; the P1 increment starts
+from `d428b83f` and does not alter that native executable or its raw records.
 
 ## Acceptance boundaries
 
@@ -20,6 +22,49 @@ and the original conjunction of all registered checks separately. The two origin
 strict verdict files remain failed; no assertion was removed from those records.
 CLI exit status uses structural checks by default; `--require-exact-replay` opts
 into the stricter diagnostic. Neither exit status means product acceptance.
+
+### Scoped PASS and the two P1 follow-ups
+
+The external re-review grants **Scoped PASS** for PR #5's token commits, ownership
+and revision isolation, actual long-output coverage, cancellation and state
+recovery evidence. This is not a Strata production-release decision. Business
+accuracy, service integration, stability and formal performance keep their own
+acceptance gates. Exact replay is not a prerequisite for phase-three single-GPU
+optimization; no multi-card experiment or broad replay study is added here.
+
+The CPU-only P1 increment strengthens two boundaries:
+
+- `verify_session_long.py` now builds `structural_checks` and
+  `exact_replay_diagnostics` independently. Actual128-token SAVE prefixes, the
+  112-token tail/128-token total,128-token post-error output and120-token
+  post-cancel output have explicit length checks; expected `length` finishes
+  remain required. Separate comparisons only describe token replay. The legacy
+  combined `gates` view remains available. Restored/live output equality is also
+  numerical diagnostic; actual counts, cursors and container checks remain
+  structural. A shorter actual stream with a matching lowered DONE counter
+  still fails structural acceptance. Historical raw logs, summary snapshots and
+  failed verdicts are unchanged; the current verifier adds checks rather than
+  rewriting those older reports.
+- `EngineLink.generate_continue()` accepts only `length`, `stop` or `cancel`,
+  checks DONE.produced equals actual T rows and never exceeds max_new, requires
+  `length` to reach max_new, and requires EOS `stop` to include a token. An extra
+  T beyond max_new is rejected immediately without waiting for DONE. SCORE's
+  generic `score` finish stays valid for SCORE. Violations use the existing
+  EngineProtocolError →502/quarantine path; legal early EOS and cancellation
+  (including cancellation with zero tokens) remain supported.
+
+Fault injection covers operation-specific illegal finishes, count overflow,
+short length completion and empty EOS through real stub pipes and localhost
+HTTP, including refusal to send further engine commands after quarantine. No
+native source, executable, model, defaults or main branch change in this P1
+increment; it needs no rebuild or new GPU measurement.
+
+Validation: **17 targeted tests pass in2.982s; the complete117-test CPU suite
+passes in55.140s**. Eight new tests extend the prior109-test suite. They include
+six shorter-output mutations with internally consistent DONE counts, separate
+structural/diagnostic membership, valid length/EOS/cancel boundaries, count and
+finish refusals, and five real-pipe/HTTP quarantine cases. Logs and preregistration
+are retained at `D:/work/Strata魔改/results/code-review/session-p1-20261015/`.
 
 ## Real-model trajectory coverage
 
