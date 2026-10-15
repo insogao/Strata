@@ -157,4 +157,5 @@ L-A2 {"exit":0,"cache_slots":2700,"decode_hits":25314,"decode_misses":77086,"tie
 
 - 复现（研究仓）：`python retry2/p33.py stats`；原始逐请求数组在 `retry2/parse/parsed-<case>.json`，raw 日志 `retry2/native-<case>/raw/child_00.log`，租约原件 `retry2/native-<case>/{audit,result}.json`，预登记 `retry2/prep/preregistration.json`。
 - 本任务：**0 构建、0 源码改动**；未动冻结件/生产/公开 PR；单一 GPU owner（gpu-lock 6 租约，串行）；≤6 native（用满 6）；每例一次；无自释放、无绕过、无围栏。
+- **采样与回落口径（如实登记）**：本批未部署 10 s 外部 GPU sampler（native 仅 19–25 s，10 s 粒度只 2–3 样本且 347 已记录混叠问题）；每 native 峰值以引擎自身 `summary.peak_device_vram_mib` 为准（§2 原文行），并配 6×pre + 6×post + 批前/批末快照（相邻快照间隔 ~20–25 s）。"回落"证据：每例结束后 GPU 用量回到 ~1000 MiB、RAM ≥17 GiB、strata/子进程 0、锁空、无 marker（`retry2/post-env/*`、`retry2/pre-env/batch-end.json`）。
 - **判定边界**：均在 4060 Laptop 8 GiB、真实 4K 语境下的**诊断数字**，非产品速度、非 p95、非稳态；30–60 档只是研究目标；本文件不含任何提速声明。
