@@ -1,5 +1,7 @@
 # 交接文档：Strata Unified 开发线（2026-10-15 13:4x，由本线主管 Codex 书写）
 
+> **接手后更新，2026-10-15**：用户授权 Codex 直接编码，暂不使用 OpenCode（额度耗尽），覆盖下文旧派发限制。当前 `codex/phase3-tune-cli` 自 `b01c9bd7` 开发 P3-4，P3-3 已核收为 2200 槽双形状 NO-GO，并从六份 raw 独立重算。P3-4 CLI/schema/失效检查/交付文档已实现，56 项 CPU 测试通过，本机只读生成及新鲜复核 exit0，0 native/0 build/0 GPU。最新状态见 `PROJECT_STATUS.md` 和 `PHASE3_DELIVERY.md`；下文为原始交接历史，旧“在飞/待办”不得覆盖最新索引。不开自动调参/生产切换，不自动恢复定时任务。阶段三独立 PR 待审查；产品跨卡/EOS/质量/性能选优仍未完成。
+
 > 目的：让接手的 agent 在 **30 分钟内**能独立继续这条开发线：知道去哪读、哪些不能碰、怎么验收、哪里会踩坑、还剩什么。
 > 本文件写在旧研究仓（监督/证据枢纽）；**同一内容将在 P3-3 收尾后复制进新仓** `D:/work/StrataUnified/strata/docs/HANDOFF_FOR_NEXT_AGENT.md` 并提交（避免与在飞会话的分支切换冲突）。
 

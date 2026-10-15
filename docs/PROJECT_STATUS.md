@@ -3,25 +3,25 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-14（**阶段 1 完成**：四项门槛自测达成，交付汇总见 `docs/PHASE1_DELIVERY.md`；阶段 2 下一步）
+更新时间：2026-10-15（接手后更新；当前分支 `codex/phase3-tune-cli`，P3-4 工程交付，产品验收仍有待办）。用户最新授权：**Codex 直接实现，暂不使用 OpenCode**；不恢复或新建定时任务。
 
 ## 0. 一句话状态
 
-**第一阶段（核心迁移）已完成并通过自测**：①本仓独立构建 exit 0；②**经官方服务入口**的普通聊天/连续请求/EOS/**取消**/状态隔离全部达成（含引擎级 `finish=cancel` 原文）；③构建与运行**不依赖旧研究树**（中立路径实跑）；④与生产冻结基线的 ABAB 配对回归 **decode PASS、prefill INCONCLUSIVE（中位 +7.15% 在带内，配对噪声；无回归证据）**。阶段 2（统一 Backend/Logits Decisions）可自主启动（**不合并 main**）；阶段 3 未开始。
+阶段一迁移、阶段二原型均已交付；P2R 补强在另一分支/PR #3，尚不在本分支。阶段三 P3-1…P3-4 的**离线研究工具链**已交付，P3-3 唯一实测候选 2200 槽双形状 **NO-GO**；没有新的提速结论。当前提供 profile 生成/失效检查，不自动选优或应用配置。跨卡、真实 EOS/业务联合目标与代码审查未闭合项仍待验收；不合并 main。见 `docs/PHASE3_DELIVERY.md`。
 
 ## 1. 三大阶段进度
 
 | 阶段 | 状态 | 关键门槛（自测） | 证据 |
 |---|---|---|---|
 | 阶段 1 核心迁移 | **完成（自测达成）** | ①独立构建 exit 0；②官方服务入口的聊天/连续/EOS/取消/隔离；③不依赖旧研究树；④与本产基线配对回归不劣化 | `docs/PHASE1_DELIVERY.md`（四项逐条证据） |
-| 阶段 2 统一 Backend + Logits Decisions | 未开始（可启动） | 双 Backend 能力表可查询；`/v1/chat/completions` 回归；`/v1/score`、`/v1/decisions` 文档化子集；状态语义与质量回归 | 接口草案见 350/351 报告（E1–E9、四类缓存边界） |
-| 阶段 3 Hardware/Workload Autotuner | 未开始 | 安全预算内搜索；4060 上识别 2700/3200 实测差异；第二张卡验证（若不可得则如实标注待办） | — |
+| 阶段 2 统一 Backend + Logits Decisions | 原型交付；P2R 补强另线，待审查/整合 | 不把其他分支的验收继承到本分支；本轮评审的续写/所有权/非有限数/长度边界问题另行修复 | `docs/PHASE2_DELIVERY.md`；P2R 权威索引在 `phase2r/review-gaps` |
+| 阶段 3 Hardware/Workload Autotuner | P3-1…P3-4 工具交付；产品验收未完成 | 2200 槽 NO-GO；无实测最优配置；跨卡/完整 EOS/业务联合目标待办 | `docs/PHASE3_DELIVERY.md` |
 
 ## 2. 当前分支与提交
 
-- 分支：`integration/qwen35-llama`（`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`）
-- PR：#1（自动随分支更新；**标题/正文编辑受 PAT 权限限制，见 §5 阻断项**）
-- 提交链（自 base `296b59d2` 起）：
+- 当前分支：`codex/phase3-tune-cli`，从 `phase3/autotuner` 的交接提交 `b01c9bd7` 开工；阶段三基于阶段二 `954a88e4`。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
+- 阶段三独立 PR 指向 `phase2/backend-interface`；与补强 PR #3 为并列审查线，均不合并 main。
+- 下列为阶段一历史提交链（自 base `296b59d2` 起，阶段三见 §4.0c）：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）
   - `e0fd2dea` 冒烟＋保真报告（task 355）
   - `c653bef1` ABAB 配对回归报告（task 358）
@@ -82,11 +82,11 @@
 | P3-1 设备/模型指纹 ＋ 资源预算规划器（0 GPU） | 完成 | commit `dee07c30`；`docs/backends/qwen35_llama_autotuner_foundation.md`（锚点复现 0.439/0.220 GiB） |
 | P3-2 离线成本模型 ＋ 候选筛选（0 GPU） | 完成（**只能可信拒绝**） | commit `d350d768`；`docs/backends/qwen35_llama_offline_screen.md`（hold-out 均值绝对误差 **9.70%**、最大 21.30%、同批异号；短名单 ≤5） |
 | P3-3 短名单 GPU 配对交错验证（真实引擎） | **完成：候选 `s2200-c-t8-u4096-x8192` 双形状 NO-GO** | commit `66b8528d`；`docs/backends/qwen35_llama_autotune_pilot.md`（6 native 一租约一例、严格串行、0 重跑；S Δ=−5.17%（漂移带 5.58%）、L Δ=−17.52%（漂移带 4.31%）；hits 3654→3032 / 25314→19896、misses 上升 ⇒ **P3-2"2700 饱和、2200 不应更慢"的拐点假设被实测证伪**；3 项口径偏差＋1 项采样口径**在 native 之前**登记于 `retry2/prep/preregistration.json`；`git diff --stat 27c987ca..HEAD -- src` 证明 prefill/decode/tier/MTP 核心未被触碰） |
-| P3-4 `strata tune` CLI ＋ profile schema/失效规则 ＋ 阶段 3 交付汇总 | 待办 | 本文件 §4.1 之后由主管排 |
+| P3-4 `strata tune` CLI ＋ profile schema/失效规则 ＋ 阶段 3 交付汇总 | **工程交付，0 GPU** | `python tools/strata_tune.py tune/check`；56 项 CPU 测试通过；本机新鲜只读 profile 生成/复核 exit0，engine SHA=`c3780a6a…`、无缺失身份、无选定配置、production_approved=false。见 CLI 文档与 `docs/PHASE3_DELIVERY.md`；产品门仍开放 |
 
 **本分支的 `PROJECT_STATUS` 尚未包含阶段二评审补强（P2R-1…P2R-5）的行**——那部分在 `phase2r/review-gaps` 的拷贝里（§4.0b，权威）。交接先读：**`docs/HANDOFF_FOR_NEXT_AGENT.md`**（全量交接说明：入口、冻结件、口径、纪律、失败处置、未闭合清单、别盲信清单）。
 
-### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
+### 4.1 阶段一历史夜间任务队列（已执行的历史，非当前派发队列）
 
 | 序 | 任务 | 入口条件 | 交付与自测判据 |
 |---|---|---|---|
