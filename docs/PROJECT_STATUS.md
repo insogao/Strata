@@ -75,6 +75,17 @@
 | P2-7 双 Backend 适配器＋Batching 契约 | 完成 | commit `17c9ea1f`（官方后端能力表如实 false；不支持端点 501；契约 v1；既有 19＋新 13 单测全绿） |
 | 阶段 2 交付汇总 | 完成 | `docs/PHASE2_DELIVERY.md` |
 
+### 4.0c 阶段 3 进度（2026-10-15 13:5x，本分支）
+
+| 任务 | 状态 | 提交/证据 |
+|---|---|---|
+| P3-1 设备/模型指纹 ＋ 资源预算规划器（0 GPU） | 完成 | commit `dee07c30`；`docs/backends/qwen35_llama_autotuner_foundation.md`（锚点复现 0.439/0.220 GiB） |
+| P3-2 离线成本模型 ＋ 候选筛选（0 GPU） | 完成（**只能可信拒绝**） | commit `d350d768`；`docs/backends/qwen35_llama_offline_screen.md`（hold-out 均值绝对误差 **9.70%**、最大 21.30%、同批异号；短名单 ≤5） |
+| P3-3 短名单 GPU 配对交错验证（真实引擎） | **完成：候选 `s2200-c-t8-u4096-x8192` 双形状 NO-GO** | commit `66b8528d`；`docs/backends/qwen35_llama_autotune_pilot.md`（6 native 一租约一例、严格串行、0 重跑；S Δ=−5.17%（漂移带 5.58%）、L Δ=−17.52%（漂移带 4.31%）；hits 3654→3032 / 25314→19896、misses 上升 ⇒ **P3-2"2700 饱和、2200 不应更慢"的拐点假设被实测证伪**；3 项口径偏差＋1 项采样口径**在 native 之前**登记于 `retry2/prep/preregistration.json`；`git diff --stat 27c987ca..HEAD -- src` 证明 prefill/decode/tier/MTP 核心未被触碰） |
+| P3-4 `strata tune` CLI ＋ profile schema/失效规则 ＋ 阶段 3 交付汇总 | 待办 | 本文件 §4.1 之后由主管排 |
+
+**本分支的 `PROJECT_STATUS` 尚未包含阶段二评审补强（P2R-1…P2R-5）的行**——那部分在 `phase2r/review-gaps` 的拷贝里（§4.0b，权威）。交接先读：**`docs/HANDOFF_FOR_NEXT_AGENT.md`**（全量交接说明：入口、冻结件、口径、纪律、失败处置、未闭合清单、别盲信清单）。
+
 ### 4.1 夜间任务队列（每轮跟进按此顺序取用；一次只跑一个）
 
 | 序 | 任务 | 入口条件 | 交付与自测判据 |
