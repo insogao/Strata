@@ -510,7 +510,7 @@ size_t state_blob_size(llama_context* ctx) {
 /// 84 flags (u32, 0); 88..96 reserved (zero).  The payload follows the header.  A writer may append fields
 /// (header_bytes > 96, readers skip to header_bytes); version 1 readers require at least 96.
 constexpr size_t kContainerMagicBytes = 8;
-constexpr uint8_t kContainerMagic[kContainerMagicBytes] = {'S', 'R', 'A', 'T', 'A', 'S', 'T'};
+constexpr uint8_t kContainerMagic[kContainerMagicBytes] = {'S', 'T', 'R', 'A', 'T', 'A', 'S', 'T'};
 constexpr uint32_t kContainerVersion = 1;
 constexpr uint32_t kContainerHeaderBytes = 96;
 

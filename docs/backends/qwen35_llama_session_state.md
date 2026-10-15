@@ -13,8 +13,11 @@ failure legs left the live session untouched) - results, raw lines and limits: s
 `STATE` additions are implemented and documented here; the **real-engine matrix for the container
 (corrupt/foreign/wrong-model/wrong-version/repeated-restore/isolation) ran as P2R-4c on 2026-10-15
 (section 13: N1/N2 pass with documented sequence adaptations - pure continuations after LOAD cannot
-sample, see there - and one unexplained doc-vs-build magic literal spelled out there)** -
-before that it was the 0-GPU build + unit tests of P2R-4a plus the (legacy-format) P2-6 parity record.
+sample, see there)**, and the follow-up **P2R-4d (section 14)** applied the supervisor decision on the
+one doc-vs-build delta P2R-4c found: the v1 magic is now exactly the 8 ASCII bytes `STRATAST` in the
+shipped build (early builds zero-filled the eighth byte and wrote `SRATAST\0`; those files are rejected
+as bad magic), and it closed the `SAVE -> LOAD -> SAVE` byte-identity re-check. Before P2R-4a it was the
+0-GPU build + unit tests of P2R-4a plus the (legacy-format) P2-6 parity record.
 
 Scope rules this doc obeys: nothing here claims cross-machine portability; cross-process continuation
 restores are verified for the same machine and build only (P2-6 N1/N2, section 11; container matrix:
@@ -98,6 +101,15 @@ require at least 96 bytes but accept longer headers (a writer may append fields)
 | 84 | 4 | `flags` | u32 = 0 (reserved) |
 | 88 | 8 | reserved | zero (up to `header_bytes`) |
 | `header_bytes` | `payload_bytes` | payload | the unchanged raw sequence-state bytes |
+
+**The v1 magic is exactly the 8 ASCII bytes `STRATAST` (hex `53 54 52 41 54 41 53 54`), no NUL.** Early
+P2R-4a..P2R-4c builds zero-filled the eighth byte of the constant and wrote `SRATAST\0` (hex
+`53 52 41 54 41 53 54 00`), which disagreed with this table and with every `ERR` text; **P2R-4d
+(section 14) fixed the constant** so writer, validator, error texts and this table all spell
+`STRATAST`. The old-literal files were never released and there is **no migration burden**: the fixed
+build refuses them with the bad-magic error above - they are neither containers of this version (byte 8
+is NUL) nor legacy raw blobs (their first four bytes `53 52 41 54` are not llama's raw magic
+`0xaf143cd8`).
 
 `SAVE` writes the container to `<path>.tmp` and atomically replaces `<path>` (same discipline as P2-5),
 and `SAVED <bytes>` reports the **container file size** (`file_bytes`; exactly 96 bytes more than the
@@ -557,13 +569,18 @@ header -> vocab -> ctx -> pos -> CRC -> fp); **every rejection left the live ses
 
 ### Unexplained / open items (as executed)
 
-- **Magic literal: the shipped build writes `SRATAST\0` (7 ASCII + NUL, hex `53 52 41 54 41 53 54 00`),
-  while section 1b and every relevant `ERR` text spell `STRATAST` (8 ASCII bytes, no NUL).** The engine
-  is self-consistent (round-trip accepted, all six rejection classes behave exactly as documented), and
-  no source was changed in this task - the constant-vs-document disagreement
-  (`qwen35_serve.cpp` `kContainerMagic = {'S','R','A','T','A','S','T'}`) needs a supervisor decision.
-- `SAVE -> LOAD -> SAVE` container **byte-identity** re-check (section 8) did not run in P2R-4c (no second
-  `SAVE` in the preregistered N1/N2 shape); remains open.
+- **Magic literal (found here, resolved by P2R-4d - section 14)**: the P2R-4c build wrote `SRATAST\0`
+  (7 ASCII + NUL, hex `53 52 41 54 41 53 54 00`) while section 1b and every relevant `ERR` text spell
+  `STRATAST` (8 ASCII bytes, no NUL) - the constant-vs-document disagreement
+  (`qwen35_serve.cpp` `kContainerMagic = {'S','R','A','T','A','S','T'}`) was left untouched in P2R-4c
+  pending a supervisor decision. Decision: **fix the code literal to match the document, version stays
+  1**. P2R-4d changed the initializer to `{'S','T','R','A','T','A','S','T'}` (one-line diff) and proved
+  on the real engine that new-magic containers round-trip while an old-literal file is refused with the
+  bad-magic `ERR`.
+- `SAVE -> LOAD -> SAVE` container **byte-identity** (section 8): P2R-4c did not run it (no second
+  `SAVE` in its preregistered shape). **Closed by P2R-4d - section 14**: `s1` (live save), `s2` (save
+  right after the first `LOAD`) and `s3` (save after the second `LOAD`) are byte-identical
+  (SHA256 `8d157ce3…b45135`, 145,748,372 B each, whole-file compare with zero divergences).
 - `STATE.origin` after `SAVE` is `"save"` (the last arming command), not the task text's literal
   `score-keep`; this matches section 1's field contract and the P2-6 record - recorded as a
   task-text-vs-spec delta, not a defect.
@@ -576,3 +593,66 @@ header -> vocab -> ctx -> pos -> CRC -> fp); **every rejection left the live ses
   executed as one already-started atomic operation with all guards (exe SHA, lock, fence, RAM/GPU,
   process table) re-verified immediately before each launch, and the raw values are recorded in
   `native1/argv-plan.json`, `native2/argv-plan.json` and `client/p2r4c-orch-summary.json`.
+
+## 14. P2R-4d - magic fix + SAVE->LOAD->SAVE byte identity (executed 2026-10-15, this machine)
+
+**Status: M1-M5 PASS.** **1 native** (cap 2; one `gpu-lock` lease; rc=0; 28.1 s; no cleanup fence; lock
+released; no `strata.exe` residue) on the **rebuilt exe**
+`c3780a6a02be44a739a272c8f1cb39b76d9d92bb4f15d18b12cf026145812b0b` (139,267,072 B; supersedes
+`b07b2c46…`, same size). **The only source change is the one-line magic-literal fix**
+(`kContainerMagic` = `{'S','R','A','T','A','S','T'}` -> `{'S','T','R','A','T','A','S','T'}`; `git diff`
+= 1 insertion / 1 deletion); `version` stays 1, the layout is untouched, no other behaviour changed.
+`build.ps1 -SkipConfigure` exit 0; the two existing python suites (unmodified) stayed green: 63
+(`test_score_api.py`) + 13 (`test_backend_adapters.py`). Evidence:
+`results/opencode-execution/strata-unified-p2r4d-magic-roundtrip/` (stdin verbatim, full child log,
+per-request parsed JSON, `client/p2r4d-compare.json` + the corrected `p2r4d-compare-v2.json`, verbatim
+`SAVED`/`LOADED` lines, s1/s2/s3 and both pre-made bad files with SHA256, lease audit/result, pre/post
+host state).
+
+**Sequence** (task.md section 2 plus read-only `STATE` probes for M4 and the supplemental same-process
+twin from the twin note): `SCORE <P_long> topk=5 keep=1` -> `SAVE s1` -> `LOAD s1` -> `SAVE s2` ->
+`GEN 16 cont=1 867,198,92,90` (cont#1) -> `LOAD s1` -> `SAVE s3` -> `LOAD legacy-magic.bin` ->
+`LOAD crc-bad.bin` -> `GEN 16 cont=1 867,198,92,90` (cont#2) -> `SCORE <P_long> topk=1` -> `GEN 16
+<P_long>` (reference R) -> `SCORE <P_long> keep=1` -> `GEN 16 cont=1 867,198,92,90` (twin) -> `QUIT`;
+the session cursor is 3896 and every demand (max 3916) is within ctx 4096. The fixed 4 ids are the
+task text's `867,198,92,90` (distinct from P2R-4c's P4; same four on all three continuation legs). The
+two bad files were **pre-made host-side from the P2R-4c `state1.bin`** (old magic; source SHA
+`f5fe4123…`, unchanged): `legacy-magic.bin` = that container verbatim; `crc-bad.bin` = first 8 bytes
+`STRATAST` + one payload bit flipped (generation method and predicted CRC in `raw/bad-files.json`).
+
+| item | result | raw anchor |
+|---|---|---|
+| **M1** new-magic container accepted; old-literal refused with the documented text | **PASS** | `LOAD s1` -> `LOADED 145748372 3896 766.6`; `LOAD legacy-magic.bin` -> `ERR session: '…legacy-magic.bin' is not a STRATAST session container (bad magic)` (the exact section-1b text) |
+| **M2** `s1`/`s2`/`s3` byte-identical (hard judgement) | **PASS** | all three 145,748,372 B, SHA256 `8d157ce35eacc2ea4fba3d5f1b806585e8efc9e4c4dec469c9da9d677eb45135`, header magic `STRATAST` (`53 54 52 41 54 41 53 54`), pos 3896; whole-file compare: zero divergences |
+| **M3** continuations token-exact, `reused=3896`/`prompt_read=4`, session survives both rejections | **PASS** | cont#1 = cont#2 = twin = `[198,220,328,78151,763,220,15,11,198,220,328,9676,33805,763,867,198]` (16/16, `finish=length`); each `DONE 16 4 … length 0 0 3896 0 0 0 0 0.0 4 0`; `STATE` after each rejection byte-identical to the pre-rejection `STATE` |
+| **M4** no side effects | **PASS** | `SAVE` keeps `pos=3896` (STATE `pos` before/after every SAVE equal); after each `LOAD`: `loaded=true`, `pos=3896`, `origin="load"` |
+| **M5** discipline | **PASS** | 1 native / 1 lease / rc=0 / no fence / lock `\x00` after / 0 `strata.exe`; `binary_sha256_actual` = declared (`c3780a6a…`); `SAVED.bytes` == on-disk size for s1/s2/s3; the two `LOADED` lines equal in bytes+pos (766.6 vs 651.8 ms - timing field differs) |
+
+**Raw lines (verbatim):**
+
+```text
+SCORE keep        DONE 0 3896 4560.7 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+SAVE s1           SAVED 145748372 3896 354.2
+LOAD s1 #1        LOADED 145748372 3896 766.6
+SAVE s2           SAVED 145748372 3896 471.3
+GEN cont#1        DONE 16 4 144.9 1075.4 length 0 0 3896 0 0 0 0 0.0 4 0
+LOAD s1 #2        LOADED 145748372 3896 651.8
+SAVE s3           SAVED 145748372 3896 443.0
+LOAD legacy       ERR session: '…legacy-magic.bin' is not a STRATAST session container (bad magic)
+LOAD crc-bad      ERR session: '…crc-bad.bin' payload CRC32 mismatch (container 19cbc5d5, computed c179c6c0)
+GEN cont#2        DONE 16 4 79.1 644.2 length 0 0 3896 0 0 0 0 0.0 4 0
+SCORE reset       DONE 0 3896 2770.4 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+GEN R             DONE 16 3896 2710.7 497.4 length 0 0 0 0 0 0 0 0.0 3896 0
+SCORE keep twin   DONE 0 3896 2774.8 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+GEN cont twin     DONE 16 4 67.0 338.9 length 0 0 3896 0 0 0 0 0.0 4 0
+```
+
+**Judgement bookkeeping**: the full-prefill reference `R` (`DONE 16 3896 2710.7 … reused=0`) is
+recorded but **not** compared to the cursor continuations (the 4 appended ids move the sampling
+position; the supplemental in-process twin from a fresh `SCORE keep=1` is the independent reference) -
+per the task's judgement discipline; no run was repeated. `crc-bad.bin` clears size/magic/version/
+header/vocab/ctx/pos and fails exactly at the payload CRC32 (predicted computed CRC `c179c6c0` == engine
+output). One evidence-harness correction is recorded, not hidden: the first compare JSON compared the
+two full `LOADED` lines including the timing ms field; `client/p2r4d_compare_fix.py` re-derived the M5
+check from the sealed `native1/requests.json` (bytes+pos equality) into `client/p2r4d-compare-v2.json`
+with raw logs and containers untouched.
