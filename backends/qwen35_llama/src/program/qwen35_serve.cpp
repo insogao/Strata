@@ -7,7 +7,9 @@
 //
 //   client -> engine:
 //     GEN <max_new> [key=value ...] <id,id,...>   one request, sampled greedy unless temperature>0
+//                                                 P2R-3a: [cont=1] - explicit session continuation
 //     SCORE <id,id,...> [topk=N] [cand=id,id,..]  read-only logits: prefill, generate nothing
+//                                                 P2R-3a: [keep=1] - state-keeping score (no reset)
 //     CAPS                                        print the capability table (one JSON line), keep serving
 //     SAVE <path>                                 P2-5: export the current session state to a file
 //     LOAD <path>                                 P2-5: import a session state; GEN then continues it
@@ -37,7 +39,12 @@
 // `topk=0` (legal only together with `cand=`) suppresses the LOGPROBS line.  A request without `cand=` is
 // byte-identical to the P2-1 engine.  State semantics are (b) independent, by construction: SCORE starts
 // from `llama_memory_clear` like GEN and resets the session again after printing, so the next request -
-// GEN or SCORE - always starts fresh (reuse stays 0).
+// GEN or SCORE - always starts fresh (reuse stays 0).  P2R-3a adds the opt-in `keep=1` key: the SAME
+// read-only answer, but the session is NOT reset - the prompt is appended at the current session cursor
+// (a reset first only when no session was armed), `DONE`'s `reused` reports the carried positions, and the
+// session stays armed afterwards so the caller can continue it (GEN `cont=1` or a plain session GEN); a
+// successful keep request that found no armed session arms one with `STATE` `origin="score-keep"`.  A
+// request without `keep=` is byte-identical to the pre-P2R-3a engine.
 // CAPS answers the same JSON as `--capabilities` (see qwen35_capabilities_json and
 // docs/backends/qwen35_llama_capabilities_and_score.md).
 //
@@ -49,7 +56,11 @@
 // restored session "continues".  Without SAVE/LOAD the per-request reset below is untouched.  LOAD imports
 // into a TEMPORARY context and swaps only after the import fully succeeded, so a bad path/file leaves the
 // live session untouched; SCORE's semantics (b) reset clears the session (documented in
-// docs/backends/qwen35_llama_session_state.md - the full contract, boundaries and P2-6 plan).
+// docs/backends/qwen35_llama_session_state.md - the full contract, boundaries and P2-6 plan).  P2R-3a adds
+// `GEN ... cont=1` (see that doc): an EXPLICIT continuation - it refuses to run without an armed session
+// and accepts an EMPTY id list (pure continuation, append nothing and decode from the cursor); a request
+// without `cont=` keeps the exact behavior above.  `SCORE ... keep=1` arms/advances the same session
+// machinery without any file (origin `score-keep`; SAVE/LOAD are neither required nor implied).
 //
 // Sampling keys implemented: temperature / top_p / top_k / min_p / seed.  A non-default `penalty_*` (or a
 // `logit_bias`) is REFUSED with ERR instead of being ignored - the phase-1 engine has no such sampler, and a
@@ -136,9 +147,11 @@ bool fill_batch(llama_batch_ext* batch, const llama_token* tokens, int count, in
 }
 
 /// One parsed GEN request.  Defaults mirror the official engine's: greedy, no filters, seed unset.
+/// P2R-3a: `cont` is the explicit continuation key (`cont=1`; requires an armed session).
 struct GenRequest {
     int64_t max_new = 0;
     std::vector<llama_token> ids;
+    bool cont = false;          ///< P2R-3a: append at the armed session's cursor (empty id list allowed)
     float temperature = 0.0f;   ///< <= 0: greedy (the official "temperature absent" default)
     float top_p = 1.0f;
     int32_t top_k = 0;          ///< 0 = off
@@ -174,8 +187,11 @@ bool parse_id_list(const char* ids, const char* ids_end, std::vector<llama_token
     return true;
 }
 
-/// `GEN <max_new> [key=value ...] <id,id,...>`; the ids start at the first whitespace token without '=' and run
-/// to the end of the line (same split rule as the official engine's parser).  Returns false with `err` set.
+/// `GEN <max_new> [key=value ...] [cont=1] <id,id,...>`; the ids start at the first whitespace token without
+/// '=' and run to the end of the line (same split rule as the official engine's parser).  Returns false with
+/// `err` set.  P2R-3a: `cont` only accepts the literal `1` (anything else is refused, never ignored); a
+/// repeated `cont=` key is refused.  With `cont=1` an empty id list is legal (pure continuation - append
+/// nothing); without it the empty list stays the legacy `ERR bad request: no token ids`.
 bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) {
     const char* p = line.c_str() + 4;   // past "GEN "
     while (*p == ' ') ++p;
@@ -185,6 +201,7 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     if (max_new < 1) { err = "bad request: max_new"; return false; }
     req.max_new = max_new;
     p = end;
+    bool cont_seen = false;
     for (;;) {
         while (*p == ' ') ++p;
         if (*p == '\0') break;
@@ -216,6 +233,13 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
             const unsigned long long v = std::strtoull(val.c_str(), &ve, 10);
             if (!parse_scalar(val, ve)) { err = "bad request: seed"; return false; }
             req.seed = v;
+        } else if (key == "cont") {
+            // P2R-3a: only the literal `1`; a repeated key is refused (a dropped continuation flag would
+            // silently turn the request into a different one).
+            if (cont_seen) { err = "bad request: duplicate cont key"; return false; }
+            cont_seen = true;
+            if (val != "1") { err = "bad request: cont"; return false; }
+            req.cont = true;
         } else if (key == "penalty_last_n" || key == "penalty_repeat" || key == "penalty_freq" ||
                    key == "penalty_present") {
             // Non-default penalties are refused, never ignored: this engine has no penalty sampler.
@@ -233,19 +257,23 @@ bool parse_gen_line(const std::string& line, GenRequest& req, std::string& err) 
     const char* ids = p;
     const char* ids_end = ids + std::strlen(ids);
     while (ids_end > ids && ids_end[-1] == ' ') --ids_end;   // a trailing space is noise, not an id list
+    if (ids_end == ids && req.cont) return true;   // P2R-3a: cont=1 with no ids is a pure continuation
     return parse_id_list(ids, ids_end, req.ids, err);
 }
 
 /// P2R-1: the hard cap of explicit `cand=` ids per SCORE (refused above it; `topk` covers wide dumps).
 constexpr size_t kScoreMaxCand = 2048;
 
-/// One parsed SCORE request (P2-1; `cand=` is P2R-1): a prompt, the number of candidate logits to report
-/// (default 5; 0 = answer only `cand`, no LOGPROBS line) and the optional explicit candidate token ids.
+/// One parsed SCORE request (P2-1; `cand=` is P2R-1; `keep=` is P2R-3a): a prompt, the number of candidate
+/// logits to report (default 5; 0 = answer only `cand`, no LOGPROBS line) and the optional explicit
+/// candidate token ids.  `keep` (`keep=1` only) makes the score state-keeping: no reset, append at the
+/// armed session's cursor, stay armed after the answer.
 struct ScoreRequest {
     std::vector<llama_token> ids;
     int32_t topk = 5;
     bool cand_present = false;
     std::vector<llama_token> cand;
+    bool keep = false;
 };
 
 /// Does the line carry a `cand=` key?  Pass 1 of the two-pass parse: `topk=0` is legal only together with
@@ -264,21 +292,23 @@ bool score_line_has_cand_key(const std::string& line) {
     }
 }
 
-/// `SCORE <id,id,...> [topk=N] [cand=id,id,...]`: the only non-key token is the id list (it may come before
-/// or after the keys).  `topk` and `cand` are the only keys; any other key is refused - a silently ignored
-/// key typo would answer a different question than the one asked.  `topk` must be a non-negative integer
-/// (the run clamps it to the vocabulary size); `topk=0` answers only the explicit candidates and therefore
-/// needs a `cand=` list.  A repeated `topk` takes the last value (unchanged); a repeated `cand=` key is
-/// refused - a silently dropped id list would be worse than an error.  `cand=` ids must be decimal,
-/// non-negative, pairwise distinct (duplicates are refused, never deduplicated silently) and at most 2048
-/// many; whether they are inside the model's vocabulary is checked by the caller, exactly like the prompt
-/// ids and with the same error text.
+/// `SCORE <id,id,...> [topk=N] [cand=id,id,...] [keep=1]`: the only non-key token is the id list (it may
+/// come before or after the keys).  `topk`, `cand` and `keep` are the only keys; any other key is refused -
+/// a silently ignored key typo would answer a different question than the one asked.  `topk` must be a
+/// non-negative integer (the run clamps it to the vocabulary size); `topk=0` answers only the explicit
+/// candidates and therefore needs a `cand=` list.  A repeated `topk` takes the last value (unchanged); a
+/// repeated `cand=` key is refused - a silently dropped id list would be worse than an error.  `cand=` ids
+/// must be decimal, non-negative, pairwise distinct (duplicates are refused, never deduplicated silently)
+/// and at most 2048 many; whether they are inside the model's vocabulary is checked by the caller, exactly
+/// like the prompt ids and with the same error text.  P2R-3a: `keep` accepts only the literal `1` (any
+/// other value is refused - never a silent default); a repeated `keep=` key is refused.
 bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& err) {
     const char* p = line.c_str() + 5;   // past "SCORE"
     const char* ids = nullptr;
     const char* ids_end = nullptr;
     const bool has_cand = score_line_has_cand_key(line);
     bool cand_seen = false;
+    bool keep_seen = false;
     for (;;) {
         while (*p == ' ') ++p;
         if (*p == '\0') break;
@@ -337,6 +367,13 @@ bool parse_score_line(const std::string& line, ScoreRequest& req, std::string& e
                     return false;
                 }
             }
+            continue;
+        }
+        if (key == "keep") {
+            if (keep_seen) { err = "bad request: duplicate keep key"; return false; }
+            keep_seen = true;
+            if (val != "1") { err = "bad request: keep"; return false; }
+            req.keep = true;
             continue;
         }
         err = "bad request: unknown key " + key;
@@ -429,13 +466,17 @@ void reset_session(llama_context* ctx) {
     }
 }
 
-/// P2-5 session bookkeeping: `active` is set by a successful SAVE or LOAD and makes GEN continue the session
-/// instead of resetting; it is cleared whenever the state is reset for real (SCORE's semantics (b) reset).
+/// P2-5 session bookkeeping: `active` is set by a successful SAVE or LOAD (or a P2R-3a SCORE `keep=1`
+/// that found no armed session) and makes GEN continue the session instead of resetting; it is cleared
+/// whenever the state is reset for real (SCORE's semantics (b) reset, a failed/cancelled keep request).
 /// `from_load` distinguishes a session that came out of a file (LOAD) from one that was merely checkpointed
-/// (SAVE); `path`/`file_bytes` describe the last successful session file.  STATE reports these facts.
+/// (SAVE); `from_score_keep` (P2R-3a) marks a session armed by `SCORE keep=1` with no file; `path`/
+/// `file_bytes` describe the last successful session file.  STATE reports these facts.  Continuing an
+/// armed session (GEN, `cont=1` or `keep=1` on top of one) never re-arms it: origin and file fields stay.
 struct SessionBook {
     bool active = false;
     bool from_load = false;
+    bool from_score_keep = false;
     std::string path;
     size_t file_bytes = 0;
 };
@@ -636,6 +677,7 @@ std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_
                   "\"mtp\":{\"available\":%s,\"enabled\":%s,\"default\":false,\"k\":null},"
                   "\"expert_formats\":[%s],\"context_max\":%lld,\"logits_read\":true,"
                   "\"score_explicit_candidate_ids\":true,\"score_max_candidate_ids\":%lld,"
+                  "\"state_keep_score\":true,\"session_continue\":true,"
                   "\"state_export\":true,\"disk_kv\":false,\"vision\":false}",
                   mtp_available ? "true" : "false", env_is_exactly_one("STRATA_QWEN35_MTP") ? "true" : "false",
                   fmts.c_str(), (long long) context_max, (long long) kScoreMaxCand);
@@ -863,7 +905,8 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             js += ",\"session\":";
             js += session.active ? "true" : "false";
             js += ",\"origin\":";
-            js += session.active ? (session.from_load ? "\"load\"" : "\"save\"") : "null";
+            js += session.active ? (session.from_load ? "\"load\""
+                                    : (session.from_score_keep ? "\"score-keep\"" : "\"save\"")) : "null";
             js += ",\"file_bytes\":";
             js += (session.active && session.file_bytes > 0) ? std::to_string(session.file_bytes) : "null";
             js += ",\"max_context\":";
@@ -906,6 +949,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             }
             session.active = true;
             session.from_load = false;
+            session.from_score_keep = false;
             session.path = path;
             session.file_bytes = blob.size();
             std::printf("SAVED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
@@ -972,6 +1016,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             ctx.reset(tmp);
             session.active = true;
             session.from_load = true;
+            session.from_score_keep = false;
             session.path = path;
             session.file_bytes = blob.size();
             std::printf("LOADED %zu %lld %.1f\n", blob.size(), (long long) state_cursor(ctx.get()),
@@ -1003,42 +1048,74 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::fflush(stdout);
                 continue;
             }
-            if ((int64_t) sreq.ids.size() > total_ctx) {
-                std::printf("ERR prompt (%lld tokens) exceeds the context (%lld)\n",
-                            (long long) sreq.ids.size(), (long long) total_ctx);
+            // P2R-3a: `keep=1` appends at an ALREADY armed session's cursor without resetting (that is the
+            // state-keeping score); with no armed session - keep or not - the request starts from 0 after
+            // the usual reset.  `score_base_pos` is what the DONE `reused` field reports (0 without keep).
+            const bool score_session = sreq.keep && session.active;
+            const int64_t score_base_pos = score_session ? state_cursor(ctx.get()) : 0;
+            if (score_base_pos + (int64_t) sreq.ids.size() > total_ctx) {
+                if (score_session) {
+                    std::printf("ERR session (%lld) + prompt (%lld tokens) exceeds the context (%lld)\n",
+                                (long long) score_base_pos, (long long) sreq.ids.size(), (long long) total_ctx);
+                } else {
+                    std::printf("ERR prompt (%lld tokens) exceeds the context (%lld)\n",
+                                (long long) sreq.ids.size(), (long long) total_ctx);
+                }
                 std::fflush(stdout);
                 continue;
             }
             stdin_shared->stop.store(false);   // a STOP between requests is stale (the GEN rule)
-            reset_session(ctx.get());
-            session = SessionBook{};   // semantics (b): the SCORE reset ends any active session
+            if (!score_session) {
+                // No continuation: the same reset the default SCORE always did; an armed session ends here
+                // (semantics (b) - a fresh keep request re-arms with origin `score-keep` after its answer).
+                reset_session(ctx.get());
+                session = SessionBook{};
+            }
             const int64_t total = (int64_t) sreq.ids.size();
-            const PrefillRun pre = run_prefill(ctx.get(), batch.get(), sreq.ids, chunk_max, stdin_shared, 0);
+            const PrefillRun pre =
+                run_prefill(ctx.get(), batch.get(), sreq.ids, chunk_max, stdin_shared, score_base_pos);
             if (pre.failed) {
                 std::printf("ERR prefill failed\n");
                 std::fflush(stdout);
+                // A failed keep append resets the state and clears the session - a partial append is never
+                // left for a continuation to pick up (the caller can LOAD a checkpoint again).
+                if (sreq.keep) {
+                    reset_session(ctx.get());
+                    session = SessionBook{};
+                }
                 continue;
             }
             if (!pre.loan_returned) {
                 std::printf("ERR the prompt workspace loan was not returned\n");
                 std::fflush(stdout);
+                if (sreq.keep) {
+                    reset_session(ctx.get());
+                    session = SessionBook{};
+                }
                 continue;
             }
             if (pre.cancelled) {
-                // A STOP ended the read part-way: there is no complete last-position row to score.
+                // A STOP ended the read part-way: there is no complete last-position row to score.  The
+                // carried positions (if any) are still reported honestly; the state is reset as always.
                 std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
-                            0LL, (long long) total, pre.prompt_ms, 0.0, "cancel", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
-                            0LL, 0.0, (long long) pre.read_n, 0LL);
+                            0LL, (long long) total, pre.prompt_ms, 0.0, "cancel", 0LL, 0LL,
+                            (long long) score_base_pos, 0LL, 0LL, 0LL, 0LL, 0.0, (long long) pre.read_n, 0LL);
                 std::fflush(stdout);
-                std::fprintf(stderr, "serve: req %lld finish=cancel produced=0 prompt_ms=%.1f decode_ms=0.0 score\n",
-                             ++serve_reqs, pre.prompt_ms);
+                std::fprintf(stderr, "serve: req %lld finish=cancel produced=0 prompt_ms=%.1f decode_ms=0.0 "
+                                     "score%s\n",
+                             ++serve_reqs, pre.prompt_ms, sreq.keep ? " keep=1" : "");
                 reset_session(ctx.get());
+                if (sreq.keep) session = SessionBook{};
                 continue;
             }
             const float* logits = llama_get_logits_ith(ctx.get(), -1);
             if (logits == nullptr) {
                 std::printf("ERR score produced no logits\n");
                 std::fflush(stdout);
+                if (sreq.keep) {
+                    reset_session(ctx.get());
+                    session = SessionBook{};
+                }
                 continue;
             }
             if (logits_have_nan(logits, n_vocab)) {
@@ -1047,6 +1124,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::printf("ERR score: the head logits are not all finite\n");
                 std::fflush(stdout);
                 reset_session(ctx.get());
+                if (sreq.keep) session = SessionBook{};
                 continue;
             }
             // log_softmax over the FULL vocabulary: logprob = logit - (max + log(sum exp(logit - max))).  The
@@ -1087,25 +1165,39 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::printf("\n");
             }
             std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
-                        0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL,
-                        0.0, (long long) pre.read_n, 0LL);
+                        0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL,
+                        (long long) score_base_pos /* reused */, 0LL, 0LL, 0LL, 0LL, 0.0,
+                        (long long) pre.read_n, 0LL);
             std::fflush(stdout);
             if (sreq.cand_present) {
                 std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
-                                     "topk=%lld cand=%lld\n",
-                             ++serve_reqs, pre.prompt_ms, (long long) k, (long long) sreq.cand.size());
+                                     "topk=%lld cand=%lld%s\n",
+                             ++serve_reqs, pre.prompt_ms, (long long) k, (long long) sreq.cand.size(),
+                             sreq.keep ? " keep=1" : "");
             } else {
                 std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
-                                     "topk=%lld\n",
-                             ++serve_reqs, pre.prompt_ms, (long long) k);
+                                     "topk=%lld%s\n",
+                             ++serve_reqs, pre.prompt_ms, (long long) k, sreq.keep ? " keep=1" : "");
             }
-            reset_session(ctx.get());
+            if (sreq.keep) {
+                // P2R-3a: a successful keep request does NOT reset - the session stays armed at the new
+                // cursor.  It armed the session itself when none was active (origin `score-keep`); when it
+                // continued an armed session, that session keeps its origin and file fields (like a
+                // session GEN - continuing never re-arms).
+                if (!score_session) {
+                    session.active = true;
+                    session.from_load = false;
+                    session.from_score_keep = true;
+                }
+            } else {
+                reset_session(ctx.get());
+            }
             continue;
         }
         if (line.rfind("GEN ", 0) != 0) {
             std::printf("ERR expected: CAPS | STATE | SAVE <path> | LOAD <path> | "
-                        "SCORE <id,id,...> [topk=N] [cand=id,id,...] | "
-                        "GEN <max_new> [key=value ...] <id,id,...>\n");
+                        "SCORE <id,id,...> [topk=N] [cand=id,id,...] [keep=1] | "
+                        "GEN <max_new> [key=value ...] [cont=1] <id,id,...>\n");
             std::fflush(stdout);
             continue;
         }
@@ -1113,6 +1205,13 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         std::string perr;
         if (!parse_gen_line(line, req, perr)) {
             std::printf("ERR %s\n", perr.c_str());
+            std::fflush(stdout);
+            continue;
+        }
+        if (req.cont && !session.active) {
+            // P2R-3a: `cont=1` is an assertion that there IS a session to continue - a continuation
+            // without one would be an isolated request, i.e. a different request than the caller meant.
+            std::printf("ERR cont=1 needs an armed session\n");
             std::fflush(stdout);
             continue;
         }
@@ -1125,9 +1224,11 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             std::fflush(stdout);
             continue;
         }
-        // P2-5: after a successful SAVE/LOAD the session is armed and this GEN APPENDS its prompt at the
-        // cursor (the continuation); without a session the request is isolated exactly as before - fresh
-        // state from position 0.  `base_pos` is also what the DONE `reused` field reports.
+        // P2-5: after a successful SAVE/LOAD (or a P2R-3a `SCORE keep=1`) the session is armed and this GEN
+        // APPENDS its prompt at the cursor (the continuation); without a session the request is isolated
+        // exactly as before - fresh state from position 0.  `base_pos` is also what the DONE `reused` field
+        // reports.  P2R-3a `cont=1` does not change this path at all: it only asserted above that a session
+        // IS armed and (in the parser) allowed an empty id list (pure continuation, `total` = 0).
         const bool session_gen = session.active;
         const int64_t base_pos = session_gen ? state_cursor(ctx.get()) : 0;
         if (base_pos + (int64_t) req.ids.size() + req.max_new > total_ctx) {
@@ -1218,8 +1319,8 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                         0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) pre.read_n,
                         0LL /* offloaded */);
             std::fflush(stdout);
-            std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f\n",
-                         ++serve_reqs, finish, produced, pre.prompt_ms, decode_ms);
+            std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f%s\n",
+                         ++serve_reqs, finish, produced, pre.prompt_ms, decode_ms, req.cont ? " cont=1" : "");
         }
     }
     core::qwen35_bridge_shutdown();

@@ -53,7 +53,7 @@ gate (all checks textual; symbolic links/junctions are not resolved):
 |---|---|
 | `loaded` | `true` when the ACTIVE session came from a `LOAD` (imported file); `false` after a plain `SAVE`, before any session command, or after the session was cleared |
 | `session` | `true` when a session is armed at all (`SAVE` or `LOAD`); this is the fact that makes the next `GEN` continue instead of resetting |
-| `origin` | `"save"` / `"load"` / `null` - which command armed the active session |
+| `origin` | `"save"` / `"load"` / `"score-keep"` / `null` - which command armed the active session (`score-keep` = P2R-3a `SCORE keep=1` that found no armed session; continuing an armed session never changes it) |
 | `pos` | current sequence-0 cursor: last occupied position + 1 (`0` when the sequence is empty). This is the position a continuation appends at |
 | `bytes` | byte size of the state **as it is now** (what `SAVE` would write at this moment). On a fresh/cleared engine this is the non-zero size of the empty state |
 | `path` | file of the active session (`null` when none); `file_bytes` its byte size at the time of the last successful `SAVE`/`LOAD` (may differ from `bytes` once the session has advanced) |
@@ -109,7 +109,9 @@ The serve engine's documented default is per-request isolation (each `GEN`/`SCOR
 4. The session cursor and content evolve with each continuation; `STATE` always reports the live values
    (`bytes`/`pos`), while `path`/`file_bytes` still describe the last file written/read.
 5. The session is cleared (back to full isolation) by:
-   - a `SCORE` request, which performs its documented semantics-(b) reset - see section 6;
+   - a `SCORE` request **without** `keep=1`, which performs its documented semantics-(b) reset - see
+     section 6 (`SCORE ... keep=1` instead keeps/arms the session, and a failed/cancelled keep request
+     clears it - section 3b);
    - process exit (nothing is implied to persist);
    - there is no separate "close session" command in this phase.
 6. A failed `SAVE`/`LOAD` does **not** change the arming state: the previous session keeps working.
@@ -119,6 +121,48 @@ The exported bytes are the state of the CURRENT sequence, whatever produced it: 
 request's final state (prompt + decoded tokens); after a `SCORE` it is the cleared state (see section 6);
 right after `LOAD` it is the imported state. `SAVE` never fabricates or normalizes anything: it serializes
 what the context holds.
+
+## 3b. `SCORE keep=1` and `GEN cont=1`: scoring -> continuation without files (P2R-3a)
+
+P2R-3a adds a **file-less** way to score and continue: `SCORE <ids> keep=1` answers the same read-only
+`LOGPROBS`/`CANDLOGPROBS` payload while leaving the session armed, and `GEN <max_new> cont=1 [<ids>]`
+continues an armed session explicitly (the multi-round continuation P2-5 only exposed through SAVE/LOAD).
+**SAVE/LOAD are not a precondition of this flow and are not part of its acceptance** - the two commands
+work with no session file anywhere; when a file-armed session exists they simply continue it.
+
+Contract (`keep` and `cont` accept only the literal `1`; `keep=0`/`keep=true`/`keep=2`/`keep=` ->
+`ERR bad request: keep`, `cont=` with any non-`1` value -> `ERR bad request: cont`; a repeated `keep=`/
+`cont=` key -> `ERR bad request: duplicate keep key` / `ERR bad request: duplicate cont key`):
+
+- `SCORE ... keep=1` with **no armed session**: the usual reset, the prompt is read from 0 (`reused=0`),
+  the answer is printed exactly as a default `SCORE`, and after a **successful** answer the session is
+  **armed** with cursor = tokens read; `STATE` then reports `origin="score-keep"`, `loaded=false`,
+  `session=true`, no file fields (`path`/`file_bytes` null).
+- `SCORE ... keep=1` with an **armed session**: **no reset** - the prompt is appended at the current
+  cursor, `DONE`'s `reused` reports the cursor before the append, and the session stays armed with the
+  cursor advanced by what was read. Continuing never re-arms: the session keeps its previous `origin` and
+  file fields (a continuation of a `LOAD`ed session still reports `origin="load"`).
+- A **failed or cancelled** `keep=1` request (any `ERR`, a NaN row, a `STOP`) resets the state and clears
+  the session - a partial append is never left for a continuation to pick up; re-`LOAD` the checkpoint to
+  continue from it. This matches the default `SCORE` failure behavior (it never leaves a session armed).
+- `GEN <max_new> cont=1 [<ids>]`: **requires** an armed session, otherwise `ERR cont=1 needs an armed
+  session`; the id list may be **empty** (pure continuation: append nothing, decode from the cursor) or
+  non-empty (append, then decode). `DONE` reports `prompt_tokens`/`prompt_read` = the tokens actually
+  appended/read (0 for a pure continuation) and `reused` = the cursor before the append; after the decode
+  the session stays armed (multi-round). Without `cont=` a session `GEN` behaves exactly as in section 3
+  (and an empty id list stays `ERR bad request: no token ids`).
+- Context limits: `cursor + prompt (+ max_new)` must fit `max_context` as before; a `keep=1` append that
+  would exceed the context answers `ERR session (...) + prompt (...) exceeds the context (...)` and leaves
+  the armed session **untouched** (nothing was read, nothing was reset).
+- The stdout protocol is the same shape as the default paths (`PP`/`LOGPROBS`/`CANDLOGPROBS`/`DONE ...
+  score` for the score; `PP`/`T`/`DONE` for the continuation); the stderr diagnostic appends ` keep=1` /
+  ` cont=1` for these requests.
+- `CAPS` advertises the flow as `state_keep_score` / `session_continue` (both `true`).
+
+Boundaries: the same single-session rules as the rest of this document (one sequence, same build/model);
+`STATE`'s `covers`/`not_covered` are unchanged - `keep=1` adds no new state kind, it only changes when the
+reset happens. Verification: **GPU evidence is P2R-3b and has not run yet** (this section is the
+pre-registered contract); the service mapping (`/v1/score` with `keep`, `/v1/continue`) is P2R-3c.
 
 ## 4. Failure semantics (no half-restore)
 
@@ -169,7 +213,8 @@ Anything answered `ERR` keeps the engine serving - the same request-level contra
 ## 6. Interaction with `SCORE` (semantics (b)) and the other commands
 
 `SCORE`'s contract is semantics **(b) independent**: it resets the session before the request and again
-after it, so the next request starts fresh. Consequences for P2-5, stated plainly:
+after it, so the next request starts fresh. (`SCORE ... keep=1` is the P2R-3a state-keeping exception and
+is documented in section 3b.) Consequences for P2-5, stated plainly:
 
 - `SCORE` **clears an armed session**: the reset is a real reset, so the engine also clears the session
   bookkeeping (`STATE`: `session=false`, `loaded=false`, `origin=null`, `path=null`, `pos=0`, `bytes` = the
@@ -180,7 +225,8 @@ after it, so the next request starts fresh. Consequences for P2-5, stated plainl
   importable file that carries nothing; `LOAD`ing it arms a session whose cursor is 0, which behaves like a
   fresh request.
 - The `SCORE` path itself is unchanged: it never reads or writes session files, and its `LOGPROBS`/`DONE`
-  output is identical with or without an armed session.
+  output is identical with or without an armed session. A `SCORE ... keep=1` (P2R-3a, section 3b) answers
+  the same way but does not perform the (b) reset.
 
 Other commands: `CAPS` is untouched (`state_export` is now `true`, see
 `qwen35_llama_capabilities_and_score.md`). `STOP` during a continuation cancels at the next chunk/token like
@@ -295,5 +341,8 @@ save/load cycles, long sequences, repeated continuations) is not measured here. 
 - Blob write/read: llama's own API - `llama_state_seq_get_size/get_data/set_data` ->
   `vendor/llama.cpp/src/llama-context.cpp` (`state_seq_*`) -> `llama-memory-hybrid.cpp` ->
   `llama-memory-recurrent.cpp` / `llama-kv-cache.cpp`.
+- P2R-3a additions (same file): the `keep=`/`cont=` parse keys, the state-keeping `SCORE` branch and the
+  `cont` gate in the `GEN` branch, `SessionBook::from_score_keep`, and the two CAPS fields
+  (`state_keep_score` / `session_continue`).
 - Protocol summary: `docs/backends/qwen35_llama_serve_protocol.md`; capability table:
   `docs/backends/qwen35_llama_capabilities_and_score.md`.

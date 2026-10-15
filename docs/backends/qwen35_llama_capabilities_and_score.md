@@ -52,10 +52,10 @@ line.
 ## Field-by-field values and sources
 
 Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `build.ps1`; the two
-`score_*` fields are P2R-1):
+`score_*` fields are P2R-1, `state_keep_score`/`session_continue` are P2R-3a):
 
 ```json
-{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"score_explicit_candidate_ids":true,"score_max_candidate_ids":2048,"state_export":true,"disk_kv":false,"vision":false}
+{"protocol":"strata-serve-v1","continuous_requests":true,"cancel":true,"state_isolation":true,"prefix_cache":false,"batching":false,"mtp":{"available":false,"enabled":false,"default":false,"k":null},"expert_formats":["Q4_0","Q4_1","Q5_0","Q5_1","Q8_0","Q4_K","Q5_K","Q6_K","IQ2_XXS","IQ2_XS","IQ3_XXS","IQ4_NL","IQ3_S","IQ2_S","IQ4_XS","IQ1_M","Q2_0"],"context_max":4096,"logits_read":true,"score_explicit_candidate_ids":true,"score_max_candidate_ids":2048,"state_keep_score":true,"session_continue":true,"state_export":true,"disk_kv":false,"vision":false}
 ```
 
 | Field | Value | Source / evidence |
@@ -75,9 +75,17 @@ Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `b
 | `logits_read` | `true` | This task's `SCORE` command (see below); no other logits export exists. |
 | `score_explicit_candidate_ids` | `true` | **P2R-1**: `SCORE` accepts the optional `cand=<id,...>` key and answers every requested id from the same last-position row/lse, whatever its top-k rank (`CANDLOGPROBS` line; see below). Requests without `cand=` remain byte-identical to the P2-1 engine. |
 | `score_max_candidate_ids` | `2048` | **P2R-1**: the hard cap of explicit `cand=` ids per `SCORE`; above it the request is refused `ERR bad request: cand has more than 2048 ids (use topk= for a wide distribution)`. A constant of the implementation (`kScoreMaxCand` in `qwen35_serve.cpp`), not a tunable. |
+| `state_keep_score` | `true` | **P2R-3a**: `SCORE` accepts the optional `keep=1` key - the same read-only logprobs answer, but no reset: the prompt is appended at the armed session's cursor (from 0 when none was armed), `DONE`'s `reused` reports the carried cursor and the session stays armed (`STATE` `origin="score-keep"` when this request armed it). A request without `keep=` is byte-identical to the pre-P2R-3a engine. |
+| `session_continue` | `true` | **P2R-3a**: `GEN` accepts the optional `cont=1` key - an explicit continuation that requires an armed session (`ERR cont=1 needs an armed session` otherwise) and allows an **empty id list** (pure continuation). `DONE` reports `prompt_tokens`/`prompt_read` = the tokens actually appended/read and `reused` = the cursor before the append; the session stays armed. A request without `cont=` is byte-identical to the pre-P2R-3a engine. |
 | `state_export` | `true` | P2-5: single-session state export/import exists - `SAVE <path>` / `LOAD <path>` / `STATE` (attention KV + GDN conv/SSM planes + positions, the raw `llama_state_seq` bytes). The official engine's own `RESTORE` command and its `SAVED <tokens> ...`/`SERR` grammar are **not** implemented; contract, boundaries (no cross-machine/cross-build guarantee; same-process and cross-process parity on this machine/build verified by P2-6, section 11 of the session-state doc) and failure semantics: `docs/backends/qwen35_llama_session_state.md`. Value flipped from `false` in P2-5 (the P2-2 captures below still show the old value - they are verbatim history of that build). |
 | `disk_kv` | `false` | No disk KV; a session file is an explicit export, nothing is loaded, cached or reused implicitly, and nothing survives the process without `SAVE`. |
 | `vision` | `false` | The Qwen35 serve path implements no vision (`GENI` is answered `ERR`); the native engine's `--vision` is a different engine and not reachable from `--qwen35-model`. |
+
+P2R-3a note: state-keeping score (`SCORE ... keep=1` / `state_keep_score`) and conditional continuation
+(`GEN ... cont=1` / `session_continue`) are implemented in the engine (contracts:
+`docs/backends/qwen35_llama_session_state.md` §3b and `docs/backends/qwen35_llama_serve_protocol.md`);
+their GPU evidence is pending - **P2R-3b** (0-GPU build/spec delivered by P2R-3a; service exposure by
+P2R-3c).
 
 ### expert_formats roles
 
