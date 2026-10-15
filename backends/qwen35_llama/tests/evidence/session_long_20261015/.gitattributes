@@ -1,0 +1,3 @@
+# SHA-bound native logs include CRLF and the engine's literal trailing spaces.
+# Preserve them as evidence rather than applying source-code whitespace fixes.
+*-raw.log -text whitespace=-blank-at-eol,cr-at-eol

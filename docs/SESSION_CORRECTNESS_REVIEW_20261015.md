@@ -7,6 +7,13 @@ replacement, MTP optimization or default cache change.
 
 Review: [PR #5](https://github.com/insogao/Strata/pull/5), implementation commit `18cc8457`.
 
+External review follow-up: [actual long-output evidence](EXTERNAL_REVIEW_FOLLOWUP_20261015.md).
+It adds real128/256/512-token trajectories, mid-decode STOP, repeated state
+roundtrips and bounded timing controls. Long exact replay differences remain
+visible as numerical diagnostics, separately from structural/control checks;
+natural answers need not be identical for product correctness. Business quality,
+unified deployment and full performance qualification remain open.
+
 Current user scope is **one GPU per laptop/PC**. No multi-GPU implementation or
 second-card experiment is required for this increment. Actual hardware evidence
 below is Windows / RTX4060 Laptop8GiB; other OS/vendor configurations remain

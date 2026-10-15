@@ -1,0 +1,3033 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8187 MiB):
+  Device 0: NVIDIA GeForce RTX 4060 Laptop GPU, compute capability 8.9, VMM: yes, VRAM: 8187 MiB
+llama_model_loader: loaded meta data with 54 key-value pairs and 733 tensors from models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35moe
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Qwen3.6-35B-A3B
+llama_model_loader: - kv   6:                           general.basename str              = Qwen3.6-35B-A3B
+llama_model_loader: - kv   7:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv   8:                         general.size_label str              = 35B-A3B
+llama_model_loader: - kv   9:                            general.license str              = apache-2.0
+llama_model_loader: - kv  10:                       general.license.link str              = https://huggingface.co/Qwen/Qwen3.6-3...
+llama_model_loader: - kv  11:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv  12:                   general.base_model.count u32              = 1
+llama_model_loader: - kv  13:                  general.base_model.0.name str              = Qwen3.6 35B A3B
+llama_model_loader: - kv  14:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  15:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen3.6-3...
+llama_model_loader: - kv  16:                               general.tags arr[str,3]       = ["qwen3_5_moe", "qwen", "image-text-t...
+llama_model_loader: - kv  17:                      qwen35moe.block_count u32              = 40
+llama_model_loader: - kv  18:                   qwen35moe.context_length u32              = 262144
+llama_model_loader: - kv  19:                 qwen35moe.embedding_length u32              = 2048
+llama_model_loader: - kv  20:             qwen35moe.attention.head_count u32              = 16
+llama_model_loader: - kv  21:          qwen35moe.attention.head_count_kv u32              = 2
+llama_model_loader: - kv  22:          qwen35moe.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  23:                   qwen35moe.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  24: qwen35moe.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  25:                     qwen35moe.expert_count u32              = 256
+llama_model_loader: - kv  26:                qwen35moe.expert_used_count u32              = 8
+llama_model_loader: - kv  27:             qwen35moe.attention.key_length u32              = 256
+llama_model_loader: - kv  28:           qwen35moe.attention.value_length u32              = 256
+llama_model_loader: - kv  29:       qwen35moe.expert_feed_forward_length u32              = 512
+llama_model_loader: - kv  30: qwen35moe.expert_shared_feed_forward_length u32              = 512
+llama_model_loader: - kv  31:                  qwen35moe.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  32:                   qwen35moe.ssm.state_size u32              = 128
+llama_model_loader: - kv  33:                  qwen35moe.ssm.group_count u32              = 16
+llama_model_loader: - kv  34:               qwen35moe.ssm.time_step_rank u32              = 32
+llama_model_loader: - kv  35:                   qwen35moe.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  36:          qwen35moe.full_attention_interval u32              = 4
+llama_model_loader: - kv  37:             qwen35moe.rope.dimension_count u32              = 64
+llama_model_loader: - kv  38:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  39:                         tokenizer.ggml.pre str              = qwen35
+llama_model_loader: - kv  40:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  41:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  42:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  43:                tokenizer.ggml.eos_token_id u32              = 248046
+llama_model_loader: - kv  44:            tokenizer.ggml.padding_token_id u32              = 248055
+llama_model_loader: - kv  45:                tokenizer.ggml.bos_token_id u32              = 248044
+llama_model_loader: - kv  46:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  47:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
+llama_model_loader: - kv  48:               general.quantization_version u32              = 2
+llama_model_loader: - kv  49:                          general.file_type u32              = 26
+llama_model_loader: - kv  50:                      quantize.imatrix.file str              = Qwen3.6-35B-A3B-GGUF/imatrix_unsloth....
+llama_model_loader: - kv  51:                   quantize.imatrix.dataset str              = unsloth_calibration_Qwen3.6-35B-A3B.txt
+llama_model_loader: - kv  52:             quantize.imatrix.entries_count u32              = 510
+llama_model_loader: - kv  53:              quantize.imatrix.chunks_count u32              = 76
+llama_model_loader: - type  f32:  361 tensors
+llama_model_loader: - type q6_K:  252 tensors
+llama_model_loader: - type iq3_s:   37 tensors
+llama_model_loader: - type iq2_s:   80 tensors
+llama_model_loader: - type iq4_xs:    3 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = IQ3_S - 3.4375 bpw
+print_info: file size   = 12.73 GiB (3.15 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA GeForce RTX 4060 Laptop GPU) (0000:01:00.0) - 6932 MiB free
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 248044 ('<|endoftext|>')
+load:   - 248046 ('<|im_end|>')
+load:   - 248063 ('<|fim_pad|>')
+load:   - 248064 ('<|repo_name|>')
+load:   - 248065 ('<|file_sep|>')
+load: special tokens cache size = 33
+load: token to piece cache size = 1.7581 MB
+print_info: arch                  = qwen35moe
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 262144
+print_info: n_embd_inp            = 2048
+print_info: n_embd                = 2048
+print_info: n_embd_out            = 2048
+print_info: n_layer               = 40
+print_info: n_layer_all           = 40
+print_info: n_head                = 16
+print_info: n_head_kv             = 2
+print_info: n_rot                 = 64
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 256
+print_info: n_embd_head_v         = 256
+print_info: n_gqa                 = 8
+print_info: n_embd_k_gqa          = 512
+print_info: n_embd_v_gqa          = 512
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-06
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 0
+print_info: n_expert              = 256
+print_info: n_expert_used         = 8
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = 40
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 262144
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: mrope sections        = [11, 11, 10, 0]
+print_info: ssm_d_conv            = 4
+print_info: ssm_d_inner           = 4096
+print_info: ssm_d_state           = 128
+print_info: ssm_dt_rank           = 32
+print_info: ssm_n_group           = 16
+print_info: ssm_dt_b_c_rms        = 0
+print_info: model type            = 35B.A3B
+print_info: model params          = 34.66 B
+print_info: general.name          = Qwen3.6-35B-A3B
+print_info: vocab type            = BPE
+print_info: n_vocab               = 248320
+print_info: n_merges              = 247587
+print_info: BOS token             = 248044 '<|endoftext|>'
+print_info: EOS token             = 248046 '<|im_end|>'
+print_info: EOT token             = 248046 '<|im_end|>'
+print_info: PAD token             = 248055 '<|vision_pad|>'
+print_info: LF token              = 198 'Ċ'
+print_info: FIM PRE token         = 248060 '<|fim_prefix|>'
+print_info: FIM SUF token         = 248062 '<|fim_suffix|>'
+print_info: FIM MID token         = 248061 '<|fim_middle|>'
+print_info: FIM PAD token         = 248063 '<|fim_pad|>'
+print_info: FIM REP token         = 248064 '<|repo_name|>'
+print_info: FIM SEP token         = 248065 '<|file_sep|>'
+print_info: EOG token             = 248044 '<|endoftext|>'
+print_info: EOG token             = 248046 '<|im_end|>'
+print_info: EOG token             = 248063 '<|fim_pad|>'
+print_info: EOG token             = 248064 '<|repo_name|>'
+print_info: EOG token             = 248065 '<|file_sep|>'
+print_info: max token length      = 256
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 39 repeating layers to GPU
+load_tensors: offloaded 41/41 layers to GPU
+load_tensors:   CPU_Mapped model buffer size = 12633.97 MiB
+load_tensors:        CUDA0 model buffer size =  1596.81 MiB
+................................................................................................
+strata: native expert tier: 3200 slots x 1228800 B = 3.66 GiB (3.66 GiB API bytes)
+strata qwen35: bridge ready: 40 layers x 256 experts, 2048 x 512 experts top-8, workers 7, native tier on, prompt experts GPU/MMQ (grouped, resident cache + bounded cold ring)
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 4608
+llama_context: n_ctx_seq             = 4608
+llama_context: n_batch               = 4096
+llama_context: n_ubatch              = 4096
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (4608) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     0.95 MiB
+llama_kv_cache:      CUDA0 KV buffer size =    90.00 MiB
+llama_kv_cache: size =   90.00 MiB (  4608 cells,  10 layers,  1/1 seqs), K (f16):   45.00 MiB, V (f16):   45.00 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 256
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 256
+llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+llama_memory_recurrent: size =   62.81 MiB (     1 cells,  40 layers,  1 seqs  0 rs_seq), R (f32):    2.81 MiB, S (f32):   60.00 MiB, P (f32):    0.00 MiB
+sched_reserve: reserving ...
+resolve_fused_ops: Flash Attention enabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =   422.13 MiB
+sched_reserve:  CUDA_Host compute buffer size =   164.19 MiB
+sched_reserve: graph: nodes = 3049, splits = 82, input objects = 4, input tensors = 10
+sched_reserve: reserve took 65.93 ms, sched copies = 1
+READY 4608 stop
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 0 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 3992 956.6
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+LOGPROBS 3816 1 103715:-0.3339
+DONE 0 3817 3994.1 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 1 finish=score produced=0 prompt_ms=3994.1 decode_ms=0.0 topk=1
+PP 1 1 121 8.3
+LOGPROBS 0 1 353:-2.5892
+DONE 0 1 121.5 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 2 finish=score produced=0 prompt_ms=121.5 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 0 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2797 1365.4
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2798.9 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 3 finish=score produced=0 prompt_ms=2798.9 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 96076
+T 97850
+T 131892
+T 96024
+T 111186
+T 97324
+T 3709
+T 97447
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 108769
+T 5205
+T 112912
+T 5205
+T 96571
+T 106168
+T 96024
+T 97811
+T 101865
+T 104095
+T 3709
+T 122813
+T 99263
+T 96348
+T 115641
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+T 96537
+T 220
+T 111186
+T 109131
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 125505
+T 96200
+T 111039
+T 100565
+T 96150
+T 134694
+T 220
+T 140362
+T 126714
+T 96091
+T 100703
+T 220
+T 96988
+T 99934
+T 828
+T 271
+T 4277
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 17
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 18
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 97322
+T 118907
+T 99263
+T 97043
+T 3709
+T 98677
+T 332
+T 104043
+T 100588
+T 14
+T 117055
+T 98534
+T 96494
+T 100588
+T 332
+T 96128
+T 332
+T 115732
+T 105200
+T 97190
+T 99495
+T 221794
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 115757
+T 99495
+T 332
+T 4960
+T 32
+T 98290
+T 100899
+T 33
+T 2005
+T 95779
+T 97190
+T 100238
+T 120614
+T 828
+T 88786
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 828
+T 88786
+T 106309
+T 122449
+T 32478
+T 97988
+T 111767
+T 97327
+T 118885
+T 144394
+T 96348
+T 104043
+T 97190
+T 96335
+T 99263
+T 100588
+T 95828
+T 113418
+T 97190
+T 100616
+T 108900
+T 1710
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 99263
+T 96621
+T 111389
+T 332
+T 4960
+T 32
+T 111445
+T 2005
+T 110266
+T 95907
+T 101244
+T 828
+T 88786
+T 98063
+T 95744
+T 100701
+T 99575
+T 828
+T 88786
+T 113230
+T 97645
+T 1076
+T 96186
+T 95930
+T 95915
+T 828
+T 88786
+T 96834
+T 110266
+T 95907
+T 103756
+T 32478
+T 111389
+T 100588
+T 96621
+T 96539
+T 98677
+T 96867
+T 117055
+T 96348
+T 96369
+T 97970
+T 103756
+T 95828
+T 100552
+T 128447
+T 112670
+T 1710
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 115732
+T 112618
+T 95999
+T 104043
+T 115812
+T 332
+T 4960
+T 32
+T 115732
+T 33
+T 142167
+T 96110
+T 96318
+T 3709
+T 96172
+T 101762
+T 128447
+T 136230
+T 95793
+T 110833
+T 3709
+T 97447
+T 96580
+T 120406
+T 99690
+T 9616
+T 96365
+T 97190
+T 109004
+T 7313
+T 96335
+T 99971
+T 102222
+T 3709
+T 97322
+T 110757
+T 96910
+T 137003
+T 100981
+T 100813
+T 1710
+T 198
+T 19
+T 13
+T 220
+T 2972
+T 96406
+T 122418
+T 99263
+T 332
+T 4960
+T 32
+T 96553
+T 2005
+T 96411
+T 97246
+T 96207
+T 828
+T 99995
+T 33
+T 96406
+T 95765
+T 97992
+T 97487
+T 96365
+T 102071
+T 2005
+T 100085
+T 32478
+T 98427
+T 104043
+T 125668
+T 96348
+T 96738
+T 98339
+T 95918
+T 110948
+T 99521
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 95779
+T 97190
+T 100238
+T 120614
+T 220
+T 97365
+T 95873
+T 98791
+T 96079
+T 96151
+T 97139
+T 220
+T 123622
+T 100085
+T 116963
+T 98250
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 122975
+T 122449
+T 220
+T 112628
+T 99565
+T 104265
+T 100049
+T 220
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 99950
+T 122975
+T 96117
+T 220
+T 96199
+T 96044
+T 101587
+T 96364
+T 96028
+T 220
+T 136060
+T 111152
+T 220
+T 100005
+T 133227
+T 96700
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 96250
+T 99451
+T 101762
+T 108724
+T 95933
+T 104677
+T 1076
+T 220
+T 103841
+T 126512
+DONE 512 0 0.0 16637.6 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 4 finish=length produced=512 prompt_ms=0.0 decode_ms=16637.6 cont=1
+PP 1 1 48 20.8
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 48.4 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 5 finish=score produced=0 prompt_ms=48.4 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2754 1386.7
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 120.4 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2876.3 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 6 finish=score produced=0 prompt_ms=2876.3 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 96076
+T 97850
+T 131892
+T 96024
+T 111186
+T 97324
+T 3709
+T 97447
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 108769
+T 5205
+T 112912
+T 5205
+T 96571
+T 106168
+T 96024
+T 97811
+T 101865
+T 104095
+T 3709
+T 122813
+T 99263
+T 96348
+T 115641
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+T 96537
+T 220
+T 111186
+T 109131
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 125505
+T 96200
+T 111039
+T 100565
+T 96150
+T 134694
+T 220
+T 140362
+T 126714
+T 96091
+T 100703
+T 220
+T 96988
+T 99934
+T 828
+T 271
+T 4277
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 17
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 18
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 97322
+T 118907
+T 99263
+T 97043
+T 3709
+T 98677
+T 332
+T 104043
+T 100588
+T 14
+T 117055
+T 98534
+T 96494
+T 100588
+T 332
+T 96128
+T 332
+T 115732
+T 105200
+T 97190
+T 99495
+T 221794
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 115757
+T 99495
+T 332
+T 4960
+T 32
+T 98290
+T 100899
+T 33
+T 2005
+T 95779
+T 97190
+T 100238
+T 120614
+T 828
+T 88786
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 828
+T 88786
+T 106309
+T 122449
+T 32478
+T 97988
+T 111767
+T 97327
+T 118885
+T 144394
+T 96348
+T 104043
+T 97190
+T 96335
+T 99263
+T 100588
+T 95828
+T 113418
+T 97190
+T 100616
+T 108900
+T 1710
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 99263
+T 96621
+T 111389
+T 332
+T 4960
+T 32
+T 111445
+T 2005
+T 110266
+T 95907
+T 101244
+T 828
+T 88786
+T 98063
+T 95744
+T 100701
+T 99575
+T 828
+T 88786
+T 113230
+T 97645
+T 96186
+T 95930
+T 95915
+T 828
+T 88786
+T 96834
+T 110266
+T 95907
+T 103756
+T 32478
+T 111389
+T 97322
+T 96580
+T 111917
+T 97582
+T 101345
+T 5205
+T 96867
+T 117055
+T 96348
+T 110112
+T 103756
+T 100552
+T 112670
+T 108900
+T 1710
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 115732
+T 112618
+T 95999
+T 106307
+T 97157
+T 332
+T 4960
+T 32
+T 115732
+T 33
+T 142167
+T 96110
+T 96318
+T 3709
+T 96172
+T 101762
+T 128447
+T 136230
+T 95793
+T 110833
+T 3709
+T 97423
+T 102017
+T 2005
+T 97139
+T 96389
+T 95889
+T 96755
+T 96597
+T 32478
+T 97628
+T 96041
+T 97192
+T 97794
+T 96376
+T 115046
+T 97447
+T 99263
+T 1710
+T 198
+T 19
+T 13
+T 220
+T 2972
+T 96406
+T 122418
+T 99263
+T 332
+T 4960
+T 32
+T 96553
+T 2005
+T 96411
+T 97246
+T 96207
+T 828
+T 99995
+T 33
+T 96406
+T 95765
+T 97992
+T 3709
+T 98427
+T 104043
+T 125668
+T 96348
+T 99263
+T 121765
+T 96406
+T 98408
+T 99521
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 95779
+T 97190
+T 100238
+T 120614
+T 220
+T 97365
+T 95873
+T 98791
+T 96079
+T 96151
+T 97139
+T 220
+T 123622
+T 100085
+T 116963
+T 98250
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 122975
+T 122449
+T 220
+T 112628
+T 99565
+T 106309
+T 220
+T 95933
+T 104265
+T 100049
+T 220
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 98063
+T 95744
+T 111598
+T 121860
+T 95984
+T 95815
+T 100787
+T 220
+T 141246
+T 1076
+T 220
+T 99950
+T 122975
+T 96117
+T 220
+T 96199
+T 96044
+T 101587
+T 96364
+T 96028
+T 220
+T 136060
+T 111152
+T 220
+T 100005
+T 133227
+T 96700
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 103807
+T 130158
+T 102894
+T 220
+DONE 512 0 0.0 16358.8 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 7 finish=length produced=512 prompt_ms=0.0 decode_ms=16358.8 cont=1
+STATE {"loaded":false,"pos":4329,"bytes":154626508,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 51 19.5
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 51.5 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 8 finish=score produced=0 prompt_ms=51.5 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2697 1415.7
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 74.3 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2774.0 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 9 finish=score produced=0 prompt_ms=2774.0 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+DONE 32 0 0.0 813.7 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 10 finish=length produced=32 prompt_ms=0.0 decode_ms=813.7 cont=1
+STATE {"loaded":false,"pos":3849,"bytes":144784588,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+DONE 32 0 0.0 844.9 length 0 0 3849 0 0 0 0 0.0 0 0
+serve: req 11 finish=length produced=32 prompt_ms=0.0 decode_ms=844.9 cont=1
+STATE {"loaded":false,"pos":3881,"bytes":145440716,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+DONE 32 0 0.0 911.5 length 0 0 3881 0 0 0 0 0.0 0 0
+serve: req 12 finish=length produced=32 prompt_ms=0.0 decode_ms=911.5 cont=1
+STATE {"loaded":false,"pos":3913,"bytes":146096844,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 32 0 0.0 923.6 length 0 0 3913 0 0 0 0 0.0 0 0
+serve: req 13 finish=length produced=32 prompt_ms=0.0 decode_ms=923.6 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 54 18.4
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 54.7 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 14 finish=score produced=0 prompt_ms=54.7 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2717 1405.1
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 71.6 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2791.2 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 15 finish=score produced=0 prompt_ms=2791.2 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+DONE 64 0 0.0 1715.5 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 16 finish=length produced=64 prompt_ms=0.0 decode_ms=1715.5 cont=1
+STATE {"loaded":false,"pos":3881,"bytes":145440716,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 64 0 0.0 1924.4 length 0 0 3881 0 0 0 0 0.0 0 0
+serve: req 17 finish=length produced=64 prompt_ms=0.0 decode_ms=1924.4 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+T 96537
+T 220
+T 111186
+T 109131
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 125505
+T 96200
+T 111039
+T 100565
+T 96150
+T 134694
+T 220
+DONE 64 0 0.0 2389.2 length 0 0 3945 0 0 0 0 0.0 0 0
+serve: req 18 finish=length produced=64 prompt_ms=0.0 decode_ms=2389.2 cont=1
+STATE {"loaded":false,"pos":4009,"bytes":148065228,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 140362
+T 126714
+T 96091
+T 100703
+T 220
+T 96988
+T 99934
+T 828
+T 271
+T 4277
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 17
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 18
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 97322
+T 118907
+T 99263
+T 97043
+T 3709
+T 98677
+T 332
+T 104043
+T 100588
+T 14
+T 96738
+T 98339
+T 95918
+T 110948
+T 221794
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 115757
+T 99495
+T 332
+T 4960
+T 32
+T 98290
+T 103902
+T 102204
+T 97190
+T 3709
+T 96719
+T 33
+T 95772
+DONE 64 0 0.0 1869.4 length 0 0 4009 0 0 0 0 0.0 0 0
+serve: req 19 finish=length produced=64 prompt_ms=0.0 decode_ms=1869.4 cont=1
+STATE {"loaded":false,"pos":4073,"bytes":149377484,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 47 21.2
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 47.3 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 20 finish=score produced=0 prompt_ms=47.3 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2754 1386.5
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 70.5 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2826.8 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 21 finish=score produced=0 prompt_ms=2826.8 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+DONE 64 0 0.0 1545.9 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 22 finish=length produced=64 prompt_ms=0.0 decode_ms=1545.9 cont=1
+STATE {"loaded":false,"pos":3881,"bytes":145440716,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 64 0 0.0 1961.3 length 0 0 3881 0 0 0 0 0.0 0 0
+serve: req 23 finish=length produced=64 prompt_ms=0.0 decode_ms=1961.3 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+T 96537
+T 220
+T 111186
+T 109131
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 125505
+T 96200
+T 111039
+T 100565
+T 96150
+T 134694
+T 220
+DONE 64 0 0.0 2231.9 length 0 0 3945 0 0 0 0 0.0 0 0
+serve: req 24 finish=length produced=64 prompt_ms=0.0 decode_ms=2231.9 cont=1
+STATE {"loaded":false,"pos":4009,"bytes":148065228,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 140362
+T 126714
+T 96091
+T 100703
+T 220
+T 96988
+T 99934
+T 828
+T 271
+T 4277
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 17
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 18
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 97322
+T 118907
+T 99263
+T 97043
+T 3709
+T 98677
+T 332
+T 104043
+T 100588
+T 14
+T 96738
+T 98339
+T 95918
+T 110948
+T 221794
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 115757
+T 99495
+T 332
+T 4960
+T 32
+T 98290
+T 103902
+T 102204
+T 95779
+T 97190
+T 3709
+T 96719
+T 33
+DONE 64 0 0.0 1797.0 length 0 0 4009 0 0 0 0 0.0 0 0
+serve: req 25 finish=length produced=64 prompt_ms=0.0 decode_ms=1797.0 cont=1
+STATE {"loaded":false,"pos":4073,"bytes":149377484,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 95772
+T 2005
+T 122975
+T 122449
+T 828
+T 88786
+T 116731
+T 98250
+T 32478
+T 96172
+T 99989
+T 2005
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 32478
+T 97988
+T 111767
+T 97327
+T 118885
+T 144394
+T 96348
+T 104043
+T 97190
+T 96335
+T 99263
+T 100588
+T 9616
+T 96031
+T 97144
+T 96726
+T 5205
+T 115939
+T 96348
+T 96369
+T 97970
+T 96621
+T 7313
+T 118472
+T 1710
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 115732
+T 99263
+T 332
+T 4960
+T 32
+T 96553
+T 2005
+T 96434
+T 96113
+T 828
+T 88786
+T 106309
+T 32478
+T 96719
+T 33
+T 95772
+T 144731
+DONE 64 0 0.0 1795.0 length 0 0 4073 0 0 0 0 0.0 0 0
+serve: req 26 finish=length produced=64 prompt_ms=0.0 decode_ms=1795.0 cont=1
+STATE {"loaded":false,"pos":4137,"bytes":150689740,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 2005
+T 96199
+T 96044
+T 96364
+T 96028
+T 828
+T 88786
+T 100005
+T 133227
+T 96700
+T 32478
+T 111389
+T 96335
+T 96365
+T 98026
+T 5205
+T 96365
+T 146964
+T 103756
+T 3709
+T 97991
+T 96539
+T 98677
+T 96867
+T 117055
+T 96348
+T 100981
+T 117224
+T 1710
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 106307
+T 97157
+T 332
+T 4960
+T 32
+T 104252
+T 2005
+T 97312
+T 95986
+T 96729
+T 96311
+T 96147
+T 97105
+T 828
+T 88786
+T 97139
+T 96389
+T 95889
+T 96755
+T 96597
+T 32478
+T 100065
+T 96382
+T 97192
+T 97794
+T 99528
+T 97190
+T 104025
+T 104617
+T 96348
+DONE 64 0 0.0 2099.5 length 0 0 4137 0 0 0 0 0.0 0 0
+serve: req 27 finish=length produced=64 prompt_ms=0.0 decode_ms=2099.5 cont=1
+STATE {"loaded":false,"pos":4201,"bytes":152001996,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 96221
+T 99263
+T 3709
+T 97447
+T 96580
+T 2005
+T 136230
+T 828
+T 88786
+T 113230
+T 97645
+T 103841
+T 126512
+T 828
+T 115732
+T 33
+T 112618
+T 112310
+T 99952
+T 3709
+T 97322
+T 110757
+T 96910
+T 114424
+T 97043
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 95779
+T 97190
+T 100238
+T 120614
+T 220
+T 97365
+T 95873
+T 98791
+T 96079
+T 96151
+T 97139
+T 220
+T 123622
+T 100085
+T 116963
+T 98250
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 122975
+DONE 64 0 0.0 2245.4 length 0 0 4201 0 0 0 0 0.0 0 0
+serve: req 28 finish=length produced=64 prompt_ms=0.0 decode_ms=2245.4 cont=1
+STATE {"loaded":false,"pos":4265,"bytes":153314252,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 122449
+T 220
+T 112628
+T 99565
+T 106309
+T 220
+T 95933
+T 104265
+T 100049
+T 220
+T 100085
+T 98407
+T 95753
+T 120978
+T 96003
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 99950
+T 122975
+T 96117
+T 220
+T 96199
+T 96044
+T 101587
+T 96364
+T 96028
+T 220
+T 136060
+T 111152
+T 220
+T 100005
+T 133227
+T 96700
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 100238
+T 97487
+T 96250
+T 97312
+T 95986
+T 96729
+T 96311
+T 96147
+T 97105
+T 220
+T 97139
+T 96389
+T 95889
+T 96755
+T 96597
+T 220
+T 103867
+DONE 64 0 0.0 2265.3 length 0 0 4265 0 0 0 0 0.0 0 0
+serve: req 29 finish=length produced=64 prompt_ms=0.0 decode_ms=2265.3 cont=1
+STATE {"loaded":false,"pos":4329,"bytes":154626508,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 30 33.7
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 29.8 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 30 finish=score produced=0 prompt_ms=29.8 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2696 1416.2
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 75.5 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2773.8 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 31 finish=score produced=0 prompt_ms=2773.8 decode_ms=0.0 topk=1 keep=1
+T 103715
+DONE 1 0 0.0 29.8 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 32 finish=length produced=1 prompt_ms=0.0 decode_ms=29.8 cont=1
+STATE {"loaded":false,"pos":3818,"bytes":144148964,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 103853
+DONE 1 0 0.0 21.8 length 0 0 3818 0 0 0 0 0.0 0 0
+serve: req 33 finish=length produced=1 prompt_ms=0.0 decode_ms=21.8 cont=1
+STATE {"loaded":false,"pos":3819,"bytes":144169468,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 147797
+DONE 1 0 0.0 19.6 length 0 0 3819 0 0 0 0 0.0 0 0
+serve: req 34 finish=length produced=1 prompt_ms=0.0 decode_ms=19.6 cont=1
+STATE {"loaded":false,"pos":3820,"bytes":144189972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 98663
+DONE 1 0 0.0 18.1 length 0 0 3820 0 0 0 0 0.0 0 0
+serve: req 35 finish=length produced=1 prompt_ms=0.0 decode_ms=18.1 cont=1
+STATE {"loaded":false,"pos":3821,"bytes":144210476,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 139572
+DONE 1 0 0.0 17.4 length 0 0 3821 0 0 0 0 0.0 0 0
+serve: req 36 finish=length produced=1 prompt_ms=0.0 decode_ms=17.4 cont=1
+STATE {"loaded":false,"pos":3822,"bytes":144230980,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 3709
+DONE 1 0 0.0 16.9 length 0 0 3822 0 0 0 0 0.0 0 0
+serve: req 37 finish=length produced=1 prompt_ms=0.0 decode_ms=16.9 cont=1
+STATE {"loaded":false,"pos":3823,"bytes":144251484,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 105090
+DONE 1 0 0.0 20.1 length 0 0 3823 0 0 0 0 0.0 0 0
+serve: req 38 finish=length produced=1 prompt_ms=0.0 decode_ms=20.1 cont=1
+STATE {"loaded":false,"pos":3824,"bytes":144271988,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 98642
+DONE 1 0 0.0 19.8 length 0 0 3824 0 0 0 0 0.0 0 0
+serve: req 39 finish=length produced=1 prompt_ms=0.0 decode_ms=19.8 cont=1
+STATE {"loaded":false,"pos":3825,"bytes":144292492,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 96282
+DONE 1 0 0.0 19.3 length 0 0 3825 0 0 0 0 0.0 0 0
+serve: req 40 finish=length produced=1 prompt_ms=0.0 decode_ms=19.3 cont=1
+STATE {"loaded":false,"pos":3826,"bytes":144312996,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 96544
+DONE 1 0 0.0 16.7 length 0 0 3826 0 0 0 0 0.0 0 0
+serve: req 41 finish=length produced=1 prompt_ms=0.0 decode_ms=16.7 cont=1
+STATE {"loaded":false,"pos":3827,"bytes":144333500,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 98151
+DONE 1 0 0.0 19.3 length 0 0 3827 0 0 0 0 0.0 0 0
+serve: req 42 finish=length produced=1 prompt_ms=0.0 decode_ms=19.3 cont=1
+STATE {"loaded":false,"pos":3828,"bytes":144354004,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 109867
+DONE 1 0 0.0 16.8 length 0 0 3828 0 0 0 0 0.0 0 0
+serve: req 43 finish=length produced=1 prompt_ms=0.0 decode_ms=16.8 cont=1
+STATE {"loaded":false,"pos":3829,"bytes":144374508,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 98682
+DONE 1 0 0.0 17.5 length 0 0 3829 0 0 0 0 0.0 0 0
+serve: req 44 finish=length produced=1 prompt_ms=0.0 decode_ms=17.5 cont=1
+STATE {"loaded":false,"pos":3830,"bytes":144395012,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 4960
+DONE 1 0 0.0 17.8 length 0 0 3830 0 0 0 0 0.0 0 0
+serve: req 45 finish=length produced=1 prompt_ms=0.0 decode_ms=17.8 cont=1
+STATE {"loaded":false,"pos":3831,"bytes":144415516,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 271
+DONE 1 0 0.0 17.8 length 0 0 3831 0 0 0 0 0.0 0 0
+serve: req 46 finish=length produced=1 prompt_ms=0.0 decode_ms=17.8 cont=1
+STATE {"loaded":false,"pos":3832,"bytes":144436020,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 13962
+DONE 1 0 0.0 19.2 length 0 0 3832 0 0 0 0 0.0 0 0
+serve: req 47 finish=length produced=1 prompt_ms=0.0 decode_ms=19.2 cont=1
+STATE {"loaded":false,"pos":3833,"bytes":144456524,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 112 0 0.0 3415.9 length 0 0 3833 0 0 0 0 0.0 0 0
+serve: req 48 finish=length produced=112 prompt_ms=0.0 decode_ms=3415.9 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+ERR bad request: max_new
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 55 18.2
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 55.1 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 49 finish=score produced=0 prompt_ms=55.1 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2781 1373.1
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 71.2 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2854.9 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 50 finish=score produced=0 prompt_ms=2854.9 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 128 0 0.0 3933.1 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 51 finish=length produced=128 prompt_ms=0.0 decode_ms=3933.1 cont=1
+SAVED 146753068 3945 534.1
+serve: session save 'D:/work/StrataUnified/session-long-20261015/at128.bin' bytes=146753068 pos=3945 payload=146752972 model_fp=0d4160ef57f03a80
+strata: prompt loan: borrowing the cache's last 33 slots (38.7 MiB, from slot 3167); 33 resident experts stream during the prompt and are refilled after it
+PP 4 4 98 40.7
+strata: prompt loan: slot 3191 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 33 experts refilled in 5.8 ms
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+DONE 32 4 106.0 1298.9 length 0 0 3945 0 0 0 0 0.0 4 0
+serve: req 52 finish=length produced=32 prompt_ms=106.0 decode_ms=1298.9 cont=1
+STATE {"loaded":false,"pos":3981,"bytes":147491116,"path":"D:/work/StrataUnified/session-long-20261015/at128.bin","covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"save","file_bytes":146753068,"payload_bytes":146752972,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 4608
+llama_context: n_ctx_seq             = 4608
+llama_context: n_batch               = 4096
+llama_context: n_ubatch              = 4096
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (4608) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     0.95 MiB
+llama_kv_cache:      CUDA0 KV buffer size =    90.00 MiB
+llama_kv_cache: size =   90.00 MiB (  4608 cells,  10 layers,  1/1 seqs), K (f16):   45.00 MiB, V (f16):   45.00 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 256
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 256
+llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+llama_memory_recurrent: size =   62.81 MiB (     1 cells,  40 layers,  1 seqs  0 rs_seq), R (f32):    2.81 MiB, S (f32):   60.00 MiB, P (f32):    0.00 MiB
+sched_reserve: reserving ...
+resolve_fused_ops: Flash Attention enabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =   452.13 MiB
+sched_reserve:  CUDA_Host compute buffer size =   164.19 MiB
+sched_reserve: graph: nodes = 3049, splits = 82, input objects = 4, input tensors = 10
+sched_reserve: reserve took 52.60 ms, sched copies = 1
+LOADED 146753068 3945 652.7
+serve: session load 'D:/work/StrataUnified/session-long-20261015/at128.bin' bytes=146753068 pos=3945 payload=146752972 model_fp=0d4160ef57f03a80
+SAVED 146753068 3945 480.8
+serve: session save 'D:/work/StrataUnified/session-long-20261015/roundtrip.bin' bytes=146753068 pos=3945 payload=146752972 model_fp=0d4160ef57f03a80
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 4608
+llama_context: n_ctx_seq             = 4608
+llama_context: n_batch               = 4096
+llama_context: n_ubatch              = 4096
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (4608) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     0.95 MiB
+llama_kv_cache:      CUDA0 KV buffer size =    90.00 MiB
+llama_kv_cache: size =   90.00 MiB (  4608 cells,  10 layers,  1/1 seqs), K (f16):   45.00 MiB, V (f16):   45.00 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 256
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 256
+llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+llama_memory_recurrent: size =   62.81 MiB (     1 cells,  40 layers,  1 seqs  0 rs_seq), R (f32):    2.81 MiB, S (f32):   60.00 MiB, P (f32):    0.00 MiB
+sched_reserve: reserving ...
+resolve_fused_ops: Flash Attention enabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =   452.13 MiB
+sched_reserve:  CUDA_Host compute buffer size =   164.19 MiB
+sched_reserve: graph: nodes = 3049, splits = 82, input objects = 4, input tensors = 10
+sched_reserve: reserve took 50.07 ms, sched copies = 1
+LOADED 146753068 3945 428.0
+serve: session load 'D:/work/StrataUnified/session-long-20261015/roundtrip.bin' bytes=146753068 pos=3945 payload=146752972 model_fp=0d4160ef57f03a80
+SAVED 146753068 3945 379.3
+serve: session save 'D:/work/StrataUnified/session-long-20261015/roundtrip2.bin' bytes=146753068 pos=3945 payload=146752972 model_fp=0d4160ef57f03a80
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":"D:/work/StrataUnified/session-long-20261015/roundtrip2.bin","covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"save","file_bytes":146753068,"payload_bytes":146752972,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+get_logits_ith: invalid logits id -1, reason: corrupt output buffer (j=4294967295, n_outputs=0)
+ERR decode produced no logits at output 0
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":"D:/work/StrataUnified/session-long-20261015/roundtrip2.bin","covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"save","file_bytes":146753068,"payload_bytes":146752972,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+strata: prompt loan: borrowing the cache's last 33 slots (38.7 MiB, from slot 3167); 33 resident experts stream during the prompt and are refilled after it
+PP 4 4 146 27.4
+strata: prompt loan: slot 3191 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 33 experts refilled in 8.2 ms
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 96076
+T 97850
+DONE 32 4 158.2 1333.0 length 0 0 3945 0 0 0 0 0.0 4 0
+serve: req 53 finish=length produced=32 prompt_ms=158.2 decode_ms=1333.0 cont=1
+STATE {"loaded":false,"pos":3981,"bytes":147491116,"path":"D:/work/StrataUnified/session-long-20261015/roundtrip2.bin","covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"save","file_bytes":146753068,"payload_bytes":146752972,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 50 20.1
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 50.0 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 54 finish=score produced=0 prompt_ms=50.0 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2841 1344.8
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 70.1 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2913.4 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 55 finish=score produced=0 prompt_ms=2913.4 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+DONE 8 0 0.0 188.2 cancel 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 56 finish=cancel produced=8 prompt_ms=0.0 decode_ms=188.2 cont=1
+STATE {"loaded":false,"pos":3825,"bytes":144292492,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 120 0 0.0 3251.0 length 0 0 3825 0 0 0 0 0.0 0 0
+serve: req 57 finish=length produced=120 prompt_ms=0.0 decode_ms=3251.0 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 41 24.6
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 40.8 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 58 finish=score produced=0 prompt_ms=40.8 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2787 1370.4
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 70.4 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2859.4 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 59 finish=score produced=0 prompt_ms=2859.4 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 99222
+T 245342
+T 198
+T 96382
+T 104062
+T 98845
+T 101603
+T 102071
+T 5205
+T 111186
+T 95726
+T 121765
+T 110948
+T 97424
+T 1710
+T 99465
+T 95896
+T 9616
+T 32
+T 7313
+T 98290
+T 99989
+T 96355
+T 97190
+T 99139
+T 102295
+T 5205
+T 108554
+T 97325
+T 97195
+T 5205
+T 95753
+T 109135
+T 134694
+T 5205
+T 95753
+T 98103
+T 95765
+T 3709
+T 97447
+T 109004
+T 96580
+T 97190
+T 96076
+T 97850
+T 96537
+T 3709
+T 98427
+T 102204
+T 100588
+T 110940
+T 111186
+T 96719
+T 1710
+T 99152
+T 99473
+T 96621
+T 96959
+T 3709
+T 98677
+T 98660
+T 134189
+T 9616
+T 98500
+T 5205
+T 100654
+T 46662
+T 95979
+T 99263
+T 115732
+T 96348
+T 104043
+T 97284
+T 105899
+T 1710
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 9
+T 256
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+DONE 128 0 0.0 3415.2 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 60 finish=length produced=128 prompt_ms=0.0 decode_ms=3415.2 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 57 17.7
+LOGPROBS 0 1 353:-2.5518
+DONE 0 1 56.7 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 61 finish=score produced=0 prompt_ms=56.7 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 470 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 2815 1384.3
+strata: prompt loan: slot 3064 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 470 experts refilled in 76.2 ms
+LOGPROBS 3895 1 90:-0.1189
+DONE 0 3896 2893.8 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 62 finish=score produced=0 prompt_ms=2893.8 decode_ms=0.0 topk=1 keep=1
+T 90
+T 198
+T 1
+T 78151
+T 763
+T 220
+T 15
+T 11
+T 198
+T 1
+T 9676
+T 33805
+T 763
+T 867
+T 198
+T 92
+T 248046
+DONE 17 0 0.0 512.7 stop 0 0 3896 0 0 0 0 0.0 0 0
+serve: req 63 finish=stop produced=17 prompt_ms=0.0 decode_ms=512.7 cont=1
+STATE {"loaded":false,"pos":3913,"bytes":146096844,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4608,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+strata qwen35: router weights device (STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE=1): device_calls 507 legacy_calls 0 weights_d2h_bytes 0 weights_h2d_bytes 0 diag_d2h_bytes 0 check_runs 0 check_elems 0 check_eq 0 check_fail 0 check_nb1 -1 check_nb2 -1 check_alloc_failed 0
+strata qwen35: packed router ids (STRATA_QWEN35_PACKED_IDS=1): packed_calls 507 raw_calls 0 packed_d2h_bytes 52508352 raw_d2h_bytes 0 diag_d2h_bytes 0 check_shapes 0 check_elems 0 check_fail 0 check_nb1 -1
