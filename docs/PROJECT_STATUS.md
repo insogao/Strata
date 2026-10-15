@@ -82,7 +82,7 @@
 | P3-1 设备/模型指纹 ＋ 资源预算规划器（0 GPU） | 完成 | commit `dee07c30`；`docs/backends/qwen35_llama_autotuner_foundation.md`（锚点复现 0.439/0.220 GiB） |
 | P3-2 离线成本模型 ＋ 候选筛选（0 GPU） | 完成（**只能可信拒绝**） | commit `d350d768`；`docs/backends/qwen35_llama_offline_screen.md`（hold-out 均值绝对误差 **9.70%**、最大 21.30%、同批异号；短名单 ≤5） |
 | P3-3 短名单 GPU 配对交错验证（真实引擎） | **完成：候选 `s2200-c-t8-u4096-x8192` 双形状 NO-GO** | commit `66b8528d`；`docs/backends/qwen35_llama_autotune_pilot.md`（6 native 一租约一例、严格串行、0 重跑；S Δ=−5.17%（漂移带 5.58%）、L Δ=−17.52%（漂移带 4.31%）；hits 3654→3032 / 25314→19896、misses 上升 ⇒ **P3-2"2700 饱和、2200 不应更慢"的拐点假设被实测证伪**；3 项口径偏差＋1 项采样口径**在 native 之前**登记于 `retry2/prep/preregistration.json`；`git diff --stat 27c987ca..HEAD -- src` 证明 prefill/decode/tier/MTP 核心未被触碰） |
-| P3-4 `strata tune` CLI ＋ profile schema/失效规则 ＋ 阶段 3 交付汇总 | 待办 | 本文件 §4.1 之后由主管排 |
+| P3-4 `strata tune` CLI ＋ profile schema/失效规则 ＋ 阶段 3 交付汇总 | **完成（0 GPU）** | 本提交；`backends/qwen35_llama/tools/strata_tune.py`（inspect/screen/plan/profile/check 五子命令，复用 P3-1/P3-2 模块）＋`test_strata_tune.py`（25 单测全绿）＋`docs/PHASE3_DELIVERY.md`；`check` 四类失效非零退出、跨卡拒绝不换算、`uncalibrated` 警告码 `W-UNCALIBRATED`；既有 19+20+13+19 单测未回归；阶段三**独立 PR**（head＝`phase3/autotuner`，base＝`phase2/backend-interface`，与 PR #3 并列、均不合并 main；编号以 GitHub 分配为准） |
 
 **本分支的 `PROJECT_STATUS` 尚未包含阶段二评审补强（P2R-1…P2R-5）的行**——那部分在 `phase2r/review-gaps` 的拷贝里（§4.0b，权威）。交接先读：**`docs/HANDOFF_FOR_NEXT_AGENT.md`**（全量交接说明：入口、冻结件、口径、纪律、失败处置、未闭合清单、别盲信清单）。
 

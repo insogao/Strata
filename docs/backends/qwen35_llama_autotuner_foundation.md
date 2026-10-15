@@ -236,3 +236,36 @@ quota 3 = 0.220 GiB); explicit rejections (all-experts, batch>1, over-context, m
 pinned host, zero-slot); the pageable host fit (including the 15.3 GiB model); the two pools
 not mixing; mode changes affecting only allocation; and the refusal to plan with an unknown
 VRAM total. Test output is saved beside the anchor JSONs in the evidence directory.
+
+## 6. P3-4: the profile schema and its invalidation rules
+
+`backends/qwen35_llama/tools/strata_tune.py` (P3-4) wraps this foundation and the P3-2 screen in
+one CLI (`inspect` / `screen` / `plan` / `profile` / `check`; 0 GPU; full command reference,
+examples and exit-code semantics in `docs/PHASE3_DELIVERY.md` §2).  A `check`-able profile is
+`schema_version = "strata-tune-profile/1"` with exactly these fields:
+
+| field | meaning |
+|---|---|
+| `schema_version` | `strata-tune-profile/1` |
+| `model_sha256_prefix` | registered model SHA prefix (8..64 lowercase hex; the file is never re-hashed) |
+| `quant` | quantization tag (e.g. `IQ3_S`); cross-quantization conversion is forbidden |
+| `device_fingerprint` | GPU name / VRAM total / driver / compute capability (any change invalidates) |
+| `argv` | `slots/ubatch/threads/ctx/compact` - compared item by item against the runtime config |
+| `evidence` | evidence references (directories/commits); without one only `uncalibrated` may be written |
+| `confidence` | `ok` / `wide` / `uncalibrated` |
+| `recommendation` | true only for `confidence=ok` + evidence + explicit `--recommend`; `uncalibrated` is never a recommendation |
+| `generated_at` | UTC ISO timestamp |
+| `invalidators` | the frozen rule table below (carried inside every profile) |
+
+`check <profile>` fails closed with exit code 2 on any of:
+
+| code | condition |
+|---|---|
+| `MODEL_SHA_MISMATCH` | registered-SHA prefix mismatch; unknown current SHA is a fail-closed mismatch |
+| `QUANT_MISMATCH` | quant differs (no cross-quantization conversion is performed) |
+| `DEVICE_MISMATCH` | any `device_fingerprint` field changed - cross-card reuse is refused with both sides printed, no conversion |
+| `ARGV_MISMATCH` | `slots/ubatch/threads/ctx/COMPACT` differ from the runtime configuration (nothing is silently reused) |
+| `W-UNCALIBRATED` | `confidence=uncalibrated`: warning code, exit code 3, never a recommendation |
+
+The rules are asserted per-fixture (positive and negative) in `test_strata_tune.py` (25 tests,
+all pass, 0 GPU).
