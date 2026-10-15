@@ -11,7 +11,9 @@ Phase-2 backend-interface work, task **P2-1** (branch `phase2/backend-interface`
    `GEN`, generate **no** token, and answer the last position's top-k log-softmax over the **full**
    vocabulary, then `DONE ... score`. **P2R-1** adds the optional `cand=<id,...>` key (explicit candidate
    ids answered from the same row/lse, whatever their top-k rank) and allows `topk=0` (candidates only,
-   no `LOGPROBS` line). The GPU cross-check of the additions is **P2R-2** (pending; not claimed here).
+   no `LOGPROBS` line). The GPU cross-check of the additions **ran in P2R-2 (2026-10-15) and passed**
+   (evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up: "P2R-2: GPU
+   validation of the P2R-1 additions" in `docs/backends/qwen35_llama_score_api_e2e.md`).
 
 The field values below are the implementation's own values, each with its source. Nothing in this table is a
 product claim; features that do not exist are `false` and listed in "Not implemented" (a wrong `true` would be
@@ -131,8 +133,10 @@ SCORE <id,id,...> [topk=N] [cand=id,id,...]
 - **Backward compatibility (hard criterion)**: a request **without** `cand=` is answered **byte-for-byte
   identically** to the P2-1 engine - the `LOGPROBS` line, the `DONE` fields and the stderr diagnostic. The
   only pre-existing text P2R-1 changes is the fallback `ERR expected: ...` line, which now shows
-  `SCORE <id,id,...> [topk=N] [cand=id,id,...]`. The same-request cross-check against the old exe is
-  **P2R-2** (pending GPU task; not claimed here).
+  `SCORE <id,id,...> [topk=N] [cand=id,id,...]`. The same-request cross-check against the old exe was
+  **run in P2R-2 (2026-10-15)**: at three same-position requests (cold P_short, warm#1/warm#2 P_long) the
+  old (`6dee0c66...`) and new (`d0321a98...`) exes printed **byte-identical `LOGPROBS` lines**; `DONE`
+  and the stderr diagnostic are byte-identical outside their timing fields (`prompt_ms`/`decode_ms`).
 
 ### Semantics (implemented exactly as listed)
 
@@ -331,6 +335,12 @@ P2R-1 note (2026-10-15, branch `phase2r/review-gaps`): the `cand=`/`topk=0` exte
 `score_*` capability fields are implemented in `src/program/qwen35_serve.cpp` (parse, `CANDLOGPROBS` block,
 CAPS builder); the explicit candidates read the **same** last-position row and the **same** full-vocab lse the
 `LOGPROBS` line uses - one prefill, no second forward. New exe `sha256=d0321a98ab1908ef3c0f0d91b1b6e6c42758d79594222c6def425bf406a4bc09`
-(139,257,344 B). This task is **0 GPU**: the runtime byte-compat cross-check of `cand=`-free requests against
-the P2-1 exe and the GPU identity check of `CANDLOGPROBS` vs `LOGPROBS` values are **P2R-2** (pending; not
-claimed here). The P2-1/P2-2 captures above were taken from pre-P2R-1 builds and remain verbatim history.
+(139,257,344 B). This task itself was **0 GPU**. **P2R-2 (2026-10-15) has since run the GPU cross-check and it
+passed**: old-vs-new exe `LOGPROBS` lines byte-identical at equal positions (cold/warm1/warm2), `cand=`
+values byte-identical to the same-process `LOGPROBS` line, explicit out-of-top-k ids finite and `<= 0` with
+candidate-set mass `<= 1`, `SCORE` top-1 == the greedy `GEN 1` first token on both prompts, and the
+`/v1/decisions` payload (always-present `label_mass`, three probability scopes, `calibrated:false`, no
+confidence/threshold field) verified against the live engine. Evidence:
+`results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up in
+`docs/backends/qwen35_llama_score_api_e2e.md` ("P2R-2: GPU validation of the P2R-1 additions"). The
+P2-1/P2-2 captures above were taken from pre-P2R-1 builds and remain verbatim history.

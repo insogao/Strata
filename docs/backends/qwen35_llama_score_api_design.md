@@ -12,8 +12,11 @@ full-vocabulary probability, the conditional probability within the candidate se
 that **no calibrated business confidence is provided** - and now **always returns `label_mass`** (the old
 `label_mass_omitted` field and the "candidate outside the returned top-k -> 422" refusal are **deleted**).
 The engine side is the P2R-1 `SCORE ... [cand=...]` / `topk=0` extension
-(`docs/backends/qwen35_llama_capabilities_and_score.md`); GPU verification of the new paths is **P2R-2**
-(pending). The payload-difference checklist vs the P2-3/P2-4 payload is at the end of §2.
+(`docs/backends/qwen35_llama_capabilities_and_score.md`); GPU verification of the new paths was
+**run 2026-10-15 by P2R-2 and passed** (evidence:
+`results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up: "P2R-2: GPU validation of the
+P2R-1 additions" in `docs/backends/qwen35_llama_score_api_e2e.md`). The payload-difference checklist vs
+the P2-3/P2-4 payload is at the end of §2.
 
 Files (all new; official files, the engine and every frozen artifact are untouched):
 
@@ -24,10 +27,12 @@ Files (all new; official files, the engine and every frozen artifact are untouch
 | `backends/qwen35_llama/tools/test_score_api.py` | 0-GPU unit tests (stub engine over real pipes + real HTTP) |
 | `docs/backends/qwen35_llama_score_api_design.md` | this document |
 
-Status of verification: **0 GPU, no engine run, no lease.** Everything measured below was measured with the stub
-engine on CPU. Running the service against the real engine (real model, GPU lease, neutral cwd) is **P2-4** and
-has not been done yet. The P2R-1 additions (explicit candidates, the new decisions payload) have **no
-real-engine evidence yet** - that is P2R-2; this document does not claim any.
+Status of verification: the P2-3 baseline below was measured with the stub engine on CPU (0 GPU, no
+engine run, no lease). Real-engine verification then happened in two steps: **P2-4** ran the thin service
+against the real engine on GPU (`docs/backends/qwen35_llama_score_api_e2e.md`) with the pre-P2R-1 payload,
+and **P2R-2 (2026-10-15)** validated the P2R-1 additions (explicit candidates, the always-present
+`label_mass` payload, byte-compat of `cand=`-free requests) on the live engine - it **passed**; each
+numeric claim below that originates from the stub capture remains labelled as such.
 
 ## 1. Running the service
 
@@ -336,7 +341,7 @@ field is accepted with a different meaning than documented here.
 | Not implemented | Today's behavior | Possible later step |
 |---|---|---|
 | real-engine verification of this service | never run against the engine (0 GPU by design) | P2-4: GPU end-to-end on the real model under the usual lease/neutral-cwd discipline |
-| GPU verification of the P2R-1 additions | not run (0 GPU): explicit candidates, the always-present `label_mass` payload and the byte-compat cross-check of `cand=`-free requests against the P2-1 exe have **no real-engine evidence yet** | P2R-2 (registered follow-up): same-request old/new exe diff + `CANDLOGPROBS` vs `LOGPROBS` identity on GPU |
+| GPU verification of the P2R-1 additions | **done 2026-10-15 (P2R-2), passed**: explicit candidates byte-identical to the same-process `LOGPROBS`; out-of-top-k ids finite `<= 0` and the candidate-set union mass `<= 1`; `SCORE` top-1 == greedy `GEN 1` first token on both prompts; live `/v1/decisions` payload per §2 (always-present `label_mass`, three scopes, `calibrated:false`, no confidence field); old-vs-new exe `LOGPROBS` byte-identical at equal positions | evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`; write-up in `docs/backends/qwen35_llama_score_api_e2e.md` |
 | server-side prompt rendering / labels / question descriptions | caller owns prompt construction (`prompt_ids`) | a rendering layer *above* this service; the service stays content-free |
 | streaming | none; one JSON response per request | incompatible with a single score answer; only relevant to future generation endpoints |
 | batching / concurrent requests | `503` while busy | engine-side continuous batching (P2-1 `batching=false`), then a scheduler above it |
@@ -401,8 +406,9 @@ history, not as the current contract.
   (signature passthrough), `tools/stub_engine.py`, `tools/test_score_api.py`, and the four docs. The engine
   change is **compile-verified only** (build.ps1 exit 0; new exe
   `sha256=d0321a98ab1908ef3c0f0d91b1b6e6c42758d79594222c6def425bf406a4bc09`, 139,257,344 B) - no engine was
-  started, no model loaded, no GPU touched; the same-request byte-compat check against the old exe
-  (`6dee0c66...`) and the GPU identity check are **P2R-2**.
+  started, no model loaded, no GPU touched. The same-request byte-compat check against the old exe
+  (`6dee0c66...`) and the GPU identity check were carried out by **P2R-2 (2026-10-15) and passed**
+  (evidence: `results/opencode-execution/strata-unified-p2r2-candidate-gpu/`, client/p2r2-compare.json).
 - Official files and frozen artifacts: zero edits (P2R-1 touches only the files listed above; no `main`
   merge, no vendor change).
 - No performance claim of any kind is made for the real engine; P2-4 owns that.

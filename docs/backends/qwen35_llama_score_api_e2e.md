@@ -140,3 +140,101 @@ is fully deterministic" — the service is a faithful relay; the engine's first 
   prompt classes (only P1 = han3k-risky and the 23-id yes/no prompt), models other than the
   IQ3_S production file, and finer precision than the protocol prints.
 - Case hygiene: each case and each native ran exactly once; no retries; no re-runs to chase numbers.
+
+## 6. P2R-2: GPU validation of the P2R-1 additions (2026-10-15, branch `phase2r/review-gaps`)
+
+Task **P2R-2** ran the P2R-1 additions (`SCORE ... [cand=...]` / `topk=0` and the new `/v1/decisions`
+payload) on the real engine and cross-checked the new exe against the old one. Evidence:
+`results/opencode-execution/strata-unified-p2r2-candidate-gpu/` (preflight SHA, jobs/argv, raw child logs,
+HTTP originals, `client/p2r2-compare.json`, `p2r2-run-console.log.md`). Exes, SHAs recomputed pre-run: old
+`6dee0c66c3e87c3020c6ddde3c9ebaa40bed3369745e8e1dbfb0a7ac963ad90a` (139,253,760 B), new
+`d0321a98ab1908ef3c0f0d91b1b6e6c42758d79594222c6def425bf406a4bc09` (139,257,344 B). cwd
+`D:\work\StrataUnified`; same engine argv as §1 (ctx 4096 / t8 / slots 3200 / ubatch 4096), the three
+production gates, CUDA `bin` prepended to `PATH`. Four natives, one `gpu-lock run` lease each declaring
+the exe under test, strictly serial, `--stdin-file`; N4 used the same `hold` + compensation form as §1.
+0 new fences; post-batch: lock `\x00`, no marker, no `strata.exe`, GPU 1323 MiB / 17 %.
+
+Prompts (ASCII, ids from the repo tokenizer, `n_vocab=248320`): **P_short** = 23-id closed yes/no question;
+**P_open** = 25-id open continuation; **P_cls** = 61-id "Answer with a single digit" classification;
+**P_long** = the 3896-id benign fixture. Candidate ids: `' yes'`=9542, `' no'`=874, `'0'..'3'`=15..18;
+spread ids `0,1,2,3,100,1000,10000,50000,100000,150000`.
+
+### A - old/new byte-compat at equal positions
+
+`SCORE P_short topk=5` (first score of the process), `SCORE P_long topk=5` (warm#1 = first score of that
+prompt), same again (warm#2); one process per exe.
+
+- **`LOGPROBS` byte-identical 3/3**, e.g. cold P_short (both exes):
+  `LOGPROBS 22 5 271:-0.0553 198:-4.0315 9542:-4.2394 7179:-4.9887 695:-5.5802`; warm#2 P_long (both):
+  `LOGPROBS 3895 5 90:-0.1160 4754:-2.2494 13215:-6.1471 1:-7.3827 5202:-8.6236`.
+- `DONE` lines: all non-timing fields identical; raw bytes differ only in `prompt_ms`/`decode_ms`. The
+  stderr diagnostic (no `cand=`) is byte-identical outside `prompt_ms` - the new exe appends nothing.
+- **Classification of the one systematic difference**: N2's own warm#1 vs warm#2 differ by up to
+  `|Δ| = 0.0327` (id 13215: `-6.1144` vs `-6.1471`), i.e. repeats of the first score of a prompt differ
+  from the stabilized repeat - the §4 phenomenon, here on P_long and reaching **3.27e-2** (larger than the
+  1.11e-2 §4 record). Because old vs new is byte-identical **within each class**, the difference is
+  classified as **state-class drift, not P2R-1 incompatibility**.
+
+### B1 - explicit candidates vs the same-process `LOGPROBS`
+
+`SCORE P_long topk=0 cand=90,4754,13215,1,5202` (new exe, hot; ids taken from N1's warm#2 line) answered
+`CANDLOGPROBS 3895 5 90:-0.1160 4754:-2.2494 13215:-6.1471 1:-7.3827 5202:-8.6236` - **5/5 values
+byte-equal** to that process's own `LOGPROBS` warm#2 line.
+
+### B2 - candidates outside the top-k, and the union mass
+
+`SCORE P_long topk=5 cand=0,1,2,3,100,1000,10000,50000,100000,150000` answered
+`CANDLOGPROBS 3895 10 0:-13.5132 1:-7.3827 2:-15.8887 3:-16.4839 100:-20.6537 1000:-22.4266
+10000:-24.8607 50000:-27.0409 100000:-23.6128 150000:-25.7831` - all finite, all `<= 0`.
+Union mass over `{top-5} ∪ {spread}`: `Σexp(logp) = 0.99888066 <= 1`. 4dp quantization note: the engine
+prints `%.4f`, so each `exp()` term carries that rounding (relative error ~5e-5..1e-4); id 1 appears in
+**both** tables with the identical value `-7.3827` and is counted once in the union. One honest caveat: of
+the 10 requested ids, id 1 actually sat **inside** that top-5 (rank 4) - the other 9 were outside it; the
+cross-table value identity is the strongest same-request check here.
+
+### B3 - `SCORE` top-1 == greedy `GEN 1` first token
+
+`GEN 1 P_short` -> `T 271`; the following `SCORE P_short topk=5` top-1 id is **271**. `GEN 1 P_long` ->
+`T 90`; `SCORE P_long topk=5` top-1 id is **90**. Both `GEN 1` requests ended `finish=length` (max_new=1,
+no EOS), so both prompts apply. (The `SCORE` answers were hot while the `GEN`s were the processes' first
+inference; the argmax did not change across the classes - consistent with A/C.)
+
+### C - repeats, drift, near-threshold sensitivity
+
+Selection rule (preregistered before the natives): the adjacent pair in N1's P_long warm#1 line with the
+smallest gap -> **ids 1 / 5202, gap 1.2125**. Three repeats of
+`SCORE P_long topk=5 cand=1,5202` (new exe) answered `1:-7.3827 5202:-8.6236` **identically each time**;
+per-id value range `0.0`; rank order unchanged; `LOGPROBS` top-1 (90) unchanged. Caveat, stated plainly:
+the P_long top-5 has **no true near-tie** (adjacent gaps 2.116 / 3.880 / 1.268 / 1.213), so this does not
+demonstrate rank-flip sensitivity at gaps below the drift; it does show hot repeats are stable at the
+`%.4f` print precision. Side by side with the §4 figure: the warm#1-vs-warm#2 deltas reached **3.27e-2**
+(larger than §4's 1.11e-2), while every same-class repeat was identical. Practical rule restated: compare
+within one state class; cold-vs-stabilized comparisons on this host need a resolution coarser than
+~3.3e-2. **Root cause not established** - no mechanism is claimed.
+
+### D - live service payload (P0-2 real cases)
+
+New exe under `score_api.py` (hold lease + compensation, §1 form). Raw JSON:
+`native4/http-evidence.jsonl`; engine stderr: `native4/engine-stderr.log`.
+
+| Case | Request | Result |
+|---|---|---|
+| D1 | `decisions yes_no` P_short, candidates `[9542]`/`[874]` | 200; `logprob -4.2394 / -8.7255`; `label_mass 0.014579`, `covers=false`; `conditional 0.9889 / 0.0111` (Σ=1 at 4dp) - identical at print precision to the P2-4b C3a values of §2 (old exe/service) |
+| D2 | `decisions yes_no` P_open | 200; `logprob -12.8303 / -9.6064`; **`label_mass 6.9975e-05`** (`< 1`, far below 0.5); `conditional 0.0383 / 0.9617` (Σ=1 at 4dp) |
+| D3 | `decisions choice` P_cls, candidates `[15],[16],[17],[18]` | 200; `logprob -9.6950 / -11.4668 / -11.2866 / -12.8001`; `label_mass 8.7363e-05`; `conditional 0.7050 / 0.1199 / 0.1435 / 0.0316` (Σ=1 at 4dp) |
+| D4 | `/v1/score` P_long, `candidates` = spread ids | 200; top-5 and candidates in request order; common id 1 equal in both tables (`-7.384`); no `label_mass` on the score path |
+
+Every decisions response carries `label_mass` + `label_mass_covers_distribution:false` +
+`label_mass_tolerance:0.001` + `calibrated:false` + the three `probability_scopes` texts; per candidate
+`logprob` / `full_vocab_probability` / `conditional_probability` and the deprecated `probability`
+(== the full-vocab value; `probability == exp(logprob)`); **no** field whose name contains
+confidence/threshold/verdict anywhere, including the two low-mass cases; `pos`/`prompt_tokens` consistent
+(22/23, 24/25, 60/61, 3895/3896).
+
+### Unexplained / not covered
+
+- Root cause of the first-vs-stabilized difference: **not established** (§4 warning updated with the
+  3.3e-2 observation; the 1.11e-2 §4 line remains as recorded history).
+- No true near-tie existed in the measured top-5 (C caveat); testing rank-flip sensitivity below the
+  drift scale needs crafted near-threshold candidates or another prompt (P2R-3+).
+- One model/quantization (IQ3_S), no cross-quantization comparison, no speed claim of any kind.
