@@ -161,8 +161,16 @@ Contract (`keep` and `cont` accept only the literal `1`; `keep=0`/`keep=true`/`k
 
 Boundaries: the same single-session rules as the rest of this document (one sequence, same build/model);
 `STATE`'s `covers`/`not_covered` are unchanged - `keep=1` adds no new state kind, it only changes when the
-reset happens. Verification: **GPU evidence is P2R-3b and has not run yet** (this section is the
-pre-registered contract); the service mapping (`/v1/score` with `keep`, `/v1/continue`) is P2R-3c.
+reset happens. Verification: **P2R-3b ran 2026-10-15** (one native, exe `7c441a94…`): the flow's
+load-bearing facts were confirmed on the real engine (continuation `prompt_read=0`/`prompt_ms=0` - no
+re-prefill; `origin="score-keep"`; `ERR cont=1 needs an armed session` after a plain `SCORE`; fresh path
+after a session clear; the `keep=1` append context guard; same-run kept-vs-fresh full-prefill reference
+16/16 token identity), but the pre-registered pairwise identity against an *immediately following*
+`GEN <P_long>` is not executable at ctx4096, because a plain `GEN` continues an armed session and its
+P_long append overflows (`ERR session (...) + prompt (...) exceeds the context`) - those items are
+recorded as FAIL-as-written in `docs/backends/qwen35_llama_score_api_e2e.md` §P2R-3b and a
+corrected-sequence re-check is a separate dispatch; the service mapping (`/v1/score` with `keep`,
+`/v1/continue`) is P2R-3c.
 
 ## 4. Failure semantics (no half-restore)
 

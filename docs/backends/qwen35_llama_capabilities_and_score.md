@@ -83,9 +83,17 @@ Example (production model, no MTP layers; `STRATA_Q6K_EXPERTS=ON` build - see `b
 
 P2R-3a note: state-keeping score (`SCORE ... keep=1` / `state_keep_score`) and conditional continuation
 (`GEN ... cont=1` / `session_continue`) are implemented in the engine (contracts:
-`docs/backends/qwen35_llama_session_state.md` §3b and `docs/backends/qwen35_llama_serve_protocol.md`);
-their GPU evidence is pending - **P2R-3b** (0-GPU build/spec delivered by P2R-3a; service exposure by
-P2R-3c).
+`docs/backends/qwen35_llama_session_state.md` §3b and `docs/backends/qwen35_llama_serve_protocol.md`).
+**GPU evidence: P2R-3b ran 2026-10-15** (one native, new exe `7c441a94…`, rc=0) and confirmed the flow's
+load-bearing facts: continuation `prompt_read=0`/`prompt_ms=0` (the 4K prefix is not re-prefilled), the
+`origin="score-keep"` bookkeeping, `ERR cont=1 needs an armed session` after a plain `SCORE`, the fresh
+(`reused=0`) path after a session clear, and the `keep=1` append context guard (`ERR session (...) +
+prompt (...) exceeds the context`); in the same run the kept state reproduced a fresh full-prefill
+reference **token-for-token 16/16**. The pre-registered reference schedule itself (identity vs the
+*immediately following* `GEN <P_long>`) is **not executable at ctx4096** - a plain `GEN` continues an
+armed session and its P_long append overflows; those pairwise comparisons are recorded as FAIL-as-written
+in `qwen35_llama_score_api_e2e.md` §P2R-3b, and a corrected-sequence re-check is a separate dispatch. The
+service exposure is P2R-3c.
 
 ### expert_formats roles
 

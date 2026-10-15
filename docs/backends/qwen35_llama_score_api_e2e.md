@@ -273,3 +273,73 @@ raw stdout under `native1/raw/`).
 5. Side by side with prior records (facts only, no root cause attributed): P2-4 **1.11e-2**; P2R-2
    top-5 max **3.27e-2** with no observable near-tie (min top-5 gap 1.2125); P2R-2b top-2000
    same-class **0** vs cross-class maxima **5.99e-2 / 7.13e-2** with real flips up to gap 3.8e-2.
+
+### P2R-3b - state-keeping score → continuation on the real engine
+
+Run 2026-10-15 on branch `phase2r/review-gaps`: **one native** (cap 2; no tool failure, no re-run), new
+exe `7c441a94…` (SHA recomputed before the lease; 139,258,368 B), one `gpu-lock run` lease with the engine
+as declared binary, rc=0, 24.2 s; static stdin = the task's 17 lines (`STATE` / `SCORE <P_long> topk=5
+keep=1` / `STATE` / `GEN 16 cont=1` / `GEN 16 <P_long>` ×2 rounds / plain `SCORE` / `GEN 4 cont=1` /
+`GEN 16 <P_long>` / `SCORE <P_long> topk=5 keep=1` / `GEN 128 cont=1` / `GEN 128 <P_long>` / `SCORE
+<P_long> topk=5 keep=1` / `GEN 128 cont=1 90` / `GEN 128 <P_long>,90` / `QUIT`; `<P_long>` = the 3896-id
+fixture; **no `SAVE`/`LOAD` anywhere**); ctx4096/t8/slots3200/ubatch4096. Evidence:
+`results/opencode-execution/strata-unified-p2r3b-keep-gpu/` (raw stdout+stderr under `native1/raw/`,
+`client/p2r3b-compare.json`, `final-report.md`).
+
+**Result: NOT-PASS as pre-registered — A1/A2/A3 FAIL as written, A4–A8 PASS.** The engine ran exactly per
+the P2R-3a contract; the failures are a property of the pre-registered *reference schedule*, which assumed
+that a plain `GEN <P_long>` mid-round would be a fresh full-prefill reference. It is not: by the P2-5
+contract (section 3 above) a `GEN` **continues an armed session** — it appends its prompt at the cursor —
+so with P_long (3896) and ctx4096 the request is `cursor + 3896 (+ max_new) > 4096` and answers `ERR`, no
+`T` line. Raw lines:
+
+```
+ERR session (3911) + prompt (3896 tokens) + max_new (16) exceeds the context (4096)
+ERR session (3912) + prompt (3896 tokens) + max_new (16) exceeds the context (4096)
+ERR session (3912) + prompt (3896 tokens) + max_new (128) exceeds the context (4096)
+ERR session (3912) + prompt (3896 tokens) exceeds the context (4096)
+ERR session (3930) + prompt (3897 tokens) + max_new (128) exceeds the context (4096)
+```
+
+A1–A8 as evaluated on the raw log:
+
+- **A1 FAIL (strict values)**: the four continuations report `prompt_read` = 0/0/0/1 and `reused` =
+  3896/3911/3896/3912 (pre-registered: 0 and 3896 for all). `prompt_ms` = 0.0/0.0/0.0/25.9 vs
+  2704.8–3862.0 for the same-process full prefills, and no continuation prints a 3896-token `PP` (pure
+  continuations print none at all; the append variant prints `PP 1 1 26 38.8`) — i.e. **the 4K prefix is
+  provably not re-prefilled**; the `reused` values drift with the carried cursor
+  (`DONE 16 0 0.0 870.8 length 0 0 3896 …`, `DONE 2 0 0.0 40.3 stop 0 0 3911 …`,
+  `DONE 17 0 0.0 384.3 stop 0 0 3896 …`, `DONE 18 1 25.9 509.9 stop 0 0 3912 …`) because the failed
+  reference requests never clear the session, exactly as the contract requires.
+- **A2/A3 FAIL**: the immediately-following references are the `ERR`s above; no reference token sequence
+  exists, so the pre-registered pairwise identity cannot be computed (first divergence index n/a).
+- **A4 PASS**: `GEN 16 cont=1` first token `T 90` = top-1 of the preceding keep-SCORE line
+  `LOGPROBS 3895 5 90:-0.1161 4754:-2.2489 13215:-6.1388 1:-7.3719 5202:-8.6075`; top-1 is 90 in all
+  three SCOREs (90:-0.1161 / 90:-0.1160 / 90:-0.1160).
+- **A5 PASS**: plain `SCORE` first, then `GEN 4 cont=1` → `ERR cont=1 needs an armed session`; the next
+  `GEN 16 <P_long>` is fresh (`reused=0`, `prompt_read=3896`, `prompt_ms=2704.8`).
+- **A6 PASS**: the second `STATE` is
+  `{"loaded":false,"pos":3896,…,"session":true,"origin":"score-keep","file_bytes":null,…}` — session
+  armed, pos 3896, file fields honest (`path`/`file_bytes` null).
+- **A7 PASS**: no `SAVE`/`LOAD` in the stdin (sha256 `f26248c0…`).
+- **A8 PASS**: 1 native, one lease, serial, rc=0, no cleanup fence, lock released, no residual process;
+  pre/post states recorded.
+
+Same-run facts the raw log *does* provide (post-hoc; **not** the pre-registered A2/A3 comparison; recorded,
+no root-cause claim): the round-1 kept-state continuation (`GEN 16 cont=1`, cursor 3896) produced
+`T 90,198,1,78151,763,220,15,11,198,1,9676,33805,763,867,198,92` — and the **fresh full-prefill
+reference** taken later in the same process (after the plain `SCORE` cleared the session:
+`PP 3896 3896 2702 1442.3`, `prompt_ms=2704.8`, `reused=0`) produced the **same 16 tokens in the same
+order** (16/16 identical, both `finish=length`). The second keep round (`SCORE … keep=1` → `GEN 128
+cont=1`) reproduced the same first 16 tokens and then `T 248046` (EOS); the round-2 `GEN 16 cont=1` from
+the carried cursor 3911 produced `T 92`, `T 248046` — exactly the 16th/17th tokens of that reference
+chain. The `GEN 128 cont=1 90` append at 3912 (`prompt_read=1`) continued consistently (`T 198…`, 18
+tokens, EOS). In other words, within this run the kept KV/GDN state at 3896 reproduced the fresh
+full-prefill state token-for-token over 16 tokens, and the cursor/token bookkeeping chained with no gap.
+
+Open items (unexplained / not covered): (1) the pre-registered A2/A3 pairwise comparisons as written
+cannot be produced at ctx4096 — a corrected schedule (session-clearing `SCORE` before each reference, or a
+fresh-process reference) is a new dispatch and was deliberately not re-run here; (2) the aux comparison is
+kept-state vs reset+full-prefill in one process — P2R-2b measured cross-class logprob drift up to 0.0713
+on this host/quant while the greedy tokens here were identical (fact only, no general claim); (3) no
+service leg (P2R-3c) and no performance/TPS claims are part of this task.
