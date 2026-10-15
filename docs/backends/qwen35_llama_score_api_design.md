@@ -1,4 +1,4 @@
-# qwen35_llama score API - `/v1/score`, `/v1/capabilities`, a minimal `/v1/decisions` and the session endpoints (P2-3 subset; P2R-1 payload semantics; P2R-3c session endpoints)
+# qwen35_llama score API - `/v1/score`, `/v1/capabilities`, a minimal `/v1/decisions` and the session endpoints (P2-3 subset; P2R-1 payload semantics; P2R-3c session endpoints; P2R-4b link quarantine)
 
 Phase-2 backend-interface work, task **P2-3** (branch `phase2/backend-interface`), extended by **P2R-1**
 and **P2R-3c** (branch `phase2r/review-gaps`). This adds a **thin HTTP service of our own** that drives one
@@ -162,8 +162,8 @@ lines), and answers:
   `422` (the engine has no answer to give); `candidates` with `topk>=1` is fine (both answers are returned).
 - A malformed `CANDLOGPROBS` from the engine (short, bad pairs, declared-vs-actual count mismatch, appearing
   twice, appearing although no `candidates` were requested, or ids not in request order) is an
-  `EngineProtocolError` -> `502`; a `LOGPROBS` line on a `topk=0` request is a `502` too. Lines are parsed
-  strictly, never best-effort.
+  `EngineProtocolError` -> `502` (P2R-4b: **and it quarantines the link**, §5); a `LOGPROBS` line on a
+  `topk=0` request is a `502` too. Lines are parsed strictly, never best-effort.
 
 ### `POST /v1/decisions` (minimal subset; P2R-1 payload)
 
@@ -366,7 +366,8 @@ and no endpoint pretends a session exists where the engine has none.
 | 422 | service | semantic refusals: unknown `kind`; multi-token or duplicate candidates; `yes_no` arity; more than 2048 candidates (`/v1/decisions`); `topk=0` without `candidates` (`/v1/score`) |
 | 422 | engine | the engine answered `ERR <message>` - the message is passed through **verbatim** (e.g. `/v1/continue` without an armed session: `ERR cont=1 needs an armed session`) |
 | 501 | service | string `prompt` without a usable tokenizer; the session endpoints on the official q36 backend: `/v1/continue`, `/v1/session` (and `/v1/score` with `keep`, via the score gating) - its protocol has no session commands and nothing is silently substituted |
-| 502 | service | the engine link is dead (process exited, pipes closed) or violated the line protocol; after a failed timeout drain the service stays dead until restarted |
+| 502 | engine | the engine violated the line protocol (short/malformed `LOGPROBS`/`CANDLOGPROBS`/`DONE`, an unrequested, duplicated or mismatched answer line, a `T` line during `SCORE`, malformed `CAPS`/`STATE` JSON, a `STATE` without the boolean `session` field). **P2R-4b: this quarantines the link** - the response keeps the original error text and appends `; the engine link was quarantined after this protocol error ... - restart the service to get a fresh engine`, plus the machine-readable `"quarantined": true`; the engine process is terminated (when the service owns it), the link is marked dead and the pipe is never read again (§5) |
+| 502 | service | the engine link is dead (process exited, pipes closed) or was quarantined after a protocol error: every engine-touching endpoint answers this, with `"quarantined": true` when the cause was a quarantine, until the service is restarted; after a failed timeout drain the service stays dead until restarted |
 | 503 | service | a request is already in flight (single engine, no queue) |
 | 504 | service | the engine did not answer within `--timeout` (default 600 s) |
 
@@ -392,8 +393,43 @@ unimplemented list.
   an internal 10 s drain timeout) so the next request starts synchronized. If the drain also fails, the link is
   marked dead: every later request answers `502` until the service is restarted. This is deliberately
   conservative - a wedged engine is never presented as healthy.
-- A `T` line during a `SCORE` (the engine contract forbids generating a token) or a second `LOGPROBS` is a
-  protocol violation and is answered `502`, not passed on.
+- A `T` line during a `SCORE` (the engine contract forbids generating a token), a second `LOGPROBS`, a
+  short/malformed `LOGPROBS`/`CANDLOGPROBS`/`DONE`, an unrequested or mismatched answer line, malformed
+  `CAPS`/`STATE` JSON or a `STATE` without the boolean `session` field is a **protocol error**, not a business
+  error: it is answered `502` (see §3) and **quarantines the link** (next subsection).
+
+### Protocol errors quarantine the link (P2R-4b)
+
+- **Mechanism (why the link cannot be reused).** The service reads an answer line by line until
+  `LOGPROBS` + `DONE ... score` (or `T`* + `DONE` for `/v1/continue`). When a line fails to parse, the bytes of
+  that same answer may still be unread in the pipe: the next request would then consume the previous request's
+  residue as its own answer - cross-talk between two requests that were never concurrent on the engine.
+- **Why quarantine and not "resynchronize".** This is an unframed text protocol: no request ids, no lengths, no
+  sequence numbers. After a parse failure there is no reliable point where the next answer begins - scanning
+  for the next `DONE`/`ERR` cannot tell a stale answer from the one that was just issued, and the stub's
+  `late-legal` injection shows a complete *legal* answer can sit right behind the malformed line. Any invented
+  resync rule would be a guess; killing the engine and refusing is the only honest option.
+- **What a quarantine does**, in order: (1) the failing request's response is still sent - status `502`,
+  `error` = the **original** protocol error text plus one appended sentence ending in
+  `restart the service to get a fresh engine`; `error_source: "engine"` (a protocol violation is engine-side;
+  P2R-4b changed this from the inherited `"service"` - a documented behavior change, no prior test asserted
+  the old value) and `"quarantined": true`; (2) the engine process is terminated through the existing `proc`
+  handle when the service owns it (attach mode cannot - the appended note says so; a terminate failure is
+  appended honestly, never hidden); (3) the link is marked dead and already-buffered answer bytes are
+  discarded, best effort.
+- **Afterward** every engine-touching endpoint - `POST /v1/score`, `/v1/decisions`, `/v1/continue`,
+  `GET /v1/session`, `GET /v1/capabilities` - answers `502` with
+  `the engine link is dead: it was quarantined after a protocol error; restart the service to get a fresh engine`
+  and `"quarantined": true`, **without reading the pipe**, even if the engine (or a test stub) emits legal
+  lines after the fault. There is **no automatic restart** in this round: an automatic restart would silently
+  erase the protocol failure; recovery is an operator action (restart the service, which starts a fresh
+  engine).
+- **Not quarantined: business refusals.** An engine `ERR <message>` (e.g. `cont=1 needs an armed session`, an
+  id outside the vocabulary) is the engine's documented verdict, not a protocol error: it is passed through as
+  `422` (`error_source: "engine"`) and the link keeps serving (asserted by the unit tests).
+- `EngineTimeout` (`504` -> drain -> dead only if the drain fails) and `EngineDead` are unchanged; a service
+  that died from a failed timeout drain answers the same dead-link `502` text but **without**
+  `"quarantined": true`.
 
 ## 6. State and latency semantics (P2-2 measured facts, reused as-is)
 
@@ -466,7 +502,7 @@ meaning and no unlisted field is accepted.
 
 ```text
 cd <repo root>
-python backends/qwen35_llama/tools/test_score_api.py -v          # 53 tests (P2R-3c)
+python backends/qwen35_llama/tools/test_score_api.py -v          # 63 tests (P2R-4b)
 python backends/qwen35_llama/tools/test_backend_adapters.py -v   # 13 tests, green
 ```
 
@@ -476,7 +512,15 @@ repo), plus the P2-7 suite **13 tests, OK** (same directory, `unit-tests-backend
 **P2R-3c re-run (2026-10-15): 53 tests, OK** (`Ran 53 tests in 33.365s`) and the P2-7 suite **13 tests, OK**
 (`Ran 13 tests in 3.197s`) - raw logs `results/opencode-execution/strata-unified-p2r3c2-finish/unit-tests-score-api.log`
 and `unit-tests-backend-adapters.log`; the 19 new cases are the `ContinueSessionTests` class (16) plus
-`OfficialBackendSessionTests` (3: `test_score_keep_501`, `test_session_501`, `test_continue_501`). Each test
+`OfficialBackendSessionTests` (3: `test_score_keep_501`, `test_session_501`, `test_continue_501`).
+**P2R-4b re-run (2026-10-15): 63 tests, OK** (`Ran 63 tests in 38.454s`) and the P2-7 suite **13 tests, OK**
+(`Ran 13 tests in 3.177s`) - raw logs `results/opencode-execution/strata-unified-p2r4b-link-quarantine/`
+(`unittest-score-api-after-v.txt`, `unittest-backend-adapters-after-v.txt`); the 10 new cases are the
+`LinkQuarantineTests` class (`test_short_logprobs_quarantines_keeping_original_text`,
+`test_junk_logprobs_quarantines`, `test_all_engine_endpoints_502_after_quarantine`,
+`test_engine_process_terminated`, `test_short_done_quarantines`, `test_unrequested_extra_line_quarantines`,
+`test_cand_mode_count_bump_now_quarantines`, `test_late_legal_lines_are_never_read`,
+`test_business_engine_err_is_not_quarantined`, `test_continue_protocol_error_quarantines`). Each test
 starts the test-only stub (`stub_engine.py`) as a real child process over pipes and an in-process HTTP server
 on `127.0.0.1:0`; no GPU, no lease, no engine, no writes outside the process pipes/sockets. Coverage (the
 P2-3 baseline plus P2R-1 plus P2R-3c):
@@ -520,7 +564,20 @@ P2-3 baseline plus P2R-1 plus P2R-3c):
 - `GET /v1/session` (P2R-3c): read-only (engine state before == after), `armed` mirrors the stub's `STATE`
   boolean, fresh state reported honestly (`session=false`, `pos=0`);
 - official backend (P2R-3c): `/v1/continue` and `/v1/session` -> `501` explicit (`keep` on `/v1/score` ->
-  `501` via the score gating) - no silent substitution.
+  `501` via the score gating) - no silent substitution;
+- link quarantine (P2R-4b; stub `--fault-mode` injections over real pipes): short `LOGPROBS` (fewer pairs
+  than declared) and junk `LOGPROBS` (non-numeric) -> `502` = original parser text + quarantine note +
+  `"quarantined": true` + `error_source=engine`; short `DONE` and an unrequested `CANDLOGPROBS` -> the same;
+  the pre-existing `--cand-mode count-bump` distortion now quarantines too (its 502 semantics are unchanged,
+  the link death is new); the stub child process is polled terminated after the fault; the full endpoint
+  matrix (`/v1/score`, `/v1/decisions`, `/v1/continue`, `/v1/session`, `/v1/capabilities`) answers the
+  dead-link 502 with `"quarantined": true` and the restart text; `late-legal` (mismatched line followed by a
+  complete legal answer) proves the residue is never read - the follow-up request is the dead-link 502 with
+  no `logprobs`/`pos` fields; a business engine `ERR` (`cont=1 needs an armed session`, out-of-vocabulary id)
+  stays `422` with no `quarantined` field, and `/v1/session` + `/v1/capabilities` stay `200` afterwards; a
+  protocol error on `/v1/continue` (`gen-extra-line`: unexpected line during `GEN cont=1`) quarantines
+  identically; the pre-existing timeout test (`test_engine_no_response_504_then_dead_502`) stays green
+  untouched.
 
 Changed P2-3-era tests (P2R-1 semantic changes only, listed in the task evidence): "candidate outside top-k ->
 422" became "candidate outside top-k -> 200 scored", and the two `label_mass_omitted` assertions became
@@ -559,4 +616,13 @@ history, not as the current contract.
   `completion.json`) and was **not** re-run; the supervisor cleaned the three orphan processes (lock `\x00`,
   no fence, no residue). Not covered live: decoded `text` (the session ran without `--tokenizer-model`),
   the official-q36 endpoints (unit-only `501`), and any re-run of the session.
+- P2R-4b (2026-10-15): edited `backends/qwen35_llama/tools/{score_api.py,stub_engine.py,test_score_api.py}`
+  and two docs; the engine source (`qwen35_serve.cpp`), the exe and every frozen artifact are untouched - no
+  engine was started, no lease, no GPU. Every quarantine fact above was produced by the stub over real
+  pipes; raw logs, the raw stub-injection transcript and the adjudication:
+  `results/opencode-execution/strata-unified-p2r4b-link-quarantine/`. Two documented behavior changes:
+  protocol-violation 502s now carry `error_source: "engine"` (previously the inherited `"service"`; no
+  existing test asserted the old value), and they terminate the owned engine process and answer every later
+  engine-touching request with the dead-link 502 (previously the link stayed alive with residue in the
+  pipe); `--cand-mode count-bump` now quarantines as well.
 - No performance claim of any kind is made for the real engine; P2-4 owns that.

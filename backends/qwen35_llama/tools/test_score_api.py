@@ -56,7 +56,8 @@ def raw_post(port, path, data):
 
 class StubService:
     def __init__(self, vocab=64, drop_scores=0, score_delay_ms=0, timeout=30.0,
-                 drain_timeout=1.0, tokenizer_model=None, cand_mode=None, backend=None, stub=None):
+                 drain_timeout=1.0, tokenizer_model=None, cand_mode=None, backend=None, stub=None,
+                 fault_mode=None):
         stub = stub or STUB
         argv = [PYTHON, "-B", "-u", str(stub), "--vocab", str(vocab)]
         if drop_scores:
@@ -65,6 +66,8 @@ class StubService:
             argv += ["--score-delay-ms", str(score_delay_ms)]
         if cand_mode:
             argv += ["--cand-mode", cand_mode]
+        if fault_mode:
+            argv += ["--fault-mode", fault_mode]
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=str(TOOLS))
         self.link = score_api.EngineLink(self.proc.stdin, self.proc.stdout, proc=self.proc)
         ready = self.link.wait_ready(15.0)
@@ -442,6 +445,120 @@ class TimeoutTests(unittest.TestCase):
         status, body, _ = env.post("/v1/score", {"prompt_ids": [1]})
         self.assertEqual(status, 502)
         self.assertIn("dead", body["error"])
+
+
+class LinkQuarantineTests(unittest.TestCase):
+    """P2R-4b: an EngineProtocolError quarantines the link (engine killed, service dead, the
+    pipe is never read again); a legitimate engine `ERR` is NOT a protocol error."""
+
+    def _env(self, **kwargs):
+        env = StubService(**kwargs)
+        self.addCleanup(env.close)
+        return env
+
+    def _expect_quarantine(self, env, path, payload, needle):
+        status, body, _ = env.post(path, payload)
+        self.assertEqual(status, 502, body)
+        self.assertEqual(body["error_source"], "engine")
+        self.assertIs(body["quarantined"], True)
+        self.assertIn(needle, body["error"])
+        self.assertIn("quarantined after this protocol error", body["error"])
+        self.assertIn("restart the service", body["error"])
+        return body
+
+    def _expect_dead(self, env, method, path, payload=None):
+        status, body, _ = request(env.port, method, path, payload)
+        self.assertEqual(status, 502, body)
+        self.assertIs(body["quarantined"], True)
+        self.assertIn("dead", body["error"])
+        self.assertIn("quarantined", body["error"])
+        self.assertIn("restart the service", body["error"])
+        return body
+
+    def test_short_logprobs_quarantines_keeping_original_text(self):
+        env = self._env(fault_mode="short-logprobs")
+        body = self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1, 2], "topk": 3},
+                                       "LOGPROBS declares 3 pairs but has 2")
+        self.assertEqual(body["error_source"], "engine")
+
+    def test_junk_logprobs_quarantines(self):
+        env = self._env(fault_mode="junk-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2},
+                                "malformed LOGPROBS line")
+
+    def test_all_engine_endpoints_502_after_quarantine(self):
+        env = self._env(fault_mode="short-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "LOGPROBS")
+        for method, path, payload in (
+                ("POST", "/v1/score", {"prompt_ids": [1]}),
+                ("POST", "/v1/decisions", {"kind": "choice", "prompt_ids": [1],
+                                           "candidates": [[0], [1]]}),
+                ("POST", "/v1/continue", {"max_new": 1}),
+                ("GET", "/v1/session", None),
+                ("GET", "/v1/capabilities", None)):
+            self._expect_dead(env, method, path, payload)
+
+    def test_engine_process_terminated(self):
+        env = self._env(fault_mode="short-logprobs")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "LOGPROBS")
+        deadline = time.monotonic() + 10.0
+        while env.proc.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertIsNotNone(env.proc.poll(),
+                             "the quarantined engine process must have been terminated")
+
+    def test_short_done_quarantines(self):
+        env = self._env(fault_mode="short-done")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "topk": 2}, "short DONE")
+        self._expect_dead(env, "GET", "/v1/capabilities")
+
+    def test_unrequested_extra_line_quarantines(self):
+        env = self._env(fault_mode="extra-line")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1]}, "unrequested CANDLOGPROBS")
+        self._expect_dead(env, "POST", "/v1/score", {"prompt_ids": [1]})
+
+    def test_cand_mode_count_bump_now_quarantines(self):
+        # Task-scoped behaviour change: this pre-existing distortion mode answered a 502 but did
+        # not touch the link; it is an EngineProtocolError, so it now quarantines as well.
+        env = self._env(cand_mode="count-bump")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1], "candidates": [3]},
+                                "CANDLOGPROBS")
+        self._expect_dead(env, "POST", "/v1/score", {"prompt_ids": [1]})
+
+    def test_late_legal_lines_are_never_read(self):
+        # The stub emits the mismatched line and then the complete legal answer right behind it;
+        # the quarantine must terminate the link before a later request can consume any of it.
+        env = self._env(fault_mode="late-legal")
+        self._expect_quarantine(env, "/v1/score", {"prompt_ids": [1, 2], "topk": 3},
+                                "LOGPROBS declares 3 pairs but has 2")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1, 2], "topk": 3})
+        self.assertEqual(status, 502, body)
+        self.assertNotIn("logprobs", body)
+        self.assertNotIn("pos", body)
+        self.assertIn("dead", body["error"])
+
+    def test_business_engine_err_is_not_quarantined(self):
+        env = self._env()
+        status, body, _ = env.post("/v1/continue", {"max_new": 1})
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error"], "cont=1 needs an armed session")
+        self.assertEqual(body["error_source"], "engine")
+        self.assertNotIn("quarantined", body)
+        status, body, _ = env.get("/v1/session")
+        self.assertEqual(status, 200)
+        self.assertIs(body["armed"], False)
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [999999]})
+        self.assertEqual(status, 422)
+        self.assertIn("outside the vocabulary", body["error"])
+        self.assertEqual(env.get("/v1/capabilities")[0], 200)
+
+    def test_continue_protocol_error_quarantines(self):
+        env = self._env(fault_mode="gen-extra-line")
+        status, body, _ = env.post("/v1/score", {"prompt_ids": [1, 2, 3], "topk": 2, "keep": True})
+        self.assertEqual(status, 200, body)
+        self._expect_quarantine(env, "/v1/continue", {"max_new": 2},
+                                "unexpected line during GEN cont=1")
+        self._expect_dead(env, "GET", "/v1/session")
 
 
 class CliTests(unittest.TestCase):

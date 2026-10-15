@@ -13,6 +13,13 @@ P2R-3c additions (test-only, same grammar as the engine's P2R-3a contract): `SCO
 keeps/arms the session, `GEN <max_new> cont=1 [<ids>]` continues an armed session and answers
 deterministic `T` lines, `STATE` answers one JSON line of session bookkeeping. No tokenizer,
 no timings, no real model.
+
+P2R-4b additions (test-only): `--fault-mode` injects deliberate protocol errors so the
+service's link quarantine can be tested over real pipes - `short-logprobs` / `junk-logprobs`
+/ `short-done` break the SCORE answer, `extra-line` emits an unrequested CANDLOGPROBS line
+ahead of the real answer, `late-legal` emits the broken line and then still emits the legal
+answer (proving that quarantined residual bytes are never read), `gen-extra-line` injects an
+unexpected line during `GEN cont=1`. The default (`none`) and `--cand-mode` are untouched.
 """
 import argparse
 import json
@@ -32,6 +39,16 @@ def main() -> int:
     parser.add_argument("--cand-mode", choices=("normal", "count-bump", "unsolicited", "twice", "swap"),
                         default="normal",
                         help="test-only CANDLOGPROBS distortion for protocol-violation tests")
+    parser.add_argument("--fault-mode",
+                        choices=("none", "short-logprobs", "junk-logprobs", "short-done",
+                                 "extra-line", "late-legal", "gen-extra-line"),
+                        default="none",
+                        help="test-only P2R-4b protocol-error injection: short-logprobs (fewer LOGPROBS "
+                             "pairs than declared), junk-logprobs (non-numeric logprob), short-done "
+                             "(malformed DONE) and extra-line (an unrequested CANDLOGPROBS ahead of the "
+                             "answer) break the SCORE answer; late-legal emits the mismatched line and "
+                             "then still emits the legal answer; gen-extra-line injects an unexpected "
+                             "line during GEN cont=1")
     parser.add_argument("--serve", action="store_true", help="accepted for CLI parity, ignored")
     args = parser.parse_args()
 
@@ -171,11 +188,23 @@ def main() -> int:
             salt = sum(ids) + len(ids)
             logprobs = log_softmax([-(0.5 * i) - 0.125 * (salt % 7) for i in range(args.vocab)])
             pos = len(ids) - 1
+            count = min(topk, args.vocab) if topk > 0 else 0
+            order = sorted(range(args.vocab), key=lambda i: (-logprobs[i], i))[:count]
+            top_pairs = ["%d:%.4f" % (i, logprobs[i]) for i in order]
+            if args.fault_mode in ("short-logprobs", "late-legal") and topk > 0:
+                # declares `count` pairs but emits one fewer; late-legal then still emits the
+                # complete legal answer below (bytes the quarantined service must never read)
+                emit("LOGPROBS %d %d %s" % (pos, count, " ".join(top_pairs[:-1])))
+                if args.fault_mode == "short-logprobs":
+                    continue
+            if args.fault_mode == "junk-logprobs" and topk > 0:
+                emit("LOGPROBS %d 1 0:not-a-number" % pos)
+                continue
+            if args.fault_mode == "extra-line":
+                # an answer line nobody requested, ahead of the real answer
+                emit("CANDLOGPROBS %d 1 0:%.4f" % (pos, logprobs[0]))
             if topk > 0:
-                count = min(topk, args.vocab)
-                order = sorted(range(args.vocab), key=lambda i: (-logprobs[i], i))[:count]
-                emit("LOGPROBS %d %d %s" % (pos, count,
-                                            " ".join("%d:%.4f" % (i, logprobs[i]) for i in order)))
+                emit("LOGPROBS %d %d %s" % (pos, count, " ".join(top_pairs)))
             if cand is not None:
                 pairs = ["%d:%.4f" % (c, logprobs[c]) for c in cand]
                 if args.cand_mode == "swap" and len(pairs) > 1:
@@ -187,6 +216,9 @@ def main() -> int:
                     emit(line)
             elif args.cand_mode == "unsolicited":
                 emit("CANDLOGPROBS %d 1 0:%.4f" % (pos, logprobs[0]))
+            if args.fault_mode == "short-done":
+                emit("DONE 0")
+                continue
             emit("DONE 0 %d 1.0 0.0 score 0 0 %d 0 0 0 0 0.0 %d 0"
                  % (len(ids), reused, len(ids)))
             continue
@@ -237,6 +269,8 @@ def main() -> int:
                 emit("ERR a token id is outside the vocabulary")
                 continue
             cursor = session["pos"]
+            if args.fault_mode == "gen-extra-line":
+                emit("LOGPROBS 0 1 0:-0.1000")
             for index in range(max_new):
                 emit("T %d" % (index % args.vocab))
             emit("DONE %d %d 0.0 1.0 length 0 0 %d 0 0 0 0 0.0 %d 0"

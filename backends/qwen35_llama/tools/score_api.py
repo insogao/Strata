@@ -37,6 +37,15 @@ protocol has none of this, so `/v1/continue` and `/v1/session` answer an explici
 and `/v1/score` with `keep` is already refused by the existing score gating - never a silent
 substitution.
 
+P2R-4b note (link quarantine): an `EngineProtocolError` is not just answered 502 - the link is
+poisoned and the service quarantines it. The failing request's 502 keeps the original error
+text and adds `"quarantined": true`; the engine process is terminated (when the service
+started it); every later engine-touching endpoint answers 502 (dead/quarantined) and the pipe
+is never read again. Recovery is a service restart - never an automatic resync, because this
+unframed line protocol has no reliable resynchronization point. A legitimate engine `ERR`
+(a business rejection) is *not* a protocol error: it stays a 422 passthrough with no
+quarantine.
+
 Tests (0 GPU, stub engines): tools/test_score_api.py (qwen35 protocol) and
 tools/test_backend_adapters.py (both backends); test-only stubs: tools/stub_engine.py,
 tools/stub_engine_official_q36.py.
@@ -82,6 +91,10 @@ _EOF = object()
 class ServiceError(Exception):
     status = 500
     source = "service"
+    # P2R-4b: set on the exception instance when the service quarantined the engine link
+    # (a protocol error). The HTTP layer mirrors it as the machine-readable
+    # "quarantined": true response field.
+    quarantined = False
 
 
 class BadRequest(ServiceError):
@@ -118,7 +131,10 @@ class EngineDead(ServiceError):
 
 
 class EngineProtocolError(ServiceError):
+    # P2R-4b: the engine violated the line protocol. The violation is engine-side, and
+    # _engine_call reacts to it with link quarantine (see _engine_call).
     status = 502
+    source = "engine"
 
 
 def _timeout_message(timeout: float) -> str:
@@ -397,6 +413,33 @@ class EngineLink:
             if item.startswith(("DONE ", "ERR ")):
                 return True
 
+    def quarantine(self) -> str:
+        """P2R-4b: kill this link after a protocol error; the queue is never read again.
+
+        Marks the link dead, terminates the engine process when this service owns it
+        (attach mode cannot), discards whatever answer bytes are already buffered and
+        returns an honest note about termination ("" when the owned process was
+        terminated).
+        """
+        self._dead.set()
+        note = ""
+        if self.proc is None:
+            note = ("this service does not own the engine process (attach mode), so it could "
+                    "not terminate it")
+        else:
+            try:
+                self.proc.terminate()
+            except Exception as exc:
+                note = "terminating the engine process failed (%s: %s)" % (type(exc).__name__, exc)
+        while True:
+            try:
+                item = self._queue.get_nowait()
+            except queue.Empty:
+                break
+            if item is _EOF:
+                break
+        return note
+
     def close(self) -> None:
         if self._closed:
             return
@@ -540,13 +583,27 @@ class ScoreService:
         self.backend = backend
         self._busy = threading.Lock()
         self._dead = False
+        self._quarantined = False
         self._sha = None
         self._tokenizer = None
         self._tokenizer_error = None
         self._tokenizer_loaded = False
 
+    def _quarantine_note(self) -> str:
+        note = self.link.quarantine()
+        if note:
+            return ("; the engine link was quarantined after this protocol error, but %s - restart "
+                    "the service to get a fresh engine" % note)
+        return ("; the engine link was quarantined after this protocol error and the engine was "
+                "terminated - restart the service to get a fresh engine")
+
     def _engine_call(self, call):
         if self._dead:
+            if self._quarantined:
+                exc = EngineDead("the engine link is dead: it was quarantined after a protocol error; "
+                                 "restart the service to get a fresh engine")
+                exc.quarantined = True
+                raise exc
             raise EngineDead("the engine link is dead; this service must be restarted")
         if not self._busy.acquire(blocking=False):
             raise Busy("a request is already in flight; this service serializes requests on one engine "
@@ -556,6 +613,17 @@ class ScoreService:
         except EngineTimeout:
             if not self.link.cancel_and_drain(self.drain_timeout):
                 self._dead = True
+            raise
+        except EngineProtocolError as exc:
+            # P2R-4b: a protocol error poisons the whole link. Bytes of this answer may still be
+            # unread in the pipe, and this line protocol has no framing and no resynchronization
+            # point - a later request could read those stale bytes as its own answer (cross-talk).
+            # The honest action is a quarantine: kill the engine, mark the link dead, never read
+            # it again; only a service restart provides a fresh engine.
+            self._dead = True
+            self._quarantined = True
+            exc.args = ("%s%s" % (exc, self._quarantine_note()),)
+            exc.quarantined = True
             raise
         except EngineDead:
             self._dead = True
@@ -771,14 +839,19 @@ class ScoreService:
     def session_request(self):
         # Read-only: one STATE query, no reset, no arm. The engine's own `session` field is the
         # arming fact (docs/backends/qwen35_llama_session_state.md); a STATE payload without it
-        # is a protocol error, never an invented value.
+        # is a protocol error, never an invented value. The check runs inside the engine call so
+        # that this protocol error goes through the same quarantine as every other one (P2R-4b).
         self._require_backend_session("/v1/session")
-        state = self._engine_call(lambda: self.link.state(self.timeout))
-        armed = state.get("session")
-        if not isinstance(armed, bool):
-            raise EngineProtocolError("the engine STATE JSON has no boolean 'session' field: %r"
-                                      % sorted(state))
-        return 200, {"engine_state": state, "armed": armed}
+
+        def state_call():
+            state = self.link.state(self.timeout)
+            if not isinstance(state.get("session"), bool):
+                raise EngineProtocolError("the engine STATE JSON has no boolean 'session' field: %r"
+                                          % sorted(state))
+            return state
+
+        state = self._engine_call(state_call)
+        return 200, {"engine_state": state, "armed": state["session"]}
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -832,7 +905,10 @@ class _Handler(BaseHTTPRequestHandler):
             status, payload = action()
         except ServiceError as exc:
             headers = {"Retry-After": "1"} if isinstance(exc, Busy) else None
-            self._send_json(exc.status, {"error": str(exc), "error_source": exc.source}, headers)
+            payload = {"error": str(exc), "error_source": exc.source}
+            if exc.quarantined:
+                payload["quarantined"] = True
+            self._send_json(exc.status, payload, headers)
         except Exception as exc:
             self._send_json(500, {"error": "internal error: %s: %s" % (type(exc).__name__, exc),
                                   "error_source": "service"})
