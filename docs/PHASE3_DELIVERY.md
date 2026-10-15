@@ -1,7 +1,7 @@
 # Phase 3 delivery — Strata Unified（Hardware/Workload Autotuner 阶段收尾）
 
 > 阶段 3（路线图"第三大阶段：硬件/负载自调优"）交付汇总。**未合并 main、未替换生产冻结件、未改引擎/vendor 源码。**
-> 分支 `phase3/autotuner`（自阶段二 `954a88e4`）；阶段三**独立 PR**（head＝`phase3/autotuner`，base＝`phase2/backend-interface`，与补强 PR #3 并列、互不包含）。
+> 分支 `phase3/autotuner`（自阶段二 `954a88e4`）；阶段三**独立 PR #6**：https://github.com/insogao/Strata/pull/6 （head＝`phase3/autotuner`，base＝`phase2/backend-interface`，与补强 PR #3 并列、互不包含；同阶段另有 Codex 直接实现线 `codex/phase3-tune-cli` → PR #4 的并行实验线，编号说明见 PR #6 正文）。
 > 逐项证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/strata-unified-p3-*`；本文档为索引与结论。
 
 ## 1. 阶段目标与验收对照
