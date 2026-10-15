@@ -19,7 +19,7 @@
 
 ## 2. 当前分支与提交
 
-- 当前分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 follow-up PR，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
+- 当前分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 [PR #5](https://github.com/insogao/Strata/pull/5)，实现提交 `18cc8457`，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
 - P3 工具 PR #4 为并列审查线，未被合并到本分支。下列为阶段一历史提交链：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）
   - `e0fd2dea` 冒烟＋保真报告（task 355）

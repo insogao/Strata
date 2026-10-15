@@ -5,6 +5,8 @@ based on the completed P2R supplement `f3610f82`, **not** the older phase-three
 branch. Target: `phase2r/review-gaps`. No production/main merge, frozen model/exe
 replacement, MTP optimization or default cache change.
 
+Review: [PR #5](https://github.com/insogao/Strata/pull/5), implementation commit `18cc8457`.
+
 Current user scope is **one GPU per laptop/PC**. No multi-GPU implementation or
 second-card experiment is required for this increment. Actual hardware evidence
 below is Windows / RTX4060 Laptop8GiB; other OS/vendor configurations remain
