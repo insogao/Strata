@@ -1,0 +1,57 @@
+{
+  "commands": [
+    {
+      "name": "warm_anchor",
+      "command": "SCORE <fixture-withheld> topk=1"
+    },
+    {
+      "name": "decode_warmup_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "decode_warmup_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "decode_warmup",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "paired0_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "paired0_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "paired0",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "paired0_state",
+      "command": "STATE"
+    },
+    {
+      "name": "paired1_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "paired1_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "paired1",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "paired1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "quit",
+      "command": "QUIT"
+    }
+  ],
+  "review_only": true
+}

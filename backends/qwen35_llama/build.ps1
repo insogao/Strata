@@ -91,6 +91,16 @@ if ($rc -ne 0) {
 $exe = Join-Path $BuildDir 'strata.exe'
 if (-not (Test-Path -LiteralPath $exe)) { throw "build exited 0 but artifact not found: $exe" }
 $item = Get-Item -LiteralPath $exe
-$sha = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
+# Some Windows PowerShell installations lack Get-FileHash although the compiler is
+# available. Stream the artifact through .NET so a successful link is not reported
+# as a failed build merely because that optional cmdlet is absent.
+$shaStream = [System.IO.File]::OpenRead($exe)
+$shaAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $sha = [System.BitConverter]::ToString($shaAlgorithm.ComputeHash($shaStream)).Replace('-', '').ToLowerInvariant()
+} finally {
+    $shaStream.Dispose()
+    $shaAlgorithm.Dispose()
+}
 Write-Host ("OK exit=0 artifact={0} size={1} sha256={2}" -f $exe, $item.Length, $sha)
 exit 0

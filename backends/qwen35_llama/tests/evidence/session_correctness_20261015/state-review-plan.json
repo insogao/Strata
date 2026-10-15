@@ -1,0 +1,78 @@
+{
+  "registered_at": "2026-10-15T06:42:14.348432+00:00",
+  "arm": "state",
+  "commands": [
+    {
+      "name": "reset_load",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "load_score",
+      "command": "SCORE <registered fixture withheld; see prompt_sha256> topk=1 keep=1"
+    },
+    {
+      "name": "load_prefix",
+      "command": "GEN 16 cont=1"
+    },
+    {
+      "name": "save16",
+      "command": "SAVE D:/work/StrataUnified/session-correctness/fixed-step16.bin"
+    },
+    {
+      "name": "live_append",
+      "command": "GEN 4 cont=1 867,198,92,90"
+    },
+    {
+      "name": "live_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "load16",
+      "command": "LOAD D:/work/StrataUnified/session-correctness/fixed-step16.bin"
+    },
+    {
+      "name": "resave16",
+      "command": "SAVE D:/work/StrataUnified/session-correctness/fixed-roundtrip.bin"
+    },
+    {
+      "name": "load_before",
+      "command": "STATE"
+    },
+    {
+      "name": "load_pure",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "load_after",
+      "command": "STATE"
+    },
+    {
+      "name": "load_append",
+      "command": "GEN 4 cont=1 867,198,92,90"
+    },
+    {
+      "name": "load_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "quit",
+      "command": "QUIT"
+    }
+  ],
+  "prompt_tokens": 3896,
+  "prompt_sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+  "model_sha256_registered": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "model_not_rehashed": true,
+  "state_files": [
+    "D:\\work\\StrataUnified\\session-correctness\\fixed-step16.bin",
+    "D:\\work\\StrataUnified\\session-correctness\\fixed-roundtrip.bin"
+  ],
+  "native_limit": 1,
+  "native_runtime_limit_seconds": 150,
+  "goal": "old reproduces known F1; fixed all token/cursor/bound/rejection/roundtrip gates pass",
+  "note": "LOAD pure continuation is intentionally refused because logits are absent; append parity is tested separately",
+  "repair_reason": "initial fixed native F1/F4 core ran, but SAVE/LOAD harness used relative paths and was correctly refused by absolute-only session contract; keep original evidence; targeted state-only native, no code repair/rebuild",
+  "native_ordinal": 3,
+  "remaining_native_after": 0,
+  "purpose": "review-only response indexing; original executable stdin retained locally; do not execute this redacted manifest"
+}

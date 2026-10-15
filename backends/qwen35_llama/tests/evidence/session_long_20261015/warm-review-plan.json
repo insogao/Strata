@@ -1,0 +1,469 @@
+{
+  "commands": [
+    {
+      "name": "warm_anchor",
+      "command": "SCORE <fixture-withheld> topk=1"
+    },
+    {
+      "name": "decode_warmup_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "decode_warmup_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "decode_warmup",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "full_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "full_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "full",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "full_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg128_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "seg128_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "seg128_0",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "seg128_0_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg128_1",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "seg128_1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg128_2",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "seg128_2_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg128_3",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "seg128_3_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg256_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "seg256_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "seg256_0",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg256_0_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg256_1",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg256_1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg256_2",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg256_2_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg256_3",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg256_3_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "seg512_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "seg512_0",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_0_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_1",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_2",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_2_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_3",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_3_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_4",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_4_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_5",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_5_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_6",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_6_state",
+      "command": "STATE"
+    },
+    {
+      "name": "seg512_7",
+      "command": "GEN 64 cont=1"
+    },
+    {
+      "name": "seg512_7_state",
+      "command": "STATE"
+    },
+    {
+      "name": "single_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "single_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "one0",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one0_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one1",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one1_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one2",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one2_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one3",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one3_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one4",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one4_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one5",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one5_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one6",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one6_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one7",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one7_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one8",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one8_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one9",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one9_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one10",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one10_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one11",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one11_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one12",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one12_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one13",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one13_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one14",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one14_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one15",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "one15_state",
+      "command": "STATE"
+    },
+    {
+      "name": "one_tail",
+      "command": "GEN 112 cont=1"
+    },
+    {
+      "name": "one_final_state",
+      "command": "STATE"
+    },
+    {
+      "name": "error_before",
+      "command": "STATE"
+    },
+    {
+      "name": "length_error",
+      "command": "GEN 999999999999999999999 cont=1"
+    },
+    {
+      "name": "error_after",
+      "command": "STATE"
+    },
+    {
+      "name": "state_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "state_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "state_prefix",
+      "command": "GEN 128 cont=1"
+    },
+    {
+      "name": "save",
+      "command": "SAVE D:/work/StrataUnified/session-long-20261015/at128.bin"
+    },
+    {
+      "name": "live_append",
+      "command": "GEN 32 cont=1 198,9,256,2972"
+    },
+    {
+      "name": "live_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "load",
+      "command": "LOAD D:/work/StrataUnified/session-long-20261015/at128.bin"
+    },
+    {
+      "name": "resave",
+      "command": "SAVE D:/work/StrataUnified/session-long-20261015/roundtrip.bin"
+    },
+    {
+      "name": "reload",
+      "command": "LOAD D:/work/StrataUnified/session-long-20261015/roundtrip.bin"
+    },
+    {
+      "name": "resave2",
+      "command": "SAVE D:/work/StrataUnified/session-long-20261015/roundtrip2.bin"
+    },
+    {
+      "name": "load_before",
+      "command": "STATE"
+    },
+    {
+      "name": "load_pure",
+      "command": "GEN 1 cont=1"
+    },
+    {
+      "name": "load_after",
+      "command": "STATE"
+    },
+    {
+      "name": "restored_append",
+      "command": "GEN 32 cont=1 198,9,256,2972"
+    },
+    {
+      "name": "restored_append_state",
+      "command": "STATE"
+    },
+    {
+      "name": "cancel_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "cancel_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "cancel",
+      "command": "GEN 512 cont=1"
+    },
+    {
+      "name": "cancel_state",
+      "command": "STATE"
+    },
+    {
+      "name": "after_cancel",
+      "command": "GEN 120 cont=1"
+    },
+    {
+      "name": "after_cancel_state",
+      "command": "STATE"
+    },
+    {
+      "name": "fresh_after_error_cancel_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "fresh_after_error_cancel_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "fresh_after_error_cancel",
+      "command": "GEN 128 cont=1"
+    },
+    {
+      "name": "fresh_after_error_cancel_state",
+      "command": "STATE"
+    },
+    {
+      "name": "short_score_reset",
+      "command": "SCORE 0 topk=1"
+    },
+    {
+      "name": "short_score",
+      "command": "SCORE <fixture-withheld> topk=1 keep=1"
+    },
+    {
+      "name": "short_eos",
+      "command": "GEN 32 cont=1"
+    },
+    {
+      "name": "short_eos_state",
+      "command": "STATE"
+    },
+    {
+      "name": "quit",
+      "command": "QUIT"
+    }
+  ],
+  "prompt_tokens": 3817,
+  "short_prompt_tokens": 3896,
+  "requires_decode_warmup": true,
+  "review_only": true,
+  "withheld_prompt": "Fixture IDs omitted; these command labels regroup responses only, not executable stdin."
+}

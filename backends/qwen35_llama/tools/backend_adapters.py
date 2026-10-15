@@ -262,7 +262,8 @@ _ROUTE_TABLE = {
             "requires": "state_keep_score",
             "in_service": True,
             "notes": "state-keeping score: no reset, appends at an armed session's cursor and stays "
-                     "armed; needs the engine's state_keep_score",
+                     "armed; needs the engine's state_keep_score; HTTP armed-session mutations "
+                     "require the issued opaque session id and current revision",
         },
         "official_q36": {
             "supported": False,
@@ -304,7 +305,8 @@ _ROUTE_TABLE = {
             "requires": "session_continue",
             "in_service": True,
             "notes": "greedy continuation of an armed session without re-prefilling the carried "
-                     "prefix; needs the engine's session_continue and an armed session at run time",
+                     "prefix; needs the engine's session_continue and an armed session at run time; "
+                     "HTTP requires the issued opaque session id and current revision (409 on conflict)",
         },
         "official_q36": {
             "supported": False,

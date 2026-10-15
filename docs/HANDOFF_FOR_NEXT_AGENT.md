@@ -1,5 +1,7 @@
 # 交接文档：Strata Unified 开发线（2026-10-15 13:4x，由本线主管 Codex 书写）
 
+> **最新接手结果（2026-10-15）**：用户授权 Codex 直接施工，暂不使用 OpenCode；范围为单 GPU 笔记本/PC，不做双卡施工。当前 `codex/session-correctness` 自 `f3610f82` 修复 F1…F4，100 CPU tests PASS，Windows CUDA 独立构建＋3 个串行 native 已完成并清理。旧17/18 token 问题复现；新版本单段/分段/逐 token 17 IDs 恒等，四项长度拒绝状态不变，保存恢复专项通过。初次状态测试相对路径错误与构建工具失败均留原件，详细说明及可供第三方复核的 raw 在 `docs/SESSION_CORRECTNESS_REVIEW_20261015.md`。HTTP keep/continue 客户端须升级 session id/revision；LOAD 不恢复 logits 的限制仍在。阶段三工具 PR #4 是另一条审查线，不在本分支；不合并 main，不自动开启定时任务。下文为原交接历史。
+
 > 目的：让接手的 agent 在 **30 分钟内**能独立继续这条开发线：知道去哪读、哪些不能碰、怎么验收、哪里会踩坑、还剩什么。
 > 本文件写在旧研究仓（监督/证据枢纽）；**同一内容将在 P3-3 收尾后复制进新仓** `D:/work/StrataUnified/strata/docs/HANDOFF_FOR_NEXT_AGENT.md` 并提交（避免与在飞会话的分支切换冲突）。
 

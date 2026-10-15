@@ -1,0 +1,203 @@
+{
+  "scope": "single NVIDIA GPU Windows session correctness; no speed certification",
+  "base": "f3610f826beb1b7a247f1465ffdd80753aa63d17",
+  "source_sha256": "2f56c4c80039812282484e16997888c0e3e2e10b0bdf2499f5bcc931a23404c2",
+  "prompt_tokens": 3896,
+  "prompt_sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+  "model_registered_sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "config": {
+    "context": 4096,
+    "threads": 8,
+    "cache_slots": 3200,
+    "ubatch": 4096,
+    "mtp": "OFF serve protocol"
+  },
+  "old": {
+    "binary_sha256": "c3780a6a02be44a739a272c8f1cb39b76d9d92bb4f15d18b12cf026145812b0b",
+    "raw_sha256": "c96d01459c26074ea80ed56b1a27f3d46168809df69eb03c941517427c302335",
+    "single_tokens": [
+      90,
+      198,
+      1,
+      78151,
+      763,
+      220,
+      15,
+      11,
+      198,
+      1,
+      9676,
+      33805,
+      763,
+      867,
+      198,
+      92,
+      248046
+    ],
+    "split_tokens": [
+      90,
+      198,
+      1,
+      78151,
+      763,
+      220,
+      15,
+      11,
+      198,
+      1,
+      9676,
+      33805,
+      763,
+      867,
+      198,
+      92,
+      92,
+      248046
+    ],
+    "gates": {
+      "split_equals_single": false,
+      "full_committed_cursor": false,
+      "split_committed_cursor": false
+    }
+  },
+  "fixed": {
+    "binary_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+    "raw_sha256": "6235ab6ba44248974d0c16ffa59fd83a4dccf19a21a3911f2f7107ed8dc0f54f",
+    "single_tokens": [
+      90,
+      198,
+      1,
+      78151,
+      763,
+      220,
+      15,
+      11,
+      198,
+      1,
+      9676,
+      33805,
+      763,
+      867,
+      198,
+      92,
+      248046
+    ],
+    "split_tokens": [
+      90,
+      198,
+      1,
+      78151,
+      763,
+      220,
+      15,
+      11,
+      198,
+      1,
+      9676,
+      33805,
+      763,
+      867,
+      198,
+      92,
+      248046
+    ],
+    "full_cursor": 3913,
+    "split_cursor": 3913,
+    "core_gates": {
+      "split_equals_single": true,
+      "full_committed_cursor": true,
+      "split_committed_cursor": true,
+      "single_token_segments_equal_single": true,
+      "single_token_final_cursor": true,
+      "reaches_real_eos": true,
+      "single_token_cursor_0": true,
+      "single_token_cursor_1": true,
+      "single_token_cursor_2": true,
+      "single_token_cursor_3": true,
+      "single_token_cursor_4": true,
+      "single_token_cursor_5": true,
+      "single_token_cursor_6": true,
+      "single_token_cursor_7": true,
+      "single_token_cursor_8": true,
+      "single_token_cursor_9": true,
+      "single_token_cursor_10": true,
+      "single_token_cursor_11": true,
+      "single_token_cursor_12": true,
+      "single_token_cursor_13": true,
+      "single_token_cursor_14": true,
+      "single_token_cursor_15": true,
+      "llmax_rejected": true,
+      "llmax_state_unchanged": true,
+      "overflow_rejected": true,
+      "overflow_state_unchanged": true,
+      "decimal_rejected": true,
+      "decimal_state_unchanged": true,
+      "suffix_rejected": true,
+      "suffix_state_unchanged": true
+    },
+    "initial_state_harness": "FAIL: relative SAVE/LOAD paths rejected. Preserved full native-fixed raw/compare; not passed off as a fully green native."
+  },
+  "state_followup": {
+    "raw_sha256": "d52d362e924a99ccbf724f39123465d1672c7e0b424ebf7f92823e34ad108ef3",
+    "gates": {
+      "state_exports_succeeded": true,
+      "state_files_exist": true,
+      "save_load_save_bytes_equal": true,
+      "load_has_no_logits_refused": true,
+      "load_failed_pure_state_unchanged": true,
+      "load_append_token_parity": true,
+      "load_append_cursor_parity": true,
+      "state_no_unexpected_errors": true
+    },
+    "container_sha256": [
+      "a196f5eeff5fe5fffa3cf7496f6b622e2c934e776f29765662754622fde8a7b6",
+      "a196f5eeff5fe5fffa3cf7496f6b622e2c934e776f29765662754622fde8a7b6"
+    ],
+    "container_bytes": [
+      146076436,
+      146076436
+    ],
+    "live_append_tokens": [
+      198,
+      1,
+      78151,
+      763
+    ],
+    "loaded_append_tokens": [
+      198,
+      1,
+      78151,
+      763
+    ],
+    "load_pure_error": [
+      "ERR decode produced no logits at output 0"
+    ]
+  },
+  "native_receipts": {
+    "old": {
+      "exit": 0,
+      "marker_retained": false,
+      "all_children_exited": true,
+      "acquired_at": "2026-10-15T14:39:33.181",
+      "released_at": "2026-10-15T14:39:48.192"
+    },
+    "fixed": {
+      "exit": 0,
+      "marker_retained": false,
+      "all_children_exited": true,
+      "acquired_at": "2026-10-15T14:40:26.273",
+      "released_at": "2026-10-15T14:40:46.912"
+    },
+    "state": {
+      "exit": 0,
+      "marker_retained": false,
+      "all_children_exited": true,
+      "acquired_at": "2026-10-15T14:42:14.615",
+      "released_at": "2026-10-15T14:42:26.142"
+    }
+  },
+  "cpu_tests": 100,
+  "combined_verdict": "PASS scoped F1/F4 core + targeted state followup; initial harness failure retained",
+  "local_raw_root": "D:\\work\\Strata\u9b54\u6539\\results\\code-review\\session-correctness-20261015",
+  "performance": "not measured/claimed"
+}
