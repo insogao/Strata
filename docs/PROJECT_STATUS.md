@@ -3,9 +3,23 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-16。当前研发分支 `codex/workload-decode-diagnostics`，对应 [PR #8](https://github.com/insogao/Strata/pull/8)，基于 PR #7；以下上一轮分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
+更新时间：2026-10-16。当前研发分支 `codex/p4-ordinal-mixed-evaluation`，基于 PR #8 `18e1f88e`；P4 交付见下。上一轮分支 `codex/workload-decode-diagnostics`，对应 [PR #8](https://github.com/insogao/Strata/pull/8)，基于 PR #7；以下上一轮分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
 
 ## 0. 一句话状态
+
+**最新 P4 修订（PR #9）**：按用户新授权使用 synthetic_design_label，不以缺少人工金标阻断实验。600条均衡集（每档150）/1800次A0/A1/B1评测全部完成，20个native干净退出、无失败/资源越界/重跑。A0 Exact51.83%/±1 94.33%，A1=B1 Exact49.83%/±1 92.83%；同Prompt预测600/600一致。匹配580条长驻耗时A0/A1/B1=1574.50/1180.81/1011.37ms，B1对A1少14.35%。不是全报3，主要短板为风险1召回（A0 6.67%、A1/B1 1.33%）。新轮次解释修复完成8例M0/M1/M2、12个非空EOS解释/游标门；无可靠额外调度收益。232 CPU tests、完整矩阵/速度/偏置/失败保留见 [600条报告](P4_BALANCED600_COMPARISON_20261016.md)。不声称人工业务准确率，不改main/生产默认/原生服务；旧4条报告以下为历史。
+
+
+**最新 P4**：已找到 Jev YAML + SQLite 数据，DB accepted3387/review66/rejected107；2条YAML语法错误剔除，3385条为合成设计标签（0/1/2/3=166/2208/543/468），不能当人工金标。新增只读导入/来源审计/保守分组/序数指标/聚类bootstrap、A0/A1/B1真实HTTP配对及有界单GPU混发工具。四条开发样本Tokenizer/API/输入身份通过，真实人工准确率 **BLOCKED_NO_GOLD_DATA**。混发8个解释分支EOS空回答，修正仪表后 **NO-GO**，未宣称提速。2 native正常退出、无资源越界；CPU与公开脱敏证据见 [P4报告](PHASE4_LOGITS_QUALITY_AND_MIXED_LOAD.md)。无默认/服务/内核/MTP/冻结件改动，无正式holdout测量或生产质量通过。
+
+| P4里程碑 | 实际状态 |
+|---|---|
+| P4-1 数据/接口 | 工具及开发冒烟通过；人工裁定/可靠holdout未闭合 |
+| P4-2 双基线 | 4条合成开发测时完成，正式业务准确率BLOCKED_NO_GOLD_DATA，速度胜负INCONCLUSIVE |
+| P4-3 混发 | 单worker队列/无重复前缀重放有证据；直接追加解释输出NO-GO，EOS空回答不得计吞吐 |
+| P4-4 决策 | 先完善标注与输出合同；没有证据支持M3/生产路由切换 |
+
+以下 P3 为保留历史。
 
 **最新 P3-10…P3-14**：历史基线完整性与当前任务兼容性分开校验；真实 W1/W2/W3 工作流可测，Score→Continue 无重复 Prefill；单卡诊断复现冷/热差异并观测软件功耗限制，完整根因未定位。COMPACT 试验实际退回 uniform，判配置未生效，不能当布局收益/失败结论，已补启动前/后实配守卫。统一入口新增 SSE、断连取消、丢失 keep 响应的所有权清理、deadline 和有界长服务退出。新交付206 CPU tests、真实10 native、最终20服务门、667新证据复核通过，四组合 CPU CI（功能提交26bb231e）通过；性能/业务/生产验收仍开放。[本轮报告](WORKFLOW_DECODE_DELIVERY_20261016.md)。
 
@@ -29,7 +43,8 @@
 
 ## 2. 当前分支与提交
 
-- 当前开发分支：`codex/single-gpu-autotune`，base=`codex/session-correctness` (`47c4b262`)，为 P3-5…P3-9 唯一后续开发线。
+- 当前开发分支：`codex/p4-ordinal-mixed-evaluation`，base=`codex/workload-decode-diagnostics` (`18e1f88e`)；单卡 P4 唯一后续开发线。
+- 历史 P3 分支：`codex/single-gpu-autotune`，base=`codex/session-correctness` (`47c4b262`)，为 P3-5…P3-9 唯一后续开发线。
 - PR #5 历史分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 [PR #5](https://github.com/insogao/Strata/pull/5)，实现提交 `18cc8457`，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
 - P3 工具 PR #4/#6 的实际源码与测试已比较；本分支选择性保留一份 canonical，没有合并旧状态文件。旧重复 PR 由本分支新 PR supersede；下列为阶段一历史提交链：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）

@@ -1,0 +1,2 @@
+# Optional, CPU-only read-only CASE-YAML importer. Other P4 metrics use stdlib.
+PyYAML>=6.0.2,<7

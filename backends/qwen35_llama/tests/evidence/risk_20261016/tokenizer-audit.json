@@ -1,0 +1,56 @@
+{
+  "labels": [
+    {
+      "risk": 0,
+      "ids": [
+        15
+      ],
+      "decoded": "0",
+      "space_prefix_ids": [
+        220,
+        15
+      ]
+    },
+    {
+      "risk": 1,
+      "ids": [
+        16
+      ],
+      "decoded": "1",
+      "space_prefix_ids": [
+        220,
+        16
+      ]
+    },
+    {
+      "risk": 2,
+      "ids": [
+        17
+      ],
+      "decoded": "2",
+      "space_prefix_ids": [
+        220,
+        17
+      ]
+    },
+    {
+      "risk": 3,
+      "ids": [
+        18
+      ],
+      "decoded": "3",
+      "space_prefix_ids": [
+        220,
+        18
+      ]
+    }
+  ],
+  "candidate_ids": [
+    15,
+    16,
+    17,
+    18
+  ],
+  "special_token_map_sha256": "5d4b1146a357eb5fc099cce618f7589a4bdf82b6e863731b559e4f6a8726bad6",
+  "status": "PASS"
+}

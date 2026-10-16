@@ -1,0 +1,61 @@
+{
+  "schema": "strata-risk-import/1",
+  "registry_snapshot_sha256": "095abd06cef922aa95df612c6794a773a0e21e5113652578771d9ec017a5d15d",
+  "pair_snapshot_sha256": "51110066981f06a3fead10b257a95cca41c21c684f4b6a675e3db5f33aa4460d",
+  "source_manifest_sha256": "ea9f151684fbf2099d03fa600d1bddd7204bdb0be02ccc7a336ed1838d03a0eb",
+  "registry_counts": {
+    "accepted": 3387,
+    "review": 66,
+    "rejected": 107
+  },
+  "usable": 3385,
+  "excluded": {
+    "registry_review": 66,
+    "registry_rejected": 107,
+    "ParserError": 2
+  },
+  "reference_kind_counts": {
+    "synthetic_design_label": 3385
+  },
+  "source_types": {
+    "synthetic_pilot": 6,
+    "synthetic_subagent": 3379
+  },
+  "risk_counts": {
+    "3": 468,
+    "0": 166,
+    "2": 543,
+    "1": 2208
+  },
+  "scenario_counts": {
+    "bribery_corruption": 1280,
+    "none": 166,
+    "fraud_scam": 170,
+    "contraband_illicit_trade": 120,
+    "other_illicit_coordination": 180,
+    "privacy_doxxing": 849,
+    "money_laundering_obfuscation": 124,
+    "sexual_transaction_exploitation": 105,
+    "theft_robbery_property_crime": 181,
+    "coercion_blackmail": 107,
+    "violence_extortion": 103
+  },
+  "leakage_clusters": 5,
+  "largest_cluster": 3379,
+  "family_sizes_top5": [
+    3217,
+    162,
+    2,
+    2,
+    1
+  ],
+  "lineage_sizes_top5": [
+    3217,
+    162,
+    2,
+    2,
+    1
+  ],
+  "gold_accuracy_status": "BLOCKED_NO_GOLD_DATA",
+  "note": "Model-generated design labels; accepted is program/pipeline status, not proof of human adjudication. No formal holdout claimed."
+}

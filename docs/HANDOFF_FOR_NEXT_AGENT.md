@@ -1,3 +1,48 @@
+# Current continuation — P4 balanced600 complete / 2026-10-16
+
+Latest user accepts synthetic_design_label as formal experiment reference. Human gold is NOT a blocker.
+PR9, branch codex/p4-ordinal-mixed-evaluation;600 fixed cases/1800 records completed,
+20 clean native leases, no runtime retry. No need to rerun the600.
+Read [P4_BALANCED600_COMPARISON_20261016.md](P4_BALANCED600_COMPARISON_20261016.md).
+A1/B1 match600/600; B1 is14.35% lower E2E on matched580 warm cases. A0 observed
+Exact is2pp higher. Risk1 recall is weak; do not relabel references to fit outputs.
+SCORE->Continue empty explanation fixed in explicit explanation_mode=new_turn:
+real greedy label/EOS, trusted GGUF new-user turn, real reason, cursor/revision
+checks.8-case mixed smoke all24 flows complete,12 nonempty reasons with EOS;
+M2~0.4% vsM1 is not reliable scheduling gain. Old inline failure originals kept.
+232 CPU tests pass. Public balanced600 CSV/matrices/SHA and repaired flow evidence
+are in tests/evidence/risk_balanced600_20261016. Inputs/original IDs remain private.
+Next: investigate grade1/2/3 prompt boundary on a separately frozen design; then
+repeated matched-policy mixed blocks, not native batching. Remaining2785 optional
+population set not run; do not merge its distribution with the balanced result.
+Main/production/native/defaults unchanged; no automation restarted.
+
+The following handoffs are historical.
+
+---
+
+# Current continuation — P4 / 2026-10-16
+
+Branch `codex/p4-ordinal-mixed-evaluation`, based on PR #8 `18e1f88e`.
+Read [PHASE4_LOGITS_QUALITY_AND_MIXED_LOAD.md](PHASE4_LOGITS_QUALITY_AND_MIXED_LOAD.md).
+Jev SQLite/YAML found:3385 parseable accepted synthetic references, NOT human gold.
+Source DB is read-only; accepted folder also holds66 review cases.2 malformed
+YAML originals preserved. Conservative lineage grouping is nearly one giant
+cluster; do not quietly random-split rows or claim independent human accuracy.
+Paired4 development cases measured; B1/A1 prompt hashes match; digits15..18
+verified on production GGUF. Mixed8 explanation requests return EOS only:
+NO-GO, fixed driver counts failures; original misleading summaries retained.
+No quality/production release, M3, native/default/MTP changes or automation.
+Local originals: D:/work/Strata魔改/results/unified-p4-20261016/ and
+D:/work/StrataUnified/experiments/p4-20261016/. Public evidence is anonymized
+statistics with SHA indexes, not the original private transcripts.
+Next: independently adjudicated labels/lineage and a real explanation-output
+contract before a new paired mixed experiment. No automatic rerun.
+
+The following are historical handoffs.
+
+---
+
 # Current continuation — P3-10…P3-14 / 2026-10-16
 
 Branch codex/workload-decode-diagnostics, based on PR #7 7a30da89.
