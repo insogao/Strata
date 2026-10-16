@@ -7,7 +7,7 @@
   "artifacts": [
     {
       "path": ".gitattributes",
-      "sha256": "85a7941474bf5530f17ca3cea1c924eb9e47aec4ad94d6f2176d08b07085cc88"
+      "sha256": "db6e2588f90c39281f86a7d46e89a0f2c8868b8b48d76bca271fbabedec1ab69"
     },
     {
       "path": "abandoned-owner-cpu.log",
