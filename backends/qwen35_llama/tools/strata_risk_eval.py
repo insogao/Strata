@@ -61,6 +61,8 @@ def audit(rows):
         'reference_counts':dict(Counter(r['reference_kind'] for r in rows)),
         'status_counts':dict(Counter(r['gold_status'] for r in rows)),
         'human_adjudicated_n':len(gold),
+        'reference_evaluation_status':'READY_SYNTHETIC_REFERENCE' if any(r['reference_kind']=='synthetic_design_label' for r in rows) else 'NO_SYNTHETIC_REFERENCE',
+        'human_accuracy_status':'READY_FOR_REGISTERED_EVALUATION' if gold else 'BLOCKED_NO_GOLD_DATA',
         'accuracy_status':'READY_FOR_REGISTERED_EVALUATION' if gold else 'BLOCKED_NO_GOLD_DATA'}
 
 
