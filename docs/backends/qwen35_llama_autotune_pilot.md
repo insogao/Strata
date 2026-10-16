@@ -30,7 +30,7 @@
 | pack | `models/experimental/mtp-qwen36-5bc3e238/pack-main40`（`native_experts.txt`） |
 | profile | `profiles/calibration-expanded.profile`（中立 cwd 内），sha256 `fab192ff…`（与 347 原 profile 同文件） |
 | fixture S | `results/20261012-qwen35-decode-quality157/fixtures/fixture-benign/prompt.tokens`；21,747 B；sha256 `4e6b2529…`；3896 ids；只读副本→`D:/work/StrataUnified/fixtures-p33/s-benign-3896.tokens`（逐字节一致） |
-| fixture L | `results/20261012-qwen35-decode-m0-repair156/fixtures/l-risk-explain/prompt.tokens`；21,389 B；sha256 `a920a130…`；3817 ids；副本→`l-risk-3817.tokens` | 
+| fixture L | `results/20261012-qwen35-decode-m0-repair156/fixtures/l-risk-explain/prompt.tokens`；21,389 B；sha256 `a920a130…`；3817 ids；副本→`l-risk-3817.tokens` |
 | cwd / argv | `D:/work/StrataUnified`；全部为 ASCII 相对路径；PATH 前置 `D:/work/Strata魔改/runtime/cuda-12.8.1/bin`；先清 `STRATA_*`/`GGML_*`/`LLAMA_GRAPH*`/`CUDA_LAUNCH_BLOCKING` |
 
 **模型路径偏差登记（1/3）**：task.md §1 写"中立模型 `models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf`＋`models/pack`"。该中立路径是**另一个文件**（13,676,723,168 B；loader 54 kv/733 tensors，**无 `nextn_predict_layers`**），MTP K1 事务引擎在其上不可运行，且与 347/P3-2 标定（ab639a7f、15.3 GB）不同量化文件——按"同量化（ab639a7f…）"的判定前提与 REQUIREMENTS"新模型已验证 SHAab639a7f…pack-main40 已就绪"，本任务使用**实验目录的注册模型**。此为按意图执行、按字面偏差的登记项。
