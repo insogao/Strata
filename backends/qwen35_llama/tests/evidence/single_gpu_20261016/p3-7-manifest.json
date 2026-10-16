@@ -1,0 +1,65 @@
+{
+  "started_at": "2026-10-15T09:23:18.827724+00:00",
+  "stage": "P3-7 first measured single-variable search",
+  "spec_sha": "43bfed9040d56d253b54f1afcf59f0bbfb1e81b33d42504faa6de30daec4ac6a",
+  "candidates": [
+    {
+      "id": "ubatch2048",
+      "config": {
+        "slots": 3200,
+        "threads": 8,
+        "ubatch": 2048,
+        "ctx": 4096,
+        "compact": false
+      },
+      "hypothesis": "S prefill dominates; reduce workspace/CPU contention",
+      "baseline_short_prefill_fraction": 0.8731099388297147
+    },
+    {
+      "id": "threads6",
+      "config": {
+        "slots": 3200,
+        "threads": 6,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": false
+      },
+      "hypothesis": "S prefill dominates; reduce workspace/CPU contention",
+      "baseline_short_prefill_fraction": 0.8731099388297147
+    },
+    {
+      "id": "slots2700",
+      "config": {
+        "slots": 2700,
+        "threads": 8,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": false
+      },
+      "hypothesis": "S prefill dominates; reduce workspace/CPU contention",
+      "baseline_short_prefill_fraction": 0.8731099388297147
+    }
+  ],
+  "budget": {
+    "native": 12,
+    "model_starts": 12,
+    "internal_requests": 72,
+    "build": 0,
+    "trace": 0,
+    "cpu_heavy_during_timing": 0,
+    "native_timeout_s": 120,
+    "window_s": 1200,
+    "wait_s": 60,
+    "automatic_retries": 0
+  },
+  "source_hashes": {
+    "strata_tune.py": "c58c4c37a6da0e6a91456bffcb2b7d9e59f0e62fcc7adde8850fd75db56a3a3e",
+    "strata_experiment.py": "8e854829437d7cc146ef2ec284f9183ad94ff73913cf73cc0afdd138feeed151",
+    "leased_native.py": "bb2748178a9c23973f29e96e69a862efe643a69abbb16550c2f238676c621b2d",
+    "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+  },
+  "order": "each candidate A B B A; warm2 judgement, cold request separately; early B regression>15% stops related candidate",
+  "decision": "90%S complete latency+10%L latency;gain>=5% and>driftband andpairedpositive;P andL regression gates;else NO-GO;none pass =>selectednull",
+  "timing_scope": "observed file timestamps5ms resolution,not exactpostflush;NVML100ms resource sampling",
+  "exit": "OOM/CUDA/state/format/resourcefail preserveevidence andstoprelatedexecutor;independentCPUwork maycontinue;no labelaccuracy certificate"
+}

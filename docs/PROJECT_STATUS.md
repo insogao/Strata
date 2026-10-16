@@ -3,9 +3,13 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-15（当前 `codex/session-correctness`，自 P2R 补强 `f3610f82` 开发四项评审修复；Codex 直接实现，暂不使用 OpenCode）。本轮按用户最新范围：**单显卡笔记本/PC，不做双卡施工**。
+更新时间：2026-10-16。当前唯一后续分支 `codex/single-gpu-autotune`，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
 
 ## 0. 一句话状态
+
+**最新 P3-5…P3-9**：PR #4 的保守 Profile 生命周期成为 canonical；PR #6 的 inspect/screen/plan 操作并入同一入口，旧重复 PR 由新 PR 取代，不串联合并。真实单 GPU 自动执行器及统一 Chat/Score/Decisions/Session MVP 已实现。三候选 ABBA/12 native/72 请求均 NO-GO；不安装 Profile，不改3200默认。最终基线身份检查通过；真实集成31门通过。新一日 Decode 下降原因未定位，性能发布门仍开放。完整结果、失败、限制和原始证据索引见 [UNIFIED_SINGLE_GPU_DELIVERY.md](UNIFIED_SINGLE_GPU_DELIVERY.md)。
+
+以下 PR #5 与 P2R 为保留的验收历史。
 
 阶段一迁移、阶段二原型与 P2R 补强已交付，仍待审查/整合。PR #5 修复分段续写重复、HTTP 会话所有权、非法概率协议与长度溢出；原100 CPU tests及17-token短序列证据保留。外部 review 后新增真实128/256/512长输出、游标/取消/错误/状态往返测试：结构与控制检查通过；跨请求长文本精确重放有差异，仅列数值诊断，不把自然回答逐字一致设为产品门槛。首轮状态文件被测试脚本覆盖的证据留存失误如实登记。最新长输出与配对计时见 `docs/EXTERNAL_REVIEW_FOLLOWUP_20261015.md`；业务质量、统一入口、部署/完整性能门仍开放，不合并生产。
 
@@ -17,12 +21,13 @@
 |---|---|---|---|
 | 阶段 1 核心迁移 | **完成（自测达成）** | ①独立构建 exit 0；②官方服务入口的聊天/连续/EOS/取消/隔离；③不依赖旧研究树；④与本产基线配对回归不劣化 | `docs/PHASE1_DELIVERY.md`（四项逐条证据） |
 | 阶段 2 统一 Backend + Logits Decisions | 原型＋P2R 已交付；本轮四项正确性修复待独立审查 | 本机单卡/单 fixture 门通过，范围与状态协议兼容性变化见报告；业务质量/全量性能不继承通过 | `docs/SESSION_CORRECTNESS_REVIEW_20261015.md`，§4.0b 为历史 P2R 证据 |
-| 阶段 3 Hardware/Workload Autotuner | 离线工具 PR #4 独立审查，不在本分支 | 本轮不实施多 GPU；其他硬件覆盖不冒称已验证。完整 EOS/业务联合目标/实测选优仍待办 | `codex/phase3-tune-cli` / PR #4 的交付文档 |
+| 阶段 3 Hardware/Workload Autotuner | canonical 离线＋真实自动实验＋统一 API MVP，待新 PR 审查 | 三候选均 NO-GO、selected=null；真实31集成门通过；性能/业务/部署生产门开放 | [新交付报告](UNIFIED_SINGLE_GPU_DELIVERY.md) |
 
 ## 2. 当前分支与提交
 
-- 当前分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 [PR #5](https://github.com/insogao/Strata/pull/5)，实现提交 `18cc8457`，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
-- P3 工具 PR #4 为并列审查线，未被合并到本分支。下列为阶段一历史提交链：
+- 当前开发分支：`codex/single-gpu-autotune`，base=`codex/session-correctness` (`47c4b262`)，为 P3-5…P3-9 唯一后续开发线。
+- PR #5 历史分支：`codex/session-correctness`，base=`phase2r/review-gaps` (`f3610f82`)；独立 [PR #5](https://github.com/insogao/Strata/pull/5)，实现提交 `18cc8457`，不改父 PR #3 或生产主线。`origin` = `insogao/Strata`，`upstream` = `Niko1221/Strata`。
+- P3 工具 PR #4/#6 的实际源码与测试已比较；本分支选择性保留一份 canonical，没有合并旧状态文件。旧重复 PR 由本分支新 PR supersede；下列为阶段一历史提交链：
   - `27c987ca` 导入 `backends/qwen35_llama`（源自只读实验树 `phase2-mtp232`：HEAD `9bb9b6a`＋17 dirty＋2 untracked；vendor/llama.cpp live 态）
   - `e0fd2dea` 冒烟＋保真报告（task 355）
   - `c653bef1` ABAB 配对回归报告（task 358）

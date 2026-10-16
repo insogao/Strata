@@ -1,0 +1,25 @@
+{
+  "started_at": "2026-10-15T09:16:23.275896+00:00",
+  "stage": "P3-6 real executor smoke",
+  "budget": {
+    "native": 1,
+    "model_starts": 1,
+    "internal_requests": 6,
+    "build": 0,
+    "trace": 0,
+    "native_runtime_s": 120,
+    "window_s": 1200,
+    "repair": 0
+  },
+  "scope": "fixed engine ea06/new branch P3 Python tools; CPU27 tests already passed during preparation, no model/kernel/default edits",
+  "source_hashes": {
+    "strata_tune.py": "c58c4c37a6da0e6a91456bffcb2b7d9e59f0e62fcc7adde8850fd75db56a3a3e",
+    "strata_experiment.py": "576beec65acb000c4585fac940439ef9e5ab783b7f5a45955bc12834801aedda",
+    "leased_native.py": "cfb49925d931ad7564da9342b67558f634e15143ae849e3c2fba879a7eecbbfb",
+    "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+  },
+  "spec_sha": "e6bf046d31122946c40b893bdea7dbcd1eafd56e8a4b6fbdae143328fe6bbee2",
+  "output": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\smoke",
+  "exit": "no retry; capacity/runtime/tool/quality failures preserved; CPU independent work allowed",
+  "models_registered_sha_no_rehash": true
+}

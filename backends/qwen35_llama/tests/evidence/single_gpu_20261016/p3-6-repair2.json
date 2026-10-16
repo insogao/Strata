@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-15T09:18:14.036139+00:00",
+  "trigger": "second pre-native attempt found psutil missing in current Python;0 GPU model starts,failed Profile retained",
+  "authorized_fix": "Install existing setup.py declared psutil dependency from cached wheel; installed7.2.2. Bind runtime Python/package versions. One fresh smoke,0 build/trace.",
+  "cumulative_native_cap": 1,
+  "cumulative_tool_repairs": 2,
+  "original_window_started_at": "2026-10-15T09:16:23.275896+00:00",
+  "packages": {
+    "psutil": "7.2.2",
+    "pywin32": "312"
+  },
+  "preflight": "NVML/memory read succeeded before model dispatch"
+}

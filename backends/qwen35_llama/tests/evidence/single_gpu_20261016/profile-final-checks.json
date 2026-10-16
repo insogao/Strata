@@ -1,0 +1,16 @@
+{
+  "current_reference": {
+    "valid": true,
+    "reasons": [],
+    "production_approved": false,
+    "auto_apply": false
+  },
+  "historical_search": {
+    "valid": false,
+    "reasons": [
+      "current identity/spec changed"
+    ],
+    "production_approved": false,
+    "auto_apply": false
+  }
+}

@@ -1,0 +1,3409 @@
+{
+  "schema": "strata-review-evidence/1",
+  "scope": "review-only extract; original measured Profiles remain local and immutable",
+  "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+  "model_sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "production_approved": false,
+  "auto_apply": false,
+  "selected_configuration": null,
+  "measurements": {
+    "integration-baseline/baseline-profile": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 9520.9,
+          "prefill_tps": 409.2050121312061,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 9531.336400003056,
+          "e2e_observed_ms": 9531.423500004166,
+          "last_visible_observed_ms": 9531.336400003056,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2838.1,
+          "prefill_tps": 1372.7493745815864,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 2853.7959000022965,
+          "e2e_observed_ms": 2853.8423999998486,
+          "last_visible_observed_ms": 2853.7959000022965,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2763.5,
+          "prefill_tps": 1409.8064049212956,
+          "decode_ms": 2001.3,
+          "ttft_observed_ms": 2774.2619999989984,
+          "e2e_observed_ms": 4775.416299999051,
+          "last_visible_observed_ms": 4775.359999999637,
+          "decode_observed_tps": 7.495884759264771,
+          "tpot_observed_ms": 133.4065333333759,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2750.3,
+          "prefill_tps": 1416.5727375195431,
+          "decode_ms": 658.8,
+          "ttft_observed_ms": 2762.1059000011883,
+          "e2e_observed_ms": 3420.423399998981,
+          "last_visible_observed_ms": 3420.368300001428,
+          "decode_observed_tps": 22.787265382307325,
+          "tpot_observed_ms": 43.88416000001598,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2721.7,
+          "prefill_tps": 1402.4323033398246,
+          "decode_ms": 6307.4,
+          "ttft_observed_ms": 2735.7071000005817,
+          "e2e_observed_ms": 9051.167600002373,
+          "last_visible_observed_ms": 9051.123099998222,
+          "decode_observed_tps": 20.10952247643662,
+          "tpot_observed_ms": 49.7276850393515,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2803.2,
+          "prefill_tps": 1361.6581050228313,
+          "decode_ms": 4908.6,
+          "ttft_observed_ms": 2812.948899998446,
+          "e2e_observed_ms": 7724.986599998374,
+          "last_visible_observed_ms": 7724.9314000000595,
+          "decode_observed_tps": 25.85514097412975,
+          "tpot_observed_ms": 38.677027559067824,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7530.55078125,
+        "host_rss_peak_mib": 14971.15234375,
+        "available_ram_min_mib": 8678.39453125,
+        "violation": null
+      }
+    },
+    "search/slots2700-0": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3839.5,
+          "prefill_tps": 1014.7154577418935,
+          "decode_ms": 1.9,
+          "ttft_observed_ms": 3853.6289000003308,
+          "e2e_observed_ms": 3853.7045000002763,
+          "last_visible_observed_ms": 3853.6289000003308,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2822.2,
+          "prefill_tps": 1380.4833108922119,
+          "decode_ms": 2.2,
+          "ttft_observed_ms": 2835.8338999996704,
+          "e2e_observed_ms": 2835.9043000000383,
+          "last_visible_observed_ms": 2835.8338999996704,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2827.8,
+          "prefill_tps": 1377.749487233892,
+          "decode_ms": 869.0,
+          "ttft_observed_ms": 2836.91060000001,
+          "e2e_observed_ms": 3711.531500000092,
+          "last_visible_observed_ms": 3711.4676999999574,
+          "decode_observed_tps": 17.151538761735402,
+          "tpot_observed_ms": 58.30380666666315,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2801.9,
+          "prefill_tps": 1390.485028016703,
+          "decode_ms": 409.5,
+          "ttft_observed_ms": 2814.7031999997125,
+          "e2e_observed_ms": 3236.7835999993986,
+          "last_visible_observed_ms": 3236.7288999994344,
+          "decode_observed_tps": 35.54285911974054,
+          "tpot_observed_ms": 28.135046666648122,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2749.7,
+          "prefill_tps": 1388.1514347019677,
+          "decode_ms": 4151.3,
+          "ttft_observed_ms": 2761.4959000002273,
+          "e2e_observed_ms": 6913.882700000613,
+          "last_visible_observed_ms": 6913.829199999782,
+          "decode_observed_tps": 30.58521337870773,
+          "tpot_observed_ms": 32.69553779527208,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2856.5,
+          "prefill_tps": 1336.2506563976895,
+          "decode_ms": 3826.3,
+          "ttft_observed_ms": 2868.868300000031,
+          "e2e_observed_ms": 6707.4979999997595,
+          "last_visible_observed_ms": 6707.439099999647,
+          "decode_observed_tps": 33.08523057592495,
+          "tpot_observed_ms": 30.224966929130833,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14962.39453125,
+        "available_ram_min_mib": 5124.47265625,
+        "violation": null
+      }
+    },
+    "search/slots2700-1": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3961.4,
+          "prefill_tps": 983.4906851113243,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 3973.553300000276,
+          "e2e_observed_ms": 3973.60640000079,
+          "last_visible_observed_ms": 3973.553300000276,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2833.0,
+          "prefill_tps": 1375.2206141899046,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 2848.4620999997787,
+          "e2e_observed_ms": 2848.5129000000597,
+          "last_visible_observed_ms": 2848.4620999997787,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2822.7,
+          "prefill_tps": 1380.2387784745104,
+          "decode_ms": 925.9,
+          "ttft_observed_ms": 2849.282399999538,
+          "e2e_observed_ms": 3764.5717999994304,
+          "last_visible_observed_ms": 3764.5239999992555,
+          "decode_observed_tps": 16.389115180084286,
+          "tpot_observed_ms": 61.01610666664783,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2850.3,
+          "prefill_tps": 1366.8736624214994,
+          "decode_ms": 423.8,
+          "ttft_observed_ms": 2861.366999999518,
+          "e2e_observed_ms": 3291.889600000104,
+          "last_visible_observed_ms": 3291.8513999993593,
+          "decode_observed_tps": 34.844468231614286,
+          "tpot_observed_ms": 28.69895999998941,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2745.7,
+          "prefill_tps": 1390.1737261900428,
+          "decode_ms": 4459.5,
+          "ttft_observed_ms": 2758.585700000367,
+          "e2e_observed_ms": 7219.153600000027,
+          "last_visible_observed_ms": 7219.098000000486,
+          "decode_observed_tps": 28.472065865617413,
+          "tpot_observed_ms": 35.12214409448912,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "9ab386889ce714232b94d5e8c91de1da01d387688ed67028101220fc52b8dc78"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2894.6,
+          "prefill_tps": 1318.6623367650107,
+          "decode_ms": 4597.6,
+          "ttft_observed_ms": 2907.0880999997826,
+          "e2e_observed_ms": 7511.214400000426,
+          "last_visible_observed_ms": 7511.149099999784,
+          "decode_observed_tps": 27.584343474163344,
+          "tpot_observed_ms": 36.25244881889765,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "7abb3022dfc36d399bc63e076b1e07300c51c575401a63f3cb136d883d349713"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 6985.5234375,
+        "host_rss_peak_mib": 14955.08203125,
+        "available_ram_min_mib": 5188.72265625,
+        "violation": null
+      }
+    },
+    "search/slots2700-2": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3861.9,
+          "prefill_tps": 1008.8298505916777,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 3871.712299999672,
+          "e2e_observed_ms": 3871.789499999977,
+          "last_visible_observed_ms": 3871.712299999672,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2832.5,
+          "prefill_tps": 1375.4633715798764,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 2846.5239000006477,
+          "e2e_observed_ms": 2846.5986000001067,
+          "last_visible_observed_ms": 2846.5239000006477,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2829.1,
+          "prefill_tps": 1377.1163974408823,
+          "decode_ms": 872.2,
+          "ttft_observed_ms": 2840.8595999999307,
+          "e2e_observed_ms": 3720.9664000001794,
+          "last_visible_observed_ms": 3720.9007999999812,
+          "decode_observed_tps": 17.044656545624385,
+          "tpot_observed_ms": 58.669413333336706,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2828.6,
+          "prefill_tps": 1377.3598246482359,
+          "decode_ms": 421.5,
+          "ttft_observed_ms": 2842.1893000004275,
+          "e2e_observed_ms": 3263.090500000544,
+          "last_visible_observed_ms": 3263.0466000000524,
+          "decode_observed_tps": 35.64153455343026,
+          "tpot_observed_ms": 28.05715333330833,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2744.1,
+          "prefill_tps": 1390.984293575307,
+          "decode_ms": 4498.9,
+          "ttft_observed_ms": 2751.4564999992217,
+          "e2e_observed_ms": 7259.54769999953,
+          "last_visible_observed_ms": 7259.494999999333,
+          "decode_observed_tps": 28.171897822078684,
+          "tpot_observed_ms": 35.49636614173316,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "9ab386889ce714232b94d5e8c91de1da01d387688ed67028101220fc52b8dc78"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2901.7,
+          "prefill_tps": 1315.4357790260883,
+          "decode_ms": 4511.5,
+          "ttft_observed_ms": 2913.6539000000994,
+          "e2e_observed_ms": 7430.882999999994,
+          "last_visible_observed_ms": 7430.82080000022,
+          "decode_observed_tps": 28.114967370365843,
+          "tpot_observed_ms": 35.56824330708756,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "7abb3022dfc36d399bc63e076b1e07300c51c575401a63f3cb136d883d349713"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 6985.5234375,
+        "host_rss_peak_mib": 14956.8046875,
+        "available_ram_min_mib": 5153.5,
+        "violation": null
+      }
+    },
+    "search/slots2700-3": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3845.8,
+          "prefill_tps": 1013.0532008944822,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 3859.997900000053,
+          "e2e_observed_ms": 3860.070600000654,
+          "last_visible_observed_ms": 3859.997900000053,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2838.3,
+          "prefill_tps": 1372.6526441884225,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 2851.1704000002283,
+          "e2e_observed_ms": 2851.242800000364,
+          "last_visible_observed_ms": 2851.1704000002283,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2832.7,
+          "prefill_tps": 1375.3662583400996,
+          "decode_ms": 880.9,
+          "ttft_observed_ms": 2844.489600000088,
+          "e2e_observed_ms": 3731.1564000001454,
+          "last_visible_observed_ms": 3731.112999999823,
+          "decode_observed_tps": 16.91811878640298,
+          "tpot_observed_ms": 59.10822666664899,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2812.5,
+          "prefill_tps": 1385.2444444444445,
+          "decode_ms": 376.3,
+          "ttft_observed_ms": 2823.1251999995948,
+          "e2e_observed_ms": 3201.6082000000097,
+          "last_visible_observed_ms": 3201.552699999411,
+          "decode_observed_tps": 39.63771131856773,
+          "tpot_observed_ms": 25.228499999987736,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2705.1,
+          "prefill_tps": 1411.038408931278,
+          "decode_ms": 4202.4,
+          "ttft_observed_ms": 2716.830399999708,
+          "e2e_observed_ms": 6923.464000000422,
+          "last_visible_observed_ms": 6923.41099999976,
+          "decode_observed_tps": 30.190792017630287,
+          "tpot_observed_ms": 33.12268188976419,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2880.9,
+          "prefill_tps": 1324.9331806032837,
+          "decode_ms": 4091.9,
+          "ttft_observed_ms": 2901.698199999373,
+          "e2e_observed_ms": 6987.983099999838,
+          "last_visible_observed_ms": 6987.937499999134,
+          "decode_observed_tps": 31.079922313900568,
+          "tpot_observed_ms": 32.17511259842332,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14964.9375,
+        "available_ram_min_mib": 5077.04296875,
+        "violation": null
+      }
+    },
+    "search/threads6-0": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3736.7,
+          "prefill_tps": 1042.6311986512164,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 3748.117500000262,
+          "e2e_observed_ms": 3748.185000000376,
+          "last_visible_observed_ms": 3748.117500000262,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2873.8,
+          "prefill_tps": 1355.6962906256524,
+          "decode_ms": 1.9,
+          "ttft_observed_ms": 2890.0516000003336,
+          "e2e_observed_ms": 2890.1260000002367,
+          "last_visible_observed_ms": 2890.0516000003336,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2812.4,
+          "prefill_tps": 1385.2936993315318,
+          "decode_ms": 930.4,
+          "ttft_observed_ms": 2822.4695999997493,
+          "e2e_observed_ms": 3756.6053000000466,
+          "last_visible_observed_ms": 3756.558899999618,
+          "decode_observed_tps": 16.058421823269047,
+          "tpot_observed_ms": 62.27261999999124,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2812.8,
+          "prefill_tps": 1385.0967007963593,
+          "decode_ms": 379.4,
+          "ttft_observed_ms": 2822.675899999922,
+          "e2e_observed_ms": 3204.7419999998965,
+          "last_visible_observed_ms": 3204.6930000005887,
+          "decode_observed_tps": 39.265258021103826,
+          "tpot_observed_ms": 25.467806666711112,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2662.0,
+          "prefill_tps": 1433.8842975206612,
+          "decode_ms": 4374.3,
+          "ttft_observed_ms": 2675.876999999673,
+          "e2e_observed_ms": 7050.673100000495,
+          "last_visible_observed_ms": 7050.620699999854,
+          "decode_observed_tps": 29.030272104853765,
+          "tpot_observed_ms": 34.446800787403,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2841.7,
+          "prefill_tps": 1343.2100503219904,
+          "decode_ms": 4264.5,
+          "ttft_observed_ms": 2856.354399999873,
+          "e2e_observed_ms": 7122.140100000252,
+          "last_visible_observed_ms": 7122.087900000224,
+          "decode_observed_tps": 29.772136491881067,
+          "tpot_observed_ms": 33.58845275590828,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14964.81640625,
+        "available_ram_min_mib": 5093.703125,
+        "violation": null
+      }
+    },
+    "search/threads6-1": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3927.2,
+          "prefill_tps": 992.0554084334896,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 3943.771000000197,
+          "e2e_observed_ms": 3943.8537000005454,
+          "last_visible_observed_ms": 3943.771000000197,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2807.6,
+          "prefill_tps": 1387.6620601225245,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 2818.8070999995034,
+          "e2e_observed_ms": 2818.8741999993,
+          "last_visible_observed_ms": 2818.8070999995034,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2812.6,
+          "prefill_tps": 1385.1951930598022,
+          "decode_ms": 977.5,
+          "ttft_observed_ms": 2825.1368999999613,
+          "e2e_observed_ms": 3806.5149000003657,
+          "last_visible_observed_ms": 3806.4631000006557,
+          "decode_observed_tps": 15.285437197120984,
+          "tpot_observed_ms": 65.42174666671296,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2819.4,
+          "prefill_tps": 1381.854295240122,
+          "decode_ms": 394.4,
+          "ttft_observed_ms": 2832.1390000000974,
+          "e2e_observed_ms": 3228.243499999735,
+          "last_visible_observed_ms": 3228.194999999687,
+          "decode_observed_tps": 37.87343203995281,
+          "tpot_observed_ms": 26.40373333330596,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2766.4,
+          "prefill_tps": 1379.7715442452284,
+          "decode_ms": 4346.8,
+          "ttft_observed_ms": 2776.924599999802,
+          "e2e_observed_ms": 7124.986699999681,
+          "last_visible_observed_ms": 7124.952199999825,
+          "decode_observed_tps": 29.20864623766402,
+          "tpot_observed_ms": 34.23643779527577,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2855.2,
+          "prefill_tps": 1336.8590641636313,
+          "decode_ms": 4221.8,
+          "ttft_observed_ms": 2867.3816999998962,
+          "e2e_observed_ms": 7090.173399999912,
+          "last_visible_observed_ms": 7090.1255999997375,
+          "decode_observed_tps": 30.075231415290133,
+          "tpot_observed_ms": 33.249951968502685,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14962.49609375,
+        "available_ram_min_mib": 5181.01171875,
+        "violation": null
+      }
+    },
+    "search/threads6-2": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3874.1,
+          "prefill_tps": 1005.6529258408405,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 3889.1858999995748,
+          "e2e_observed_ms": 3889.2588999997315,
+          "last_visible_observed_ms": 3889.1858999995748,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2814.6,
+          "prefill_tps": 1384.2109003055498,
+          "decode_ms": 1.4,
+          "ttft_observed_ms": 2827.894899999592,
+          "e2e_observed_ms": 2827.9445999996824,
+          "last_visible_observed_ms": 2827.894899999592,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2815.9,
+          "prefill_tps": 1383.5718597961575,
+          "decode_ms": 857.8,
+          "ttft_observed_ms": 2825.494100000469,
+          "e2e_observed_ms": 3689.857999999731,
+          "last_visible_observed_ms": 3689.8142000000007,
+          "decode_observed_tps": 17.354681442683248,
+          "tpot_observed_ms": 57.62133999996877,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2812.0,
+          "prefill_tps": 1385.4907539118065,
+          "decode_ms": 403.1,
+          "ttft_observed_ms": 2820.014699999774,
+          "e2e_observed_ms": 3229.0555999998105,
+          "last_visible_observed_ms": 3229.012199999488,
+          "decode_observed_tps": 36.67504080100854,
+          "tpot_observed_ms": 27.266499999980926,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2665.6,
+          "prefill_tps": 1431.9477791116446,
+          "decode_ms": 4138.3,
+          "ttft_observed_ms": 2677.1505000006073,
+          "e2e_observed_ms": 6828.266200000144,
+          "last_visible_observed_ms": 6828.208400000221,
+          "decode_observed_tps": 30.594610593124177,
+          "tpot_observed_ms": 32.68549527558751,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2806.6,
+          "prefill_tps": 1360.0085512720018,
+          "decode_ms": 4170.4,
+          "ttft_observed_ms": 2816.888299999846,
+          "e2e_observed_ms": 6988.109099999747,
+          "last_visible_observed_ms": 6988.047599999845,
+          "decode_observed_tps": 30.447170886041206,
+          "tpot_observed_ms": 32.843774015748025,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14964.17578125,
+        "available_ram_min_mib": 5130.1953125,
+        "violation": null
+      }
+    },
+    "search/threads6-3": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3956.9,
+          "prefill_tps": 984.6091637392908,
+          "decode_ms": 2.5,
+          "ttft_observed_ms": 3970.9960000000137,
+          "e2e_observed_ms": 3971.084599999813,
+          "last_visible_observed_ms": 3970.9960000000137,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2853.4,
+          "prefill_tps": 1365.388659143478,
+          "decode_ms": 1.7,
+          "ttft_observed_ms": 2864.9248000001535,
+          "e2e_observed_ms": 2864.997300000141,
+          "last_visible_observed_ms": 2864.9248000001535,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2826.7,
+          "prefill_tps": 1378.2856334241342,
+          "decode_ms": 925.3,
+          "ttft_observed_ms": 2835.7875000001513,
+          "e2e_observed_ms": 3769.504500000039,
+          "last_visible_observed_ms": 3769.4534000002022,
+          "decode_observed_tps": 16.065704016821417,
+          "tpot_observed_ms": 62.244393333336724,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2827.3,
+          "prefill_tps": 1377.9931383298554,
+          "decode_ms": 411.3,
+          "ttft_observed_ms": 2839.9113000004945,
+          "e2e_observed_ms": 3251.541300000099,
+          "last_visible_observed_ms": 3251.4772000004086,
+          "decode_observed_tps": 36.44616815922585,
+          "tpot_observed_ms": 27.43772666666094,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2689.3,
+          "prefill_tps": 1419.3284497824711,
+          "decode_ms": 4633.9,
+          "ttft_observed_ms": 2703.1454000007216,
+          "e2e_observed_ms": 7340.948500000195,
+          "last_visible_observed_ms": 7340.895000000273,
+          "decode_observed_tps": 27.38397088105237,
+          "tpot_observed_ms": 36.51771338582324,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2849.3,
+          "prefill_tps": 1339.6272768750218,
+          "decode_ms": 4351.4,
+          "ttft_observed_ms": 2861.7841000004773,
+          "e2e_observed_ms": 7215.20320000036,
+          "last_visible_observed_ms": 7215.147600000819,
+          "decode_observed_tps": 29.172845318336048,
+          "tpot_observed_ms": 34.2784527559082,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14966.05859375,
+        "available_ram_min_mib": 5203.859375,
+        "violation": null
+      }
+    },
+    "search/ubatch2048-0": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3665.6,
+          "prefill_tps": 1062.8546486250546,
+          "decode_ms": 1.7,
+          "ttft_observed_ms": 3677.852300000268,
+          "e2e_observed_ms": 3677.8947000002518,
+          "last_visible_observed_ms": 3677.852300000268,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2761.8,
+          "prefill_tps": 1410.67419798682,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 2771.1659000005966,
+          "e2e_observed_ms": 2771.2429000002885,
+          "last_visible_observed_ms": 2771.1659000005966,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2753.9,
+          "prefill_tps": 1414.7209412106467,
+          "decode_ms": 826.9,
+          "ttft_observed_ms": 2767.451400000027,
+          "e2e_observed_ms": 3595.903299999918,
+          "last_visible_observed_ms": 3595.8524000006946,
+          "decode_observed_tps": 18.10717273396328,
+          "tpot_observed_ms": 55.22673333337783,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2733.9,
+          "prefill_tps": 1425.0704122316104,
+          "decode_ms": 383.7,
+          "ttft_observed_ms": 2744.6721999995134,
+          "e2e_observed_ms": 3130.7802000001175,
+          "last_visible_observed_ms": 3130.7300999997096,
+          "decode_observed_tps": 38.85427548560041,
+          "tpot_observed_ms": 25.737193333346415,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2676.9,
+          "prefill_tps": 1425.9030968657776,
+          "decode_ms": 4276.0,
+          "ttft_observed_ms": 2687.712400000237,
+          "e2e_observed_ms": 6967.246400000477,
+          "last_visible_observed_ms": 6967.210100000557,
+          "decode_observed_tps": 29.676380010670528,
+          "tpot_observed_ms": 33.69683228346709,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2758.4,
+          "prefill_tps": 1383.7732018561485,
+          "decode_ms": 4132.3,
+          "ttft_observed_ms": 2770.8247000000483,
+          "e2e_observed_ms": 6909.634200000255,
+          "last_visible_observed_ms": 6909.573400000227,
+          "decode_observed_tps": 30.685603114775855,
+          "tpot_observed_ms": 32.58857244094629,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14964.9765625,
+        "available_ram_min_mib": 5160.5859375,
+        "violation": null
+      }
+    },
+    "search/ubatch2048-1": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 4996.5,
+          "prefill_tps": 779.7458220754528,
+          "decode_ms": 1.9,
+          "ttft_observed_ms": 5006.279100000029,
+          "e2e_observed_ms": 5006.3264000000345,
+          "last_visible_observed_ms": 5006.279100000029,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3448.9,
+          "prefill_tps": 1129.6355359679897,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 3459.6556000005876,
+          "e2e_observed_ms": 3459.7247000001516,
+          "last_visible_observed_ms": 3459.6556000005876,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3467.9,
+          "prefill_tps": 1123.4464661610773,
+          "decode_ms": 915.5,
+          "ttft_observed_ms": 3480.6126000003133,
+          "e2e_observed_ms": 4403.8119999995615,
+          "last_visible_observed_ms": 4403.766999999789,
+          "decode_observed_tps": 16.248636197811027,
+          "tpot_observed_ms": 61.5436266666317,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3136.0,
+          "prefill_tps": 1242.3469387755101,
+          "decode_ms": 388.3,
+          "ttft_observed_ms": 3149.637299999995,
+          "e2e_observed_ms": 3539.1999000003125,
+          "last_visible_observed_ms": 3539.153100000476,
+          "decode_observed_tps": 38.50934929977543,
+          "tpot_observed_ms": 25.967720000032084,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3054.9,
+          "prefill_tps": 1249.4680676945236,
+          "decode_ms": 4437.6,
+          "ttft_observed_ms": 3066.1776000006284,
+          "e2e_observed_ms": 7508.28730000012,
+          "last_visible_observed_ms": 7508.242800000517,
+          "decode_observed_tps": 28.59030524810919,
+          "tpot_observed_ms": 34.976891338581794,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3027.4,
+          "prefill_tps": 1260.8178635132456,
+          "decode_ms": 3807.4,
+          "ttft_observed_ms": 3046.590599999945,
+          "e2e_observed_ms": 6847.39830000035,
+          "last_visible_observed_ms": 6847.3658000002615,
+          "decode_observed_tps": 33.41423612740617,
+          "tpot_observed_ms": 29.92736377953005,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "4f29ff750418b920eb3b9e573ebc54f4e174571b802d6d4cbb92ff39f968bdfb"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7343.5234375,
+        "host_rss_peak_mib": 14824.70703125,
+        "available_ram_min_mib": 5231.48046875,
+        "violation": null
+      }
+    },
+    "search/ubatch2048-2": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 4705.1,
+          "prefill_tps": 828.0376612611846,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 4716.562700000395,
+          "e2e_observed_ms": 4716.627800000424,
+          "last_visible_observed_ms": 4716.562700000395,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3381.1,
+          "prefill_tps": 1152.2877170151726,
+          "decode_ms": 1.6,
+          "ttft_observed_ms": 3392.9874999994354,
+          "e2e_observed_ms": 3393.0272999996305,
+          "last_visible_observed_ms": 3392.9874999994354,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3431.8,
+          "prefill_tps": 1135.264292790955,
+          "decode_ms": 868.1,
+          "ttft_observed_ms": 3446.052599999348,
+          "e2e_observed_ms": 4312.140399999407,
+          "last_visible_observed_ms": 4312.095899999804,
+          "decode_observed_tps": 17.320150158764697,
+          "tpot_observed_ms": 57.73622000003039,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3144.8,
+          "prefill_tps": 1238.8705164080386,
+          "decode_ms": 368.0,
+          "ttft_observed_ms": 3162.561999999525,
+          "e2e_observed_ms": 3523.2378999999128,
+          "last_visible_observed_ms": 3523.189200000161,
+          "decode_observed_tps": 41.594200326468886,
+          "tpot_observed_ms": 24.04181333337571,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3034.5,
+          "prefill_tps": 1257.8678530235625,
+          "decode_ms": 4172.2,
+          "ttft_observed_ms": 3046.5437000002566,
+          "e2e_observed_ms": 7221.117400000367,
+          "last_visible_observed_ms": 7221.06950000034,
+          "decode_observed_tps": 30.42261710300065,
+          "tpot_observed_ms": 32.870281889764435,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "dcac4608a171afc649348f0e493fa2396beaa5d079afb4199c4a79b893d9fbde"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3066.8,
+          "prefill_tps": 1244.6197991391678,
+          "decode_ms": 3643.1,
+          "ttft_observed_ms": 3080.0694999998086,
+          "e2e_observed_ms": 6725.398300000052,
+          "last_visible_observed_ms": 6725.353499999983,
+          "decode_observed_tps": 34.83953513635534,
+          "tpot_observed_ms": 28.703023622048615,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "bb8eb6d72578a03e5077d1201773978c3a5845b3b44e235bcfc5e77a50b15bc7"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7343.5234375,
+        "host_rss_peak_mib": 14794.41796875,
+        "available_ram_min_mib": 5270.0078125,
+        "violation": null
+      }
+    },
+    "search/ubatch2048-3": {
+      "metrics": {
+        "P0": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 3865.1,
+          "prefill_tps": 1007.9946185092236,
+          "decode_ms": 1.7,
+          "ttft_observed_ms": 3874.6265999998286,
+          "e2e_observed_ms": 3874.696799999583,
+          "last_visible_observed_ms": 3874.6265999998286,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "P1": {
+          "n": 1,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2801.9,
+          "prefill_tps": 1390.485028016703,
+          "decode_ms": 1.5,
+          "ttft_observed_ms": 2814.0171000004557,
+          "e2e_observed_ms": 2814.0759000007165,
+          "last_visible_observed_ms": 2814.0171000004557,
+          "decode_observed_tps": null,
+          "tpot_observed_ms": null,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+        },
+        "S0": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2792.4,
+          "prefill_tps": 1395.2155851597192,
+          "decode_ms": 967.8,
+          "ttft_observed_ms": 2810.2756999996927,
+          "e2e_observed_ms": 3775.0066999997216,
+          "last_visible_observed_ms": 3774.9493000001166,
+          "decode_observed_tps": 15.549300820498672,
+          "tpot_observed_ms": 64.3115733333616,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "S1": {
+          "n": 16,
+          "prompt_tokens": 3896,
+          "prompt_read": 3896,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2769.3,
+          "prefill_tps": 1406.85371754595,
+          "decode_ms": 420.6,
+          "ttft_observed_ms": 2780.1998999993884,
+          "e2e_observed_ms": 3202.260199999728,
+          "last_visible_observed_ms": 3202.2135999995953,
+          "decode_observed_tps": 35.543869784304746,
+          "tpot_observed_ms": 28.134246666680458,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "c8bdd6fd81b86c24f18c59a8f21c522dd50bc97c78c453d3d465722b85aa00bd",
+          "json_complete": true
+        },
+        "L0": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2707.0,
+          "prefill_tps": 1410.0480236424087,
+          "decode_ms": 4587.0,
+          "ttft_observed_ms": 2718.9336999999796,
+          "e2e_observed_ms": 7311.162100000729,
+          "last_visible_observed_ms": 7311.123600000428,
+          "decode_observed_tps": 27.655650738656863,
+          "tpot_observed_ms": 36.15897559055471,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "d3df5aa6fe05cc18b7ca8bcdd8100927a9a9cb874e59d4b2a8bacee032bf14c2"
+        },
+        "L1": {
+          "n": 128,
+          "prompt_tokens": 3817,
+          "prompt_read": 3817,
+          "finish": "length",
+          "eos": false,
+          "prefill_ms": 2837.3,
+          "prefill_tps": 1345.2930603038099,
+          "decode_ms": 4217.4,
+          "ttft_observed_ms": 2852.1767000002,
+          "e2e_observed_ms": 7071.078099999795,
+          "last_visible_observed_ms": 7071.022600000106,
+          "decode_observed_tps": 30.10301940632694,
+          "tpot_observed_ms": 33.21925905511737,
+          "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+          "token_ids_sha256": "2f1d95657ce5dad461d526066c89550b7c7b8ce6a65ae4dd33270b8ad846ad45"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7569.5234375,
+        "host_rss_peak_mib": 14964.57421875,
+        "available_ram_min_mib": 5228.9140625,
+        "violation": null
+      }
+    }
+  },
+  "receipts": {
+    "integration-api": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          30460
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-16T08:58:13.504",
+        "removed_at": "2026-10-16T08:58:23.562",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 30460,
+          "exit_code": 0,
+          "elapsed_seconds": 10.056,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "integration-api-repair1": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35824
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-16T08:59:02.150",
+        "removed_at": "2026-10-16T08:59:27.062",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35824,
+          "exit_code": 0,
+          "elapsed_seconds": 24.911,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "integration-baseline/baseline-profile": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35980
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-16T08:56:25.147",
+        "removed_at": "2026-10-16T08:57:07.448",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35980,
+          "exit_code": 0,
+          "elapsed_seconds": 42.301,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/slots2700-0": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          2556
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:27:48.954",
+        "removed_at": "2026-10-15T17:28:20.607",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 2556,
+          "exit_code": 0,
+          "elapsed_seconds": 31.651,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/slots2700-1": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          32924
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:28:21.313",
+        "removed_at": "2026-10-15T17:28:54.199",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 32924,
+          "exit_code": 0,
+          "elapsed_seconds": 32.884,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/slots2700-2": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35456
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:28:54.921",
+        "removed_at": "2026-10-15T17:29:27.936",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35456,
+          "exit_code": 0,
+          "elapsed_seconds": 33.013,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/slots2700-3": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          36516
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:29:28.661",
+        "removed_at": "2026-10-15T17:30:00.689",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 36516,
+          "exit_code": 0,
+          "elapsed_seconds": 32.019,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/threads6-0": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          36676
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:25:36.954",
+        "removed_at": "2026-10-15T17:26:09.170",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 36676,
+          "exit_code": 0,
+          "elapsed_seconds": 32.215,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/threads6-1": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35368
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:26:09.901",
+        "removed_at": "2026-10-15T17:26:42.209",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35368,
+          "exit_code": 0,
+          "elapsed_seconds": 32.307,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/threads6-2": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35688
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:26:42.943",
+        "removed_at": "2026-10-15T17:27:14.684",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35688,
+          "exit_code": 0,
+          "elapsed_seconds": 31.74,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/threads6-3": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          34960
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:27:15.421",
+        "removed_at": "2026-10-15T17:27:48.250",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 34960,
+          "exit_code": 0,
+          "elapsed_seconds": 32.827,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/ubatch2048-0": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          30108
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:23:20.206",
+        "removed_at": "2026-10-15T17:23:51.325",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 30108,
+          "exit_code": 0,
+          "elapsed_seconds": 31.118,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/ubatch2048-1": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          36052
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:23:52.085",
+        "removed_at": "2026-10-15T17:24:27.195",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 36052,
+          "exit_code": 0,
+          "elapsed_seconds": 35.108,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/ubatch2048-2": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35120
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:24:28.085",
+        "removed_at": "2026-10-15T17:25:03.110",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35120,
+          "exit_code": 0,
+          "elapsed_seconds": 35.024,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "search/ubatch2048-3": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          36680
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:25:03.802",
+        "removed_at": "2026-10-15T17:25:36.232",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 36680,
+          "exit_code": 0,
+          "elapsed_seconds": 32.429,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "smoke-ready/baseline-profile": {
+      "child_cleanup": {
+        "all_exited": true,
+        "roots_exited": true,
+        "active_processes_zero": true,
+        "confirm_seconds": 0.0,
+        "confirm_after_terminate_seconds": null,
+        "no_go": false,
+        "processes": [
+          35200
+        ]
+      },
+      "marker": {
+        "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "written_at": "2026-10-15T17:18:15.346",
+        "removed_at": "2026-10-15T17:18:46.641",
+        "retained": false,
+        "outcome": null
+      },
+      "commands": [
+        {
+          "pid": 35200,
+          "exit_code": 0,
+          "elapsed_seconds": 31.294,
+          "timed_out": false
+        }
+      ],
+      "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    }
+  },
+  "raw_artifacts": [
+    {
+      "path": "integration-api-raw.log",
+      "sha256": "738d258e7640714a40ad87c3c00bcc11d82b250dbd74e5a6a8ada3f13b2aaab0",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\integration-api\\raw\\child_00.log",
+      "label": "integration-api"
+    },
+    {
+      "path": "integration-api-repair1-raw.log",
+      "sha256": "207355623b1bbecc4334f4e96db79a22833a56f3772ebbc389eb22c8d4787da3",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\integration-api-repair1\\raw\\child_00.log",
+      "label": "integration-api-repair1"
+    },
+    {
+      "path": "integration-baseline-baseline-profile-raw.log",
+      "sha256": "7f8ecf6439b75a8590c3727adcccbf392dbc49bf58e117d7c13ddab5aaf10759",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\integration-baseline\\baseline-profile\\raw\\child_00.log",
+      "label": "integration-baseline/baseline-profile"
+    },
+    {
+      "path": "search-slots2700-0-raw.log",
+      "sha256": "721bf14f3260b39354c2fbffee166e45a86aefd4d5a11cac387951c7e3d121c3",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\slots2700-0\\raw\\child_00.log",
+      "label": "search/slots2700-0"
+    },
+    {
+      "path": "search-slots2700-1-raw.log",
+      "sha256": "8fc8504ba9c15b5da5d4727f311e942bcf4e9ec1dc681be75bd94c6aaa889ac0",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\slots2700-1\\raw\\child_00.log",
+      "label": "search/slots2700-1"
+    },
+    {
+      "path": "search-slots2700-2-raw.log",
+      "sha256": "d3e2a1f03060704ac81e508f5c3d00e104fc8be59ce9e821a197bdc02eb3bbce",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\slots2700-2\\raw\\child_00.log",
+      "label": "search/slots2700-2"
+    },
+    {
+      "path": "search-slots2700-3-raw.log",
+      "sha256": "ee3311fc3b217c69f7185db24b9e5d7995a279bfd79e197a95ff49662850eb2e",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\slots2700-3\\raw\\child_00.log",
+      "label": "search/slots2700-3"
+    },
+    {
+      "path": "search-threads6-0-raw.log",
+      "sha256": "ec18dbb96f3b3c24cbca93b7be64c8d95c8543f68303717d2efa5383f7e578b6",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\threads6-0\\raw\\child_00.log",
+      "label": "search/threads6-0"
+    },
+    {
+      "path": "search-threads6-1-raw.log",
+      "sha256": "51e9566df9796a75d2dc713fc237e763968c5febda59a32af792621e21a8f5b3",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\threads6-1\\raw\\child_00.log",
+      "label": "search/threads6-1"
+    },
+    {
+      "path": "search-threads6-2-raw.log",
+      "sha256": "a948bd03610ab86649409f959a512ed488936aa52b461def95bfbf3d7c27662b",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\threads6-2\\raw\\child_00.log",
+      "label": "search/threads6-2"
+    },
+    {
+      "path": "search-threads6-3-raw.log",
+      "sha256": "3a9014c7d350618ee205f5241a85a0f26c2671b28e29b0fc18e00daec3f59b49",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\threads6-3\\raw\\child_00.log",
+      "label": "search/threads6-3"
+    },
+    {
+      "path": "search-ubatch2048-0-raw.log",
+      "sha256": "ffd9c2b457f4c0b0adf62d2f08312b5b1263d8f3a83e74eb456250e79760b597",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\ubatch2048-0\\raw\\child_00.log",
+      "label": "search/ubatch2048-0"
+    },
+    {
+      "path": "search-ubatch2048-1-raw.log",
+      "sha256": "666f476eaf5cb7741c26f720b043d3a6dccd66477f353f0bbad5f24b81ec8572",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\ubatch2048-1\\raw\\child_00.log",
+      "label": "search/ubatch2048-1"
+    },
+    {
+      "path": "search-ubatch2048-2-raw.log",
+      "sha256": "8e65ef072e5a9b677355ec0d885f80b39a607d66aaf750350926ef3abf9e1a66",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\ubatch2048-2\\raw\\child_00.log",
+      "label": "search/ubatch2048-2"
+    },
+    {
+      "path": "search-ubatch2048-3-raw.log",
+      "sha256": "a601d238aed6e65e08a1c3aeaf94b1fd1453f4f3023f524582f065295804ea1e",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\search\\ubatch2048-3\\raw\\child_00.log",
+      "label": "search/ubatch2048-3"
+    },
+    {
+      "path": "smoke-ready-baseline-profile-raw.log",
+      "sha256": "c368893fdb4dd114ae432d6dc888d932b25e5042171ccd0df347b8a24b2b74ff",
+      "original_path": "D:\\work\\StrataUnified\\experiments\\single-gpu-20261015\\smoke-ready\\baseline-profile\\raw\\child_00.log",
+      "label": "smoke-ready/baseline-profile"
+    }
+  ],
+  "paired_candidates": [
+    {
+      "id": "ubatch2048",
+      "config": {
+        "slots": 3200,
+        "threads": 8,
+        "ubatch": 2048,
+        "ctx": 4096,
+        "compact": false
+      },
+      "verdict": "NO-GO",
+      "objective_gain_fraction": -0.1007383005663165,
+      "drift_fraction": 0.023095232422390873,
+      "paired_directions_positive": false,
+      "shapes": {
+        "P": {
+          "baseline_ms": [
+            2761.8,
+            2801.9
+          ],
+          "candidate_ms": [
+            3448.9,
+            3381.1
+          ],
+          "ratio": 1.2276003379046316,
+          "drift_fraction": 0.019853587115666232
+        },
+        "S": {
+          "baseline_ms": [
+            3130.7802000001175,
+            3202.260199999728
+          ],
+          "candidate_ms": [
+            3539.1999000003125,
+            3523.2378999999128
+          ],
+          "ratio": 1.1151733375963302,
+          "drift_fraction": 0.022573675670729036
+        },
+        "L": {
+          "baseline_ms": [
+            6909.634200000255,
+            7071.078099999795
+          ],
+          "candidate_ms": [
+            6847.39830000035,
+            6725.398300000052
+          ],
+          "ratio": 0.9708229672961909,
+          "drift_fraction": 0.023095232422390873
+        }
+      },
+      "reason": "no reliable all-gates improvement",
+      "production_approved": false,
+      "quality": "business classification not evaluated"
+    },
+    {
+      "id": "threads6",
+      "config": {
+        "slots": 3200,
+        "threads": 6,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": false
+      },
+      "verdict": "NO-GO",
+      "objective_gain_fraction": 0.0016652938310151022,
+      "drift_fraction": 0.014499538562344946,
+      "paired_directions_positive": false,
+      "shapes": {
+        "P": {
+          "baseline_ms": [
+            2873.8,
+            2853.4
+          ],
+          "candidate_ms": [
+            2807.6,
+            2814.6
+          ],
+          "ratio": 0.9816664338594774,
+          "drift_fraction": 0.0071238999860316
+        },
+        "S": {
+          "baseline_ms": [
+            3204.7419999998965,
+            3251.541300000099
+          ],
+          "candidate_ms": [
+            3228.243499999735,
+            3229.0555999998105
+          ],
+          "ratio": 1.0001573351032396,
+          "drift_fraction": 0.014497288246382412
+        },
+        "L": {
+          "baseline_ms": [
+            7122.140100000252,
+            7215.20320000036
+          ],
+          "candidate_ms": [
+            7090.173399999912,
+            6988.109099999747
+          ],
+          "ratio": 0.9819310457606926,
+          "drift_fraction": 0.014499538562344946
+        }
+      },
+      "reason": "no reliable all-gates improvement",
+      "production_approved": false,
+      "quality": "business classification not evaluated"
+    },
+    {
+      "id": "slots2700",
+      "config": {
+        "slots": 2700,
+        "threads": 8,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": false
+      },
+      "verdict": "NO-GO",
+      "objective_gain_fraction": -0.02539985721917981,
+      "drift_fraction": 0.04096024052781707,
+      "paired_directions_positive": false,
+      "shapes": {
+        "P": {
+          "baseline_ms": [
+            2822.2,
+            2838.3
+          ],
+          "candidate_ms": [
+            2833.0,
+            2832.5
+          ],
+          "ratio": 1.0008833141948592,
+          "drift_fraction": 0.005688543414892806
+        },
+        "S": {
+          "baseline_ms": [
+            3236.7835999993986,
+            3201.6082000000097
+          ],
+          "candidate_ms": [
+            3291.889600000104,
+            3263.090500000544
+          ],
+          "ratio": 1.018108295304621,
+          "drift_fraction": 0.010926765904303038
+        },
+        "L": {
+          "baseline_ms": [
+            6707.4979999997595,
+            6987.983099999838
+          ],
+          "candidate_ms": [
+            7511.214400000426,
+            7430.882999999994
+          ],
+          "ratio": 1.0910239144502094,
+          "drift_fraction": 0.04096024052781707
+        }
+      },
+      "reason": "no reliable all-gates improvement",
+      "production_approved": false,
+      "quality": "business classification not evaluated"
+    }
+  ],
+  "search_identity": {
+    "hardware": {
+      "gpu": {
+        "index": 0,
+        "uuid": "GPU-0a2bdfeb-eea7-313b-946c-03515fd4e1da",
+        "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "compute_capability": "8.9",
+        "vram_total_mib": 8188,
+        "driver_version": "591.74",
+        "cuda_driver_max": "13.1"
+      },
+      "cpu": {
+        "model_name": "AMD Ryzen 9 7945HX with Radeon Graphics",
+        "physical_cores": 16,
+        "logical_cores": 32,
+        "isa": {
+          "avx": true,
+          "avx2": true,
+          "avx512f": true
+        }
+      },
+      "ram": {
+        "total_mib": 32448.5,
+        "commit_limit_mib": 51469.7
+      },
+      "os": "Windows-11-10.0.26200-SP0"
+    },
+    "model": {
+      "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+      "size_bytes": 13676723168,
+      "mtime_utc": "2026-10-08T02:12:47.857127+00:00",
+      "gguf": {
+        "architecture": "qwen35moe",
+        "block_count": 40,
+        "context_length": 262144,
+        "embedding_length": 2048,
+        "expert_count": 256,
+        "expert_used_count": 8,
+        "expert_feed_forward_length": 512,
+        "full_attention_interval": 4,
+        "attention": {
+          "head_count": 16,
+          "head_count_kv": 2,
+          "key_length": 256,
+          "value_length": 256
+        },
+        "ssm": {
+          "conv_kernel": 4,
+          "state_size": 128,
+          "group_count": 16,
+          "time_step_rank": 32,
+          "inner_size": 4096
+        },
+        "nextn_predict_layers": 0,
+        "has_mtp_block": false,
+        "nextn_tensor_bytes": 0,
+        "tensor_count": 733,
+        "tensor_bytes_total": 13665733120,
+        "routed_expert_bytes_total": 11574181888,
+        "non_expert_bytes_total": 2091551232,
+        "routed_expert_layers": 40,
+        "routed_expert_layer_bytes": [
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          314572800
+        ],
+        "role_quant": {
+          "blk.N.attn_gate.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_output.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_qkv.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_v.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_down_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_gate_inp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_inp_shexp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_up_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.post_attention_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_a": [
+            "F32"
+          ],
+          "blk.N.ssm_alpha.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_beta.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_conv1d.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_dt.bias": [
+            "F32"
+          ],
+          "blk.N.ssm_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_out.weight": [
+            "Q6_K"
+          ],
+          "ffn_down_exps": [
+            "IQ3_S",
+            "IQ4_XS"
+          ],
+          "ffn_gate_exps": [
+            "IQ2_S"
+          ],
+          "ffn_up_exps": [
+            "IQ2_S"
+          ],
+          "output.weight": [
+            "Q6_K"
+          ],
+          "output_norm.weight": [
+            "F32"
+          ],
+          "token_embd.weight": [
+            "Q6_K"
+          ]
+        },
+        "role_bytes": {
+          "blk.N.attn_gate.weight": 206438400,
+          "blk.N.attn_k.weight": 8601600,
+          "blk.N.attn_k_norm.weight": 10240,
+          "blk.N.attn_norm.weight": 327680,
+          "blk.N.attn_output.weight": 68812800,
+          "blk.N.attn_q.weight": 137625600,
+          "blk.N.attn_q_norm.weight": 10240,
+          "blk.N.attn_qkv.weight": 412876800,
+          "blk.N.attn_v.weight": 8601600,
+          "blk.N.ffn_down_shexp.weight": 34406400,
+          "blk.N.ffn_gate_inp.weight": 83886080,
+          "blk.N.ffn_gate_inp_shexp.weight": 327680,
+          "blk.N.ffn_gate_shexp.weight": 34406400,
+          "blk.N.ffn_up_shexp.weight": 34406400,
+          "blk.N.post_attention_norm.weight": 327680,
+          "blk.N.ssm_a": 3840,
+          "blk.N.ssm_alpha.weight": 7864320,
+          "blk.N.ssm_beta.weight": 7864320,
+          "blk.N.ssm_conv1d.weight": 3932160,
+          "blk.N.ssm_dt.bias": 3840,
+          "blk.N.ssm_norm.weight": 15360,
+          "blk.N.ssm_out.weight": 206438400,
+          "ffn_down_exps": 4695523328,
+          "ffn_gate_exps": 3439329280,
+          "ffn_up_exps": 3439329280,
+          "output.weight": 417177600,
+          "output_norm.weight": 8192,
+          "token_embd.weight": 417177600
+        }
+      }
+    },
+    "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+    "runtime_id": "CUDA12.8.1/MSVC ea06 canonical serve",
+    "tool_sha256": {
+      "strata_tune.py": "c58c4c37a6da0e6a91456bffcb2b7d9e59f0e62fcc7adde8850fd75db56a3a3e",
+      "strata_fingerprint.py": "f48828574ef613fe299a1a2d1bf229d8a475afdbd9e2e1e7a2c605694b2d22a6",
+      "strata_plan.py": "ffe4885536bc3a951422d86318451d86cda1a6c63452e4aff002756fc5587966",
+      "strata_screen.py": "1d874a2536b1e4fb293676ba9729f2a3e5cfbb7a8277817e05dab6ac361e9b8b",
+      "strata_cost_model.py": "29b2bb73d93934de7d82e7bca94adf7454ce0b7e9c336417aa8b2ba105a912c7",
+      "gguf_reader.py": "5ecf739bb3c2f07bc7f889f7f3a455e3dfdb40068409e10781a1a9b2be289b5e",
+      "_paths.py": "31b0f4d27d66b32793074ad1ff00a7a9b5938dc63dca3ffe79a8de5df7b37d27",
+      "strata_experiment.py": "8e854829437d7cc146ef2ec284f9183ad94ff73913cf73cc0afdd138feeed151",
+      "leased_native.py": "bb2748178a9c23973f29e96e69a862efe643a69abbb16550c2f238676c621b2d",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+    },
+    "workload": {
+      "context": 4096,
+      "max_new": 128,
+      "batch": 1,
+      "manifest_sha256": "f9d771000e6dad1cb1c775130382ee4f01fd66398ccc78647890c656e5d313c1"
+    },
+    "policy": {
+      "mode": "safe",
+      "kv_bytes": 4
+    },
+    "experiment_tools": {
+      "strata_experiment.py": "8e854829437d7cc146ef2ec284f9183ad94ff73913cf73cc0afdd138feeed151",
+      "leased_native.py": "bb2748178a9c23973f29e96e69a862efe643a69abbb16550c2f238676c621b2d",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+    },
+    "quant": "UD-IQ3_S",
+    "python": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "packages": {
+      "psutil": "7.2.2",
+      "pywin32": "312"
+    },
+    "baseline_profile_sha256": "af17e5a08e43a59e0248a969cc2eafb324e2c207698cdfd290a2e479b1732fcc",
+    "pack_index_sha256": "91224828e55ccdf519a81cb2af5b9ca7df3178b25f7ffaa0782db731b2bbd6da",
+    "pack_files": {
+      "native_experts.txt": [
+        2672,
+        1791514612920853700
+      ]
+    }
+  },
+  "search_spec": {
+    "schema": "strata-single-gpu-experiment/1",
+    "cwd": "D:/work/StrataUnified",
+    "engine": {
+      "path": "D:/work/StrataUnified/build-session-correctness/strata.exe",
+      "sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+    },
+    "model": {
+      "path": "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+      "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+      "quant": "UD-IQ3_S",
+      "sha_trust": "registered previously fully verified; no rehash"
+    },
+    "pack": "models/pack",
+    "lease": {
+      "tool": "D:\\work\\StrataUnified\\strata\\backends\\qwen35_llama\\tools\\gpu_lock.py",
+      "lock": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock"
+    },
+    "runtime": {
+      "id": "CUDA12.8.1/MSVC ea06 canonical serve",
+      "cuda_bin": "D:\\work\\Strata魔改\\runtime\\cuda-12.8.1\\bin",
+      "env": {
+        "STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1",
+        "STRATA_QWEN35_PACKED_IDS": "1",
+        "STRATA_QWEN35_EXPERT_ORDER": "count_desc"
+      }
+    },
+    "budget": {
+      "max_native": 12,
+      "native_timeout_s": 120,
+      "window_s": 1200,
+      "wait_s": 60
+    },
+    "resources": {
+      "max_gpu_used_mib": 8060,
+      "max_host_rss_mib": 28000,
+      "min_available_ram_mib": 256,
+      "baseline_gpu_estimate_mib": 7697.5234375,
+      "estimated_host_mib": 14000,
+      "baseline_estimate_source": "measuredP3-6 wholecard sampled peak+128MiB margin; online guard still mandatory"
+    },
+    "baseline": {
+      "id": "production-reference",
+      "config": {
+        "slots": 3200,
+        "threads": 8,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": false
+      }
+    },
+    "candidates": [],
+    "shapes": [
+      {
+        "id": "P",
+        "tokens_file": "D:\\work\\Strata魔改\\results\\20261012-qwen35-decode-quality157\\fixtures\\fixture-benign\\prompt.tokens",
+        "sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+        "prompt_tokens": 3896,
+        "max_new": 1
+      },
+      {
+        "id": "S",
+        "tokens_file": "D:\\work\\Strata魔改\\results\\20261012-qwen35-decode-quality157\\fixtures\\fixture-benign\\prompt.tokens",
+        "sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+        "prompt_tokens": 3896,
+        "max_new": 16
+      },
+      {
+        "id": "L",
+        "tokens_file": "D:\\work\\Strata魔改\\results\\20261012-qwen35-decode-m0-repair156\\fixtures\\l-risk-explain\\prompt.tokens",
+        "sha256": "a920a130b9ab81ebc8f958edd396ffd0393403bfe1658b5347076900ff0a3ac5",
+        "prompt_tokens": 3817,
+        "max_new": 128
+      }
+    ],
+    "policy": {
+      "min_gain": 0.05,
+      "early_regression": 0.15
+    },
+    "baseline_profile": "D:/work/StrataUnified/experiments/single-gpu-20261015/smoke-ready/postprocessed-profile.json"
+  },
+  "final_reference_identity": {
+    "hardware": {
+      "gpu": {
+        "index": 0,
+        "uuid": "GPU-0a2bdfeb-eea7-313b-946c-03515fd4e1da",
+        "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "compute_capability": "8.9",
+        "vram_total_mib": 8188,
+        "driver_version": "591.74",
+        "cuda_driver_max": "13.1"
+      },
+      "cpu": {
+        "model_name": "AMD Ryzen 9 7945HX with Radeon Graphics",
+        "physical_cores": 16,
+        "logical_cores": 32,
+        "isa": {
+          "avx": true,
+          "avx2": true,
+          "avx512f": true
+        }
+      },
+      "ram": {
+        "total_mib": 32448.5,
+        "commit_limit_mib": 51469.7
+      },
+      "os": "Windows-11-10.0.26200-SP0"
+    },
+    "model": {
+      "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+      "size_bytes": 13676723168,
+      "mtime_utc": "2026-10-08T02:12:47.857127+00:00",
+      "gguf": {
+        "architecture": "qwen35moe",
+        "block_count": 40,
+        "context_length": 262144,
+        "embedding_length": 2048,
+        "expert_count": 256,
+        "expert_used_count": 8,
+        "expert_feed_forward_length": 512,
+        "full_attention_interval": 4,
+        "attention": {
+          "head_count": 16,
+          "head_count_kv": 2,
+          "key_length": 256,
+          "value_length": 256
+        },
+        "ssm": {
+          "conv_kernel": 4,
+          "state_size": 128,
+          "group_count": 16,
+          "time_step_rank": 32,
+          "inner_size": 4096
+        },
+        "nextn_predict_layers": 0,
+        "has_mtp_block": false,
+        "nextn_tensor_bytes": 0,
+        "tensor_count": 733,
+        "tensor_bytes_total": 13665733120,
+        "routed_expert_bytes_total": 11574181888,
+        "non_expert_bytes_total": 2091551232,
+        "routed_expert_layers": 40,
+        "routed_expert_layer_bytes": [
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          314572800
+        ],
+        "role_quant": {
+          "blk.N.attn_gate.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_output.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_qkv.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_v.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_down_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_gate_inp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_inp_shexp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_up_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.post_attention_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_a": [
+            "F32"
+          ],
+          "blk.N.ssm_alpha.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_beta.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_conv1d.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_dt.bias": [
+            "F32"
+          ],
+          "blk.N.ssm_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_out.weight": [
+            "Q6_K"
+          ],
+          "ffn_down_exps": [
+            "IQ3_S",
+            "IQ4_XS"
+          ],
+          "ffn_gate_exps": [
+            "IQ2_S"
+          ],
+          "ffn_up_exps": [
+            "IQ2_S"
+          ],
+          "output.weight": [
+            "Q6_K"
+          ],
+          "output_norm.weight": [
+            "F32"
+          ],
+          "token_embd.weight": [
+            "Q6_K"
+          ]
+        },
+        "role_bytes": {
+          "blk.N.attn_gate.weight": 206438400,
+          "blk.N.attn_k.weight": 8601600,
+          "blk.N.attn_k_norm.weight": 10240,
+          "blk.N.attn_norm.weight": 327680,
+          "blk.N.attn_output.weight": 68812800,
+          "blk.N.attn_q.weight": 137625600,
+          "blk.N.attn_q_norm.weight": 10240,
+          "blk.N.attn_qkv.weight": 412876800,
+          "blk.N.attn_v.weight": 8601600,
+          "blk.N.ffn_down_shexp.weight": 34406400,
+          "blk.N.ffn_gate_inp.weight": 83886080,
+          "blk.N.ffn_gate_inp_shexp.weight": 327680,
+          "blk.N.ffn_gate_shexp.weight": 34406400,
+          "blk.N.ffn_up_shexp.weight": 34406400,
+          "blk.N.post_attention_norm.weight": 327680,
+          "blk.N.ssm_a": 3840,
+          "blk.N.ssm_alpha.weight": 7864320,
+          "blk.N.ssm_beta.weight": 7864320,
+          "blk.N.ssm_conv1d.weight": 3932160,
+          "blk.N.ssm_dt.bias": 3840,
+          "blk.N.ssm_norm.weight": 15360,
+          "blk.N.ssm_out.weight": 206438400,
+          "ffn_down_exps": 4695523328,
+          "ffn_gate_exps": 3439329280,
+          "ffn_up_exps": 3439329280,
+          "output.weight": 417177600,
+          "output_norm.weight": 8192,
+          "token_embd.weight": 417177600
+        }
+      }
+    },
+    "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+    "runtime_id": "CUDA12.8.1/MSVC ea06 canonical serve",
+    "tool_sha256": {
+      "strata_tune.py": "c58c4c37a6da0e6a91456bffcb2b7d9e59f0e62fcc7adde8850fd75db56a3a3e",
+      "strata_fingerprint.py": "f48828574ef613fe299a1a2d1bf229d8a475afdbd9e2e1e7a2c605694b2d22a6",
+      "strata_plan.py": "ffe4885536bc3a951422d86318451d86cda1a6c63452e4aff002756fc5587966",
+      "strata_screen.py": "1d874a2536b1e4fb293676ba9729f2a3e5cfbb7a8277817e05dab6ac361e9b8b",
+      "strata_cost_model.py": "29b2bb73d93934de7d82e7bca94adf7454ce0b7e9c336417aa8b2ba105a912c7",
+      "gguf_reader.py": "5ecf739bb3c2f07bc7f889f7f3a455e3dfdb40068409e10781a1a9b2be289b5e",
+      "_paths.py": "31b0f4d27d66b32793074ad1ff00a7a9b5938dc63dca3ffe79a8de5df7b37d27",
+      "strata_experiment.py": "badc76d85dafc52f2848fa2b185323846be46e169452dabd182a0c563674df2d",
+      "leased_native.py": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+    },
+    "workload": {
+      "context": 4096,
+      "max_new": 128,
+      "batch": 1,
+      "manifest_sha256": "acce1f6ed9f170a1ab8a3ac58c66b4b53824106735f41c5ef069fb664e26b99d"
+    },
+    "policy": {
+      "mode": "safe",
+      "kv_bytes": 4
+    },
+    "experiment_tools": {
+      "strata_experiment.py": "badc76d85dafc52f2848fa2b185323846be46e169452dabd182a0c563674df2d",
+      "leased_native.py": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111",
+      "strata_tokenizer.py": "9b0327e25aa62754406a924db6cc137e6edb1d93c7af76a4f3d14a8920ea72c8",
+      "score_api.py": "046a0b311470fdc21a6011f3ba80072f9d6ad165fb9204a2accea261a2e3b22c"
+    },
+    "telemetry_source_sha256": "aa5bdf75f55861ce761115ddab4c4f3c38410c841284e52d1fc7a069ca9b3a7f",
+    "quant": "UD-IQ3_S",
+    "python": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "packages": {
+      "psutil": "7.2.2",
+      "pywin32": "312",
+      "regex": "2026.9.29",
+      "jinja2": "3.1.6"
+    },
+    "pack_index_sha256": "91224828e55ccdf519a81cb2af5b9ca7df3178b25f7ffaa0782db731b2bbd6da",
+    "pack_files": {
+      "native_experts.txt": [
+        2672,
+        1791514612920853700
+      ]
+    }
+  },
+  "integration_gates": {
+    "short_reset_ok": true,
+    "short_score_ok": true,
+    "short_cursor": true,
+    "save_load_save_sha": true,
+    "load_no_logits_refused": true,
+    "load_refusal_state_unchanged": true,
+    "load_append_cursor": true,
+    "long_reset_ok": true,
+    "long_score_ok": true,
+    "cancel_actual": true,
+    "cancel_cursor": true,
+    "cancel_recovery_cursor": true,
+    "overflow_refused": true,
+    "overflow_state_unchanged": true,
+    "eos_prompt_reset_ok": true,
+    "eos_prompt_score_ok": true,
+    "real_eos": true,
+    "eos_cursor": true,
+    "models": true,
+    "shared_chat": true,
+    "chat_real_eos_json": true,
+    "score_keep": true,
+    "owner_blocks_chat_no_write": true,
+    "continue": true,
+    "stale_revision_no_write": true,
+    "continue_eos": true,
+    "decisions_uncalibrated": true,
+    "session_released": true,
+    "chat_real_template": true,
+    "stream_unsupported_no_write": true,
+    "chat_private_state_reset": true
+  },
+  "http": [
+    {
+      "method": "GET",
+      "path": "/v1/models",
+      "status": 200,
+      "response": {
+        "object": "list",
+        "data": [
+          {
+            "id": "strata-qwen35",
+            "object": "model",
+            "owned_by": "local-strata"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v1/capabilities",
+      "status": 200,
+      "response": {
+        "protocol": "strata-serve-v1",
+        "continuous_requests": true,
+        "cancel": true,
+        "state_isolation": true,
+        "prefix_cache": false,
+        "batching": false,
+        "mtp": {
+          "available": false,
+          "enabled": false,
+          "default": false,
+          "k": null
+        },
+        "expert_formats": [
+          "Q4_0",
+          "Q4_1",
+          "Q5_0",
+          "Q5_1",
+          "Q8_0",
+          "Q4_K",
+          "Q5_K",
+          "Q6_K",
+          "IQ2_XXS",
+          "IQ2_XS",
+          "IQ3_XXS",
+          "IQ4_NL",
+          "IQ3_S",
+          "IQ2_S",
+          "IQ4_XS",
+          "IQ1_M",
+          "Q2_0"
+        ],
+        "context_max": 4096,
+        "logits_read": true,
+        "score_explicit_candidate_ids": true,
+        "score_max_candidate_ids": 2048,
+        "state_keep_score": true,
+        "session_continue": true,
+        "state_export": true,
+        "disk_kv": false,
+        "vision": false,
+        "backend": "qwen35_llama",
+        "batching_contract": "1",
+        "service": "strata-unified-mvp/1",
+        "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+        "active_backend": "qwen35_llama",
+        "service_session_contract": "opaque-lease-revision/1",
+        "chat_completions": true,
+        "chat_streaming": false,
+        "chat_disconnect_cancel": false,
+        "chat_prefix_reuse": false,
+        "shared_executor": true,
+        "model_alias": "strata-qwen35"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200,
+      "response": {
+        "id": "chatcmpl-879c1ae30fe1401b9ee6db0b7ec56764",
+        "object": "chat.completion",
+        "created": 1792112361,
+        "model": "strata-qwen35",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "{\n\"risk\": 0,\n\"violation\": false\n}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 3896,
+          "completion_tokens": 17,
+          "total_tokens": 3913
+        },
+        "session": null,
+        "prefix_reused": false,
+        "engine_timing": {
+          "prefill_ms": 2721.8,
+          "decode_ms": 419.1
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/score",
+      "status": 200,
+      "response": {
+        "logprobs": [
+          {
+            "id": 90,
+            "logprob": -0.116
+          },
+          {
+            "id": 4754,
+            "logprob": -2.2494
+          },
+          {
+            "id": 13215,
+            "logprob": -6.1471
+          },
+          {
+            "id": 1,
+            "logprob": -7.3827
+          },
+          {
+            "id": 5202,
+            "logprob": -8.6236
+          }
+        ],
+        "pos": 3895,
+        "full_vocab_softmax": true,
+        "generated_tokens": 0,
+        "usage": {
+          "prompt_tokens": 3896,
+          "prompt_ms": 2722.2,
+          "prompt_read": 3896
+        },
+        "keep": true,
+        "session": {
+          "id": "kZUQzDzx61NXuLtLfca_qO-5vEeeuXjU5WkrXCaLOPw",
+          "revision": 1
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 409,
+      "response": {
+        "error": "session ownership or revision conflict; no engine command was sent",
+        "error_source": "service"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/continue",
+      "status": 200,
+      "response": {
+        "tokens": [
+          90,
+          198,
+          1,
+          78151,
+          763,
+          220,
+          15,
+          11,
+          198,
+          1,
+          9676,
+          33805,
+          763,
+          867,
+          198,
+          92
+        ],
+        "text": "{\n\"risk\": 0,\n\"violation\": false\n}",
+        "finish": "length",
+        "reused": 3896,
+        "prompt_read": 0,
+        "prompt_tokens": 0,
+        "generated_tokens": 16,
+        "usage": {
+          "prompt_tokens": 0,
+          "prompt_ms": 0.0,
+          "prompt_read": 0
+        },
+        "session": {
+          "id": "kZUQzDzx61NXuLtLfca_qO-5vEeeuXjU5WkrXCaLOPw",
+          "revision": 2
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/continue",
+      "status": 409,
+      "response": {
+        "error": "session ownership or revision conflict; no engine command was sent",
+        "error_source": "service"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/continue",
+      "status": 200,
+      "response": {
+        "tokens": [
+          248046
+        ],
+        "text": "<|im_end|>",
+        "finish": "stop",
+        "reused": 3912,
+        "prompt_read": 0,
+        "prompt_tokens": 0,
+        "generated_tokens": 1,
+        "usage": {
+          "prompt_tokens": 0,
+          "prompt_ms": 0.0,
+          "prompt_read": 0
+        },
+        "session": {
+          "id": "kZUQzDzx61NXuLtLfca_qO-5vEeeuXjU5WkrXCaLOPw",
+          "revision": 3
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/decisions",
+      "status": 200,
+      "response": {
+        "kind": "choice",
+        "candidates": [
+          {
+            "token_ids": [
+              15
+            ],
+            "logprob": -8.0195,
+            "full_vocab_probability": 0.00032898447393480074,
+            "conditional_probability": 0.03267088656793604,
+            "probability": 0.00032898447393480074
+          },
+          {
+            "token_ids": [
+              16
+            ],
+            "logprob": -5.1061,
+            "full_vocab_probability": 0.006059669611146204,
+            "conditional_probability": 0.6017754459262477,
+            "probability": 0.006059669611146204
+          },
+          {
+            "token_ids": [
+              17
+            ],
+            "logprob": -5.9632,
+            "full_vocab_probability": 0.0025716694487874963,
+            "conditional_probability": 0.25538810341613266,
+            "probability": 0.0025716694487874963
+          },
+          {
+            "token_ids": [
+              18
+            ],
+            "logprob": -6.804,
+            "full_vocab_probability": 0.0011093289455862089,
+            "conditional_probability": 0.11016556408968356,
+            "probability": 0.0011093289455862089
+          }
+        ],
+        "pos": 0,
+        "full_vocab_softmax": true,
+        "generated_tokens": 0,
+        "usage": {
+          "prompt_tokens": 1,
+          "prompt_ms": 40.2,
+          "prompt_read": 1
+        },
+        "keep": false,
+        "label_mass": 0.01006965247945471,
+        "label_mass_covers_distribution": false,
+        "label_mass_tolerance": 0.001,
+        "calibrated": false,
+        "probability_scopes": {
+          "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable across requests; the sum over this candidate set is at most 1.",
+          "conditional_probability": "full_vocab_probability / label_mass: meaningful only within this candidate set; not comparable across different candidate sets.",
+          "business_confidence": "not provided: no calibration exists, so these numbers are not confidences; e.g. a label_mass of 0.31 means about 69% of the distribution mass lies outside the candidate set."
+        },
+        "session": null
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "response": {
+        "engine_state": {
+          "loaded": false,
+          "pos": 0,
+          "bytes": 748,
+          "path": null,
+          "covers": [
+            "attn_kv",
+            "gdn_state",
+            "conv",
+            "pos"
+          ],
+          "session": false,
+          "origin": null,
+          "file_bytes": null,
+          "payload_bytes": null,
+          "max_context": 4096,
+          "container_version": 1,
+          "model_fp_prefix": "0d4160ef57f03a80",
+          "not_covered": [
+            "logits",
+            "sampler_rng_state",
+            "expert_cache",
+            "pack",
+            "bridge_counters",
+            "rollback_history"
+          ]
+        },
+        "armed": false
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200,
+      "response": {
+        "id": "chatcmpl-aed78489f932426584ba059de8719626",
+        "object": "chat.completion",
+        "created": 1792112365,
+        "model": "strata-qwen35",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "好"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 18,
+          "completion_tokens": 2,
+          "total_tokens": 20
+        },
+        "session": null,
+        "prefix_reused": false,
+        "engine_timing": {
+          "prefill_ms": 154.3,
+          "decode_ms": 84.9
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 501,
+      "response": {
+        "error": "streaming Chat is not implemented in this unified MVP",
+        "error_source": "service"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "response": {
+        "engine_state": {
+          "loaded": false,
+          "pos": 0,
+          "bytes": 748,
+          "path": null,
+          "covers": [
+            "attn_kv",
+            "gdn_state",
+            "conv",
+            "pos"
+          ],
+          "session": false,
+          "origin": null,
+          "file_bytes": null,
+          "payload_bytes": null,
+          "max_context": 4096,
+          "container_version": 1,
+          "model_fp_prefix": "0d4160ef57f03a80",
+          "not_covered": [
+            "logits",
+            "sampler_rng_state",
+            "expert_cache",
+            "pack",
+            "bridge_counters",
+            "rollback_history"
+          ]
+        },
+        "armed": false
+      }
+    }
+  ],
+  "state_files": {
+    "state1.bin": {
+      "sha256": "a196f5eeff5fe5fffa3cf7496f6b622e2c934e776f29765662754622fde8a7b6",
+      "bytes": 146076436
+    },
+    "state2.bin": {
+      "sha256": "a196f5eeff5fe5fffa3cf7496f6b622e2c934e776f29765662754622fde8a7b6",
+      "bytes": 146076436
+    }
+  },
+  "failed_integration": {
+    "error": "AssertionError('cancel_cursor')",
+    "gates": {
+      "short_cursor": true,
+      "save_load_save_sha": true,
+      "load_no_logits_refused": true,
+      "load_refusal_state_unchanged": true,
+      "load_append_cursor": true,
+      "cancel_actual": true,
+      "cancel_cursor": false
+    },
+    "retry": false
+  },
+  "counts": {
+    "model_launches": 16,
+    "search_launches": 12,
+    "search_requests": 72,
+    "integration_gates": 31,
+    "cpu_full": 190,
+    "cpu_final_unified": 8,
+    "cpu_full_final": 191,
+    "cpu_full_final_seconds": 64.183
+  },
+  "observation_artifacts": [
+    {
+      "label": "integration-baseline/baseline-profile",
+      "path": "integration-baseline-baseline-profile-observations.json",
+      "sha256": "69a382958616f479016b512588a4e5ddfa32c396a842eabc02a46a330e5067b4"
+    },
+    {
+      "label": "search/slots2700-0",
+      "path": "search-slots2700-0-observations.json",
+      "sha256": "3ae437062f71b4c36dd4255605eca73a232e066347344b9670c69a859eaffeff"
+    },
+    {
+      "label": "search/slots2700-1",
+      "path": "search-slots2700-1-observations.json",
+      "sha256": "057abfb70c8bf0b36980d454b88993881b24bb70b09eee872381c3d9b4275ee4"
+    },
+    {
+      "label": "search/slots2700-2",
+      "path": "search-slots2700-2-observations.json",
+      "sha256": "16fcadb25fcb50123c553e974dfd1074f0dcbe534651bf1948c2be6229473b0f"
+    },
+    {
+      "label": "search/slots2700-3",
+      "path": "search-slots2700-3-observations.json",
+      "sha256": "1b3c85b5e68c873c960e9f493510b0052764ff7bf705b9fcc2ed379cb4c0ca8b"
+    },
+    {
+      "label": "search/threads6-0",
+      "path": "search-threads6-0-observations.json",
+      "sha256": "34e37d1211dbeb8106112acd21004194fbcdc1ddca104ecbb75e21ddaa6f2c51"
+    },
+    {
+      "label": "search/threads6-1",
+      "path": "search-threads6-1-observations.json",
+      "sha256": "69aa557afcd63a08973fd7e819997e455a4dc45477389312d4d93bd93c7763a9"
+    },
+    {
+      "label": "search/threads6-2",
+      "path": "search-threads6-2-observations.json",
+      "sha256": "7a38c519093f3b7dabb7cafa53bf80fa68e7b39ec525a4fd1af8506047bb1f55"
+    },
+    {
+      "label": "search/threads6-3",
+      "path": "search-threads6-3-observations.json",
+      "sha256": "bff3c789f16b8de1f564eb171a646376bd16cba04e7a7fb0c65a315d4b99a513"
+    },
+    {
+      "label": "search/ubatch2048-0",
+      "path": "search-ubatch2048-0-observations.json",
+      "sha256": "4dbc2784a40b7d1319c7f0c910e3d9b353940d4c16a01aac3cedd5c8ec55c4cb"
+    },
+    {
+      "label": "search/ubatch2048-1",
+      "path": "search-ubatch2048-1-observations.json",
+      "sha256": "75baaba486d463b78f881c4665aab12b57658649a2e9714354dfb31aaff47e35"
+    },
+    {
+      "label": "search/ubatch2048-2",
+      "path": "search-ubatch2048-2-observations.json",
+      "sha256": "7310ef175dcb8c5fc3c8cfb2fe9843aacce396acfe0b416b61486746d9fada33"
+    },
+    {
+      "label": "search/ubatch2048-3",
+      "path": "search-ubatch2048-3-observations.json",
+      "sha256": "9330dfbc8399c18119db1bb6ea1752555428375c9de9c0abf740c07dd56bb399"
+    }
+  ]
+}

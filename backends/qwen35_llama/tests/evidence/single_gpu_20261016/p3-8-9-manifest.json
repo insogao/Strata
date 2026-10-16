@@ -1,0 +1,43 @@
+{
+  "started_at": "2026-10-15T09:36:28.615944+00:00",
+  "stage": "P3-8/P3-9 integrated maintenance + shared API",
+  "scope": "one current baseline performance refresh + one same-engine correctness/HTTP integration native;no long exact replay expansion",
+  "budget": {
+    "native": 2,
+    "model_starts": 2,
+    "internal_requests_max": 66,
+    "build": 0,
+    "trace": 0,
+    "cpu_full_runs": 1,
+    "cpu_limit_s": 180,
+    "native_timeout_s": 120,
+    "window_s": 1200,
+    "repair": 0
+  },
+  "source_ownership": [
+    "single-gpu-autotune branch tools only; native binary ea06 unchanged",
+    "new unified frontend modules; oldscoreAPI unmodified"
+  ],
+  "performance_source_note": "P3-7 measurement finished before transport CtrlC isolation and identity-dependency hardening. Prior measured Profiles fail current tool identity check by design; raw actual results preserved. Fresh P3-8 baseline binds final tool versions. No candidate is installed or promoted.",
+  "P3-7": [
+    {
+      "id": "ubatch2048",
+      "verdict": "NO-GO",
+      "gain": -0.1007383005663165,
+      "drift": 0.023095232422390873
+    },
+    {
+      "id": "threads6",
+      "verdict": "NO-GO",
+      "gain": 0.0016652938310151022,
+      "drift": 0.014499538562344946
+    },
+    {
+      "id": "slots2700",
+      "verdict": "NO-GO",
+      "gain": -0.02539985721917981,
+      "drift": 0.04096024052781707
+    }
+  ],
+  "next": "fullCPU;fresh P/S/L6-request reference;oneGPU SCORE/keep/GEN/EOS/cursor/SAVELOAD/STOP/error + unifiedHTTPChat/Score/Decisions/Session/revision conflict"
+}

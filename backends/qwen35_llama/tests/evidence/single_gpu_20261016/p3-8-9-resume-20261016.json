@@ -1,0 +1,20 @@
+{
+  "started_at": "2026-10-16T00:56:23.472690+00:00",
+  "reason": "User continue after interruption; old window expired; preserve previous manifest and cumulative budgets",
+  "prior_native_used": 0,
+  "remaining_native": 2,
+  "prior_cpu_full_runs": 1,
+  "cpu_result": "190 PASS 65.011s",
+  "remaining_build": 0,
+  "remaining_trace": 0,
+  "window_s": 1200,
+  "native_timeout_s": 120,
+  "internal_requests_remaining": 66,
+  "scope": "fresh final-tool reference plus same-engine native and unified API integration; startup bind failure cleanup tightened before launch",
+  "source_sha256": {
+    "leased_native.py": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb",
+    "strata_experiment.py": "badc76d85dafc52f2848fa2b185323846be46e169452dabd182a0c563674df2d",
+    "strata_unified.py": "6cf140af20cd6c8b21308145095660c07d0dc4c0e3ec4df8398ca11dede32b45",
+    "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+  }
+}
