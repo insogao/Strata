@@ -3,9 +3,13 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-16。当前唯一后续分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
+更新时间：2026-10-16。当前研发分支 `codex/workload-decode-diagnostics`，基于 PR #7；以下上一轮分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
 
 ## 0. 一句话状态
+
+**最新 P3-10…P3-14**：历史基线完整性与当前任务兼容性分开校验；真实 W1/W2/W3 工作流可测，Score→Continue 无重复 Prefill；单卡诊断复现冷/热差异并观测软件功耗限制，完整根因未定位。COMPACT 试验实际退回 uniform，判配置未生效，不能当布局收益/失败结论，已补启动前/后实配守卫。统一入口新增 SSE、断连取消、丢失 keep 响应的所有权清理、deadline 和有界长服务退出。新交付206 CPU tests、真实10 native、最终20服务门、667新证据复核通过；性能/业务/生产验收仍开放。[本轮报告](WORKFLOW_DECODE_DELIVERY_20261016.md)。
+
+以下 P3-5…P3-9 与 PR #5 为保留历史。
 
 **最新 P3-5…P3-9**：PR #4 的保守 Profile 生命周期成为 canonical；PR #6 的 inspect/screen/plan 操作并入同一入口，旧重复 PR 由新 PR 取代，不串联合并。真实单 GPU 自动执行器及统一 Chat/Score/Decisions/Session MVP 已实现。三候选 ABBA/12 native/72 请求均 NO-GO；不安装 Profile，不改3200默认。最终基线身份检查通过；最终191 CPU tests、真实集成31门、307证据复核通过。新一日 Decode 下降原因未定位，性能发布门仍开放。完整结果、失败、限制和原始证据索引见 [UNIFIED_SINGLE_GPU_DELIVERY.md](UNIFIED_SINGLE_GPU_DELIVERY.md)。
 

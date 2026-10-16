@@ -1,0 +1,15 @@
+{
+  "historical_content_sha256": "8666f32317cf4ffacf63208e062dedaf2f562ae7d1cd8814e8be7e76f4dd9e5e",
+  "integrity": {
+    "valid": true,
+    "reasons": []
+  },
+  "current_compatibility": {
+    "valid": false,
+    "reasons": [
+      "baseline incompatible identity: experiment_tools",
+      "baseline incompatible identity: tool_sha256"
+    ],
+    "contract": "baseline-search-compatibility/1"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-16T03:27:11.862428+00:00",
+  "battery": {
+    "percent": 100,
+    "secsleft": -2,
+    "power_plugged": true
+  },
+  "power_scheme": "电源方案 GUID: 16edbccd-dee9-4ec4-ace5-2f0b5f2a8975  (安静模式)",
+  "note": "post-run snapshot only; cannot reconstruct historical AC/power mode"
+}

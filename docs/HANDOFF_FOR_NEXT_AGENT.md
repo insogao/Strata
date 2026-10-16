@@ -1,3 +1,17 @@
+# Current continuation — P3-10…P3-14 / 2026-10-16
+
+Branch codex/workload-decode-diagnostics, based on PR #7 7a30da89.
+Read [WORKFLOW_DECODE_DELIVERY_20261016.md](WORKFLOW_DECODE_DELIVERY_20261016.md).
+Historical baseline integrity is separate from current compatibility; W1/W2/W3
+are measured. COMPACT did not apply without a profile, not an actual layout
+comparison. Decode cause remains partly unknown; no speed winner. Cooperative
+SSE and disconnect/response-lost ownership cleanup pass real service gates.
+Only single GPU; no main merge/default change/MTP enablement/OpenCode/automation.
+
+The following handoffs remain historical records.
+
+---
+
 # Current continuation — 2026-10-16
 
 Latest user scope and implementation supersede the historical next-step list below.

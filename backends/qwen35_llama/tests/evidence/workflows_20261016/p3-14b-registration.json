@@ -1,0 +1,11 @@
+{
+  "started_at": "2026-10-16T03:33:08.964654+00:00",
+  "scope": "SCORE keep response lost on disconnect must not leave unreachable owner; same busy lock, exact-revision reset on response-write failure, no ScoreAPI/native changes",
+  "cumulative_native_used": 9,
+  "additional_native": 1,
+  "service_lifetime_s": 90,
+  "internal_cap": 60,
+  "window_s": 1200,
+  "repair": 0,
+  "reason": "review discovered non-Chat endpoints need same abandonment handling, not just SSE Chat"
+}

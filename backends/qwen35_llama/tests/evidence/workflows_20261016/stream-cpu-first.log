@@ -1,0 +1,59 @@
+test_chat_cannot_steal_score_owner_and_explicit_owner_reset_releases (test_strata_unified.UnifiedTests.test_chat_cannot_steal_score_owner_and_explicit_owner_reset_releases) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+ok
+test_corrupt_generation_quarantines_same_engine_for_all_routes (test_strata_unified.UnifiedTests.test_corrupt_generation_quarantines_same_engine_for_all_routes) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+ok
+test_disconnect_during_prefill_drains_and_next_request_recovers (test_strata_unified.UnifiedTests.test_disconnect_during_prefill_drains_and_next_request_recovers) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_invalid_prompt_refusal_cleans_up_before_next_request (test_strata_unified.UnifiedTests.test_invalid_prompt_refusal_cleans_up_before_next_request) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+ok
+test_official_backend_is_not_silently_substituted (test_strata_unified.UnifiedTests.test_official_backend_is_not_silently_substituted) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 501 -
+ok
+test_one_busy_lock_serializes_chat_and_score (test_strata_unified.UnifiedTests.test_one_busy_lock_serializes_chat_and_score) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 503 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_one_entry_discovers_routes_and_chat_clears_private_state (test_strata_unified.UnifiedTests.test_one_entry_discovers_routes_and_chat_clears_private_state) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/models HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_server_bind_failure_releases_owned_native_and_link (test_strata_unified.UnifiedTests.test_server_bind_failure_releases_owned_native_and_link) ... ERROR
+test_sse_chunks_finish_and_next_request_uses_clean_engine (test_strata_unified.UnifiedTests.test_sse_chunks_finish_and_next_request_uses_clean_engine) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_stream_ownership_refusal_is_json_before_sse_headers (test_strata_unified.UnifiedTests.test_stream_ownership_refusal_is_json_before_sse_headers) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 409 -
+ok
+test_unsupported_features_do_not_mutate_engine (test_strata_unified.UnifiedTests.test_unsupported_features_do_not_mutate_engine) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+ok
+
+======================================================================
+ERROR: test_server_bind_failure_releases_owned_native_and_link (test_strata_unified.UnifiedTests.test_server_bind_failure_releases_owned_native_and_link)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\work\StrataUnified\strata\backends\qwen35_llama\tools\test_strata_unified.py", line 117, in test_server_bind_failure_releases_owned_native_and_link
+    unified.main(['--spec', 'unused', '--out', 'unused'])
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\work\StrataUnified\strata\backends\qwen35_llama\tools\strata_unified.py", line 291, in main
+    spec['budget']['window_s'] = a.lifetime+spec['budget']['wait_s']+30
+                                            ~~~~~~~~~~~~~~^^^^^^^^^^
+KeyError: 'wait_s'
+
+----------------------------------------------------------------------
+Ran 11 tests in 12.647s
+
+FAILED (errors=1)

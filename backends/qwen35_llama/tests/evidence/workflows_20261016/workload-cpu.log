@@ -1,0 +1,10 @@
+test_branch_or_actual_length_changes_cannot_fake_speedup (test_strata_workloads.WorkloadTests.test_branch_or_actual_length_changes_cannot_fake_speedup) ... ok
+test_explanation_policy_is_explicit_and_not_low_mass (test_strata_workloads.WorkloadTests.test_explanation_policy_is_explicit_and_not_low_mass) ... ok
+test_manifest_explicit_weights_shapes_and_quality (test_strata_workloads.WorkloadTests.test_manifest_explicit_weights_shapes_and_quality) ... ok
+test_probabilities_zero_generation_and_full_vocab_mass (test_strata_workloads.WorkloadTests.test_probabilities_zero_generation_and_full_vocab_mass) ... ok
+test_weighted_latency_not_mixed_raw_tps (test_strata_workloads.WorkloadTests.test_weighted_latency_not_mixed_raw_tps) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK

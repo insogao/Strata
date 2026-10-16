@@ -1,0 +1,38 @@
+{
+  "started_at": "2026-10-16T03:09:52.025273+00:00",
+  "stage": "P3-12/P3-13",
+  "hypothesis": "Current3200 false-layout diagnostic peaks7894/7913MiB near8060budget; many cold decode page-fault counts with uncertain cause. COMPACT alone may reduce footprint/pressure without losing3200 slots. Test latency and resources; no assumed speed gain.",
+  "budgets": {
+    "baseline_native": 1,
+    "paired_candidate_native": 4,
+    "native_s_each": 180,
+    "internal_command_cap": 220,
+    "trace": 0,
+    "build": 0,
+    "repair": 0,
+    "window_s": 1200
+  },
+  "candidate": {
+    "compact": true
+  },
+  "source_frozen": [
+    {
+      "name": "strata_workloads.py",
+      "sha256": "ef8ff62b8f2fb2b4efb3e006334774f6999c4593d79f67a6c858d97f6802ecdb"
+    },
+    {
+      "name": "strata_experiment.py",
+      "sha256": "360b7bef3327f07ebc6f89f4fd0086aeb169141eea1000a282ec98795f25c2eb"
+    },
+    {
+      "name": "strata_diagnostics.py",
+      "sha256": "840c59a1e9680dafa16eef46fec75563a4f6677ba60f2759e1945f2af56b3081"
+    },
+    {
+      "name": "leased_native.py",
+      "sha256": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb"
+    }
+  ],
+  "decisions_semantics": "explicit original logits; no label/business approval; explanation forced always/never for reproducible branch cost, policy declaredresearch only",
+  "no_cpu_heavy_during_timing": true
+}

@@ -1,0 +1,7 @@
+{
+  "registered_at": "2026-10-16T03:27:11.861042+00:00",
+  "max_full_runs": 1,
+  "limit_s": 180,
+  "scope": "complete CPU regression after compatibility/workload/SSE/lifecycle changes; historical evidence verifier307 also retained",
+  "gpu": "finished all9 native launches before full CPU run"
+}
