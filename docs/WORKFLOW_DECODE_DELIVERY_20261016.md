@@ -1,6 +1,7 @@
 # P3-10…P3-14: compatible baselines, business workloads and cancellation
 
-2026-10-16. Branch `codex/workload-decode-diagnostics`, based on PR #7
+2026-10-16. [Review PR #8](https://github.com/insogao/Strata/pull/8).
+Branch `codex/workload-decode-diagnostics`, based on PR #7
 `7a30da89`. Single RTX4060 Laptop8GB; no main merge, production-default change,
 MTP enablement, native/CUDA change, model download or frozen-file replacement.
 
@@ -18,8 +19,9 @@ Final complete CPU regression: **206 PASS in72.797s**. New evidence verifier:
 **667 checks PASS**; historical PR #7 verifier307 checks still PASS. These are
 contract/arithmetic checks, not performance samples or causal proof. Results
 and raw console logs are included in the public bundle. GitHub Actions CPU CI is added for Windows/Linux, Python3.11/3.13,
-syntax, protocol/session/tuner tests and both evidence verifiers. Remote CI status
-is separate from the measured local result; no hosted GPU is required.
+syntax, protocol/session/tuner tests and both evidence verifiers. All four combinations passed on functional commit `26bb231e` in
+[CI run38846690807](https://github.com/insogao/Strata/actions/runs/38846690807).
+No hosted GPU was used; later documentation/array-display commits are separate.
 
 ## 1. Safe reuse of a historical baseline
 
