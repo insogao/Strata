@@ -1,0 +1,2 @@
+# Canonical lease validation compares exact bytes on every launch.
+gpu_lock.py -text

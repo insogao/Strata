@@ -1,0 +1,12 @@
+{
+  "registered_at": "2026-10-16T00:59:00.461041+00:00",
+  "new_evidence": "integration-api/transcript.json long SCORE rejected session3920+prompt3817; harness omitted reset. cancel cursor3924 correctly equals3920+4. No native defect.",
+  "prior_native_used": 2,
+  "additional_native_authorized": 1,
+  "additional_native_timeout_s": 120,
+  "repair_scope": "reset state before independent SCORE; assert DONE score before proceeding; same 20min resume window",
+  "internal_requests_cumulative_cap": 80,
+  "source_functional_changes": 0,
+  "original_failure_preserved": true,
+  "retry_automatic": false
+}

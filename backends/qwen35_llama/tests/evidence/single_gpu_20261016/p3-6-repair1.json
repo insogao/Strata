@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-15T09:16:51.798865+00:00",
+  "trigger": "smoke executor failed at lazy import: raw-string named-pipe suffix syntax; no leased child,0 actual native/0 model start",
+  "authorized_repair": "fix one pipe-name literal; import transport in CPU tests; one fresh native smoke after syntax test",
+  "budget_cumulative": {
+    "native": 1,
+    "model_starts": 1,
+    "internal_requests": 6,
+    "tool_repairs": 1,
+    "build": 0,
+    "trace": 0
+  },
+  "window_started_at_unchanged": "2026-10-15T09:16:23.275896+00:00",
+  "failed_output_preserved": "D:/work/StrataUnified/experiments/single-gpu-20261015/smoke/profile.json"
+}

@@ -1,0 +1,65 @@
+{
+  "started_at": "2026-10-15T09:02:09.456082+00:00",
+  "stage": "P3-5 canonical selection",
+  "new_branch": "codex/single-gpu-autotune",
+  "base": "47c4b2624b10a27e5421d3e0a32b75744a079f87",
+  "source_PR4": "c320d8017c0f1da21d2905043fbecddf537243df",
+  "source_PR6": "917df4195ef532a75bbb80c1fe26b9f59ff178fe",
+  "selection": "PR4 identity/lifecycle canonical; PR6 inspect/screen/plan concepts retained without permissive profile/recommend",
+  "copied": [
+    "backends/qwen35_llama/tools/strata_cost_model.py",
+    "backends/qwen35_llama/tools/strata_fingerprint.py",
+    "backends/qwen35_llama/tools/strata_plan.py",
+    "backends/qwen35_llama/tools/strata_screen.py",
+    "backends/qwen35_llama/tools/strata_tune.py",
+    "backends/qwen35_llama/tools/test_strata_autotune.py",
+    "backends/qwen35_llama/tools/test_strata_cost_screen.py",
+    "backends/qwen35_llama/tools/test_strata_tune.py",
+    "docs/PHASE3_DELIVERY.md",
+    "docs/backends/qwen35_llama_autotune_pilot.md",
+    "docs/backends/qwen35_llama_autotuner_foundation.md",
+    "docs/backends/qwen35_llama_offline_screen.md",
+    "docs/backends/qwen35_llama_tune_cli.md",
+    "docs/backends/strata_tune_profile.schema.json",
+    "tools/strata_tune.py"
+  ],
+  "excluded": [
+    "docs/HANDOFF_FOR_NEXT_AGENT.md",
+    "docs/PROJECT_STATUS.md"
+  ],
+  "common_blob_ids": {
+    "strata_cost_model.py": {
+      "codex/phase3-tune-cli": "0c544a8827376d8c4606f0e765d111b8cb084335",
+      "phase3/autotuner": "0c544a8827376d8c4606f0e765d111b8cb084335"
+    },
+    "strata_fingerprint.py": {
+      "codex/phase3-tune-cli": "d35554d0ca1f295283bf214b6a3e6d2954479366",
+      "phase3/autotuner": "d35554d0ca1f295283bf214b6a3e6d2954479366"
+    },
+    "strata_plan.py": {
+      "codex/phase3-tune-cli": "185edcdc334c33b78b3dafbe4b05148cca64a629",
+      "phase3/autotuner": "185edcdc334c33b78b3dafbe4b05148cca64a629"
+    },
+    "strata_screen.py": {
+      "codex/phase3-tune-cli": "1757cf3fa6a7ee47ef10c5eac175693c4b14d3ee",
+      "phase3/autotuner": "1757cf3fa6a7ee47ef10c5eac175693c4b14d3ee"
+    },
+    "test_strata_autotune.py": {
+      "codex/phase3-tune-cli": "713ac993ce6003ce4ac64ae954900849b0a1331e",
+      "phase3/autotuner": "713ac993ce6003ce4ac64ae954900849b0a1331e"
+    },
+    "test_strata_cost_screen.py": {
+      "codex/phase3-tune-cli": "5cb201d82a3343a9fc4e82b35cf0a43f24688b3a",
+      "phase3/autotuner": "5cb201d82a3343a9fc4e82b35cf0a43f24688b3a"
+    }
+  },
+  "budget": {
+    "native": 0,
+    "build": 0,
+    "cpu_tests_runs": 2,
+    "cpu_seconds_each": 180,
+    "continuation_window_s": 1200
+  },
+  "source_ownership": "new branch only; existing PR4/6 untouched; original worktree .wt-p3-4 untouched",
+  "user_latest": "Direct Codex; do P3-5..9, singleGPU experiments, not exact long replay study; no main/default/frozen changes"
+}

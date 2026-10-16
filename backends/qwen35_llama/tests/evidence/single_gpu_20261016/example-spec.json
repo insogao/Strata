@@ -1,0 +1,79 @@
+{
+  "schema": "strata-single-gpu-experiment/1",
+  "cwd": "C:/Strata",
+  "engine": {
+    "path": "C:/Strata/build/strata.exe",
+    "sha256": "REPLACE_WITH_VERIFIED_FULL_ENGINE_SHA256"
+  },
+  "model": {
+    "path": "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+    "sha256": "REPLACE_WITH_REGISTERED_FULL_MODEL_SHA256",
+    "quant": "UD-IQ3_S",
+    "sha_trust": "registered previously fully verified; no rehash"
+  },
+  "pack": "models/pack",
+  "lease": {
+    "tool": "C:/Strata/strata/backends/qwen35_llama/tools/gpu_lock.py",
+    "lock": "C:/Strata/runtime/gpu.lock"
+  },
+  "runtime": {
+    "id": "CUDA12.8.1/MSVC ea06 canonical serve",
+    "cuda_bin": "C:/Strata/runtime/cuda/bin",
+    "env": {
+      "STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1",
+      "STRATA_QWEN35_PACKED_IDS": "1",
+      "STRATA_QWEN35_EXPERT_ORDER": "count_desc"
+    }
+  },
+  "budget": {
+    "max_native": 1,
+    "native_timeout_s": 120,
+    "window_s": 1200,
+    "wait_s": 60
+  },
+  "resources": {
+    "max_gpu_used_mib": 8060,
+    "max_host_rss_mib": 28000,
+    "min_available_ram_mib": 256,
+    "baseline_gpu_estimate_mib": 7800,
+    "estimated_host_mib": 14000
+  },
+  "baseline": {
+    "id": "production-reference",
+    "config": {
+      "slots": 3200,
+      "threads": 8,
+      "ubatch": 4096,
+      "ctx": 4096,
+      "compact": false
+    }
+  },
+  "candidates": [],
+  "shapes": [
+    {
+      "id": "P",
+      "tokens_file": "C:/Strata/fixtures/P.tokens",
+      "sha256": "REPLACE_WITH_FULL_INPUT_SHA256",
+      "prompt_tokens": 3896,
+      "max_new": 1
+    },
+    {
+      "id": "S",
+      "tokens_file": "C:/Strata/fixtures/S.tokens",
+      "sha256": "REPLACE_WITH_FULL_INPUT_SHA256",
+      "prompt_tokens": 3896,
+      "max_new": 16
+    },
+    {
+      "id": "L",
+      "tokens_file": "C:/Strata/fixtures/L.tokens",
+      "sha256": "REPLACE_WITH_FULL_INPUT_SHA256",
+      "prompt_tokens": 3817,
+      "max_new": 128
+    }
+  ],
+  "policy": {
+    "min_gain": 0.05,
+    "early_regression": 0.15
+  }
+}

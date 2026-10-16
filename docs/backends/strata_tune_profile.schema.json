@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Strata offline research profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "created_at", "status", "selected_configuration", "identity", "identity_sha256", "missing_identity", "fingerprint", "capacity_plan", "diagnostic_screen", "fallback", "evidence", "confidence", "next_action", "content_sha256"],
+  "properties": {
+    "schema": {"const": "strata-tune-profile/1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "status": {"const": "research-only"},
+    "selected_configuration": {"type": "null"},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hardware", "model", "engine_sha256", "runtime_id", "tool_sha256", "workload", "policy"],
+      "properties": {
+        "hardware": {"type": "object", "required": ["gpu", "cpu", "ram", "os"]},
+        "model": {"type": "object", "required": ["sha256", "size_bytes", "mtime_utc", "gguf"]},
+        "engine_sha256": {"$ref": "#/$defs/sha"},
+        "runtime_id": {"type": "string"},
+        "tool_sha256": {"type": "object", "additionalProperties": {"$ref": "#/$defs/sha"}},
+        "workload": {
+          "type": "object", "required": ["context", "max_new", "batch", "manifest_sha256"],
+          "properties": {
+            "context": {"type": "integer", "minimum": 1},
+            "max_new": {"type": "integer", "minimum": 1},
+            "batch": {"const": 1},
+            "manifest_sha256": {"$ref": "#/$defs/sha"}
+          }
+        },
+        "policy": {
+          "type": "object", "required": ["mode", "kv_bytes"],
+          "properties": {"mode": {"enum": ["safe", "balanced", "latency", "throughput"]}, "kv_bytes": {"enum": [2, 4]}}
+        }
+      }
+    },
+    "identity_sha256": {"$ref": "#/$defs/sha"},
+    "content_sha256": {"$ref": "#/$defs/sha"},
+    "missing_identity": {"type": "array", "items": {"type": "string"}},
+    "fingerprint": {"type": "object"},
+    "capacity_plan": {"type": "object"},
+    "diagnostic_screen": {"type": ["object", "null"]},
+    "fallback": {
+      "type": "object", "required": ["configuration", "source", "confidence", "auto_apply"],
+      "properties": {"configuration": {"type": "object", "minProperties": 1}, "source": {"type": "string"}, "confidence": {"type": "string"}, "auto_apply": {"const": false}}
+    },
+    "evidence": {
+      "type": "array", "items": {"type": "object", "required": ["path", "sha256", "size_bytes"],
+        "properties": {"path": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha"}, "size_bytes": {"type": "integer", "minimum": 0}}}
+    },
+    "confidence": {"type": "object", "required": ["capacity", "speed", "quality", "cross_hardware"]},
+    "next_action": {"type": "string"}
+  },
+  "$defs": {"sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

@@ -1,0 +1,2 @@
+# Review artifacts and their SHA evidence retain bytes on every platform.
+* -text whitespace=-blank-at-eol,cr-at-eol

@@ -1,0 +1,6 @@
+# Explicit opt-in Windows experiment/unified-service dependencies.
+# First three are already part of the project setup.py package set.
+psutil
+regex
+jinja2
+pywin32; sys_platform == 'win32'

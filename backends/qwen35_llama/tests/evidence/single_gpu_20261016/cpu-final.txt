@@ -1,0 +1,427 @@
+test_official_backend_cli_end_to_end (test_backend_adapters.CliTests.test_official_backend_cli_end_to_end) ... ok
+test_qwen35_backend_cli_end_to_end (test_backend_adapters.CliTests.test_qwen35_backend_cli_end_to_end) ... ok
+test_capabilities_synthesized_not_qwen35_equivalent (test_backend_adapters.OfficialBackendTests.test_capabilities_synthesized_not_qwen35_equivalent) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_decisions_501_explicit (test_backend_adapters.OfficialBackendTests.test_decisions_501_explicit) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 501 -
+ok
+test_score_501_explicit_no_generation (test_backend_adapters.OfficialBackendTests.test_score_501_explicit_no_generation) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+ok
+test_gen_stream_and_quit (test_backend_adapters.OfficialStubProtocolTests.test_gen_stream_and_quit) ... ok
+test_qwen35_commands_are_refused (test_backend_adapters.OfficialStubProtocolTests.test_qwen35_commands_are_refused) ... ok
+test_capabilities_engine_reported_plus_framework_fields (test_backend_adapters.Qwen35BackendTests.test_capabilities_engine_reported_plus_framework_fields) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_score_and_decisions_still_green (test_backend_adapters.Qwen35BackendTests.test_score_and_decisions_still_green) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_capabilities_for_difference_items (test_backend_adapters.RoutingMatrixTests.test_capabilities_for_difference_items) ... ok
+test_every_cell_is_consistent (test_backend_adapters.RoutingMatrixTests.test_every_cell_is_consistent) ... ok
+test_matrix_covers_every_endpoint_and_backend (test_backend_adapters.RoutingMatrixTests.test_matrix_covers_every_endpoint_and_backend) ... ok
+test_official_refusal_texts_byte_identical_to_pre_matrix (test_backend_adapters.RoutingMatrixTests.test_official_refusal_texts_byte_identical_to_pre_matrix) ... ok
+test_official_unsupported_cells_and_boundary_notes (test_backend_adapters.RoutingMatrixTests.test_official_unsupported_cells_and_boundary_notes) ... ok
+test_qwen35_supported_cells_and_engine_commands (test_backend_adapters.RoutingMatrixTests.test_qwen35_supported_cells_and_engine_commands) ... ok
+test_route_returns_a_readonly_copy (test_backend_adapters.RoutingMatrixTests.test_route_returns_a_readonly_copy) ... ok
+test_routes_payload_is_full_matrix_and_serializable (test_backend_adapters.RoutingMatrixTests.test_routes_payload_is_full_matrix_and_serializable) ... ok
+test_unknown_endpoint_and_backend_refused (test_backend_adapters.RoutingMatrixTests.test_unknown_endpoint_and_backend_refused) ... ok
+test_command_surfaces_differ (test_backend_adapters.SelectionTests.test_command_surfaces_differ) ... ok
+test_config_field_and_cli_precedence (test_backend_adapters.SelectionTests.test_config_field_and_cli_precedence) ... ok
+test_unknown_backend_valueerror (test_backend_adapters.SelectionTests.test_unknown_backend_valueerror) ... ok
+test_unknown_config_backend_systemexit (test_backend_adapters.SelectionTests.test_unknown_config_backend_systemexit) ... ok
+test_concurrent_request_gets_503 (test_score_api.BusyTests.test_concurrent_request_gets_503) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 503 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_count_mismatch_502 (test_score_api.CandidateProtocolViolationTests.test_count_mismatch_502) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_two_lines_502 (test_score_api.CandidateProtocolViolationTests.test_two_lines_502) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_unsolicited_line_502 (test_score_api.CandidateProtocolViolationTests.test_unsolicited_line_502) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_wrong_id_order_502 (test_score_api.CandidateProtocolViolationTests.test_wrong_id_order_502) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_candidate_outside_topk_still_returned (test_score_api.CandidateScoreTests.test_candidate_outside_topk_still_returned) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_candidates_and_topk_coexist (test_score_api.CandidateScoreTests.test_candidates_and_topk_coexist) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_candidates_duplicate_400 (test_score_api.CandidateScoreTests.test_candidates_duplicate_400) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+ok
+test_candidates_order_preserved_and_same_row (test_score_api.CandidateScoreTests.test_candidates_order_preserved_and_same_row) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_candidates_outside_vocabulary_engine_422 (test_score_api.CandidateScoreTests.test_candidates_outside_vocabulary_engine_422) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 422 -
+ok
+test_candidates_over_limit_400 (test_score_api.CandidateScoreTests.test_candidates_over_limit_400) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+ok
+test_topk0_with_candidates_answers_only_candidates (test_score_api.CandidateScoreTests.test_topk0_with_candidates_answers_only_candidates) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_topk0_without_candidates_422 (test_score_api.CandidateScoreTests.test_topk0_without_candidates_422) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 422 -
+ok
+test_cli_start_engine_end_to_end (test_score_api.CliTests.test_cli_start_engine_end_to_end) ... ok
+test_capabilities_expose_p2r3a_engine_fields (test_score_api.ContinueSessionTests.test_capabilities_expose_p2r3a_engine_fields) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_continue_ids_validation_400 (test_score_api.ContinueSessionTests.test_continue_ids_validation_400) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+ok
+test_continue_max_new_validation_400 (test_score_api.ContinueSessionTests.test_continue_max_new_validation_400) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+ok
+test_continue_multi_round_stays_armed (test_score_api.ContinueSessionTests.test_continue_multi_round_stays_armed) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_continue_pure_and_text_null_without_tokenizer (test_score_api.ContinueSessionTests.test_continue_pure_and_text_null_without_tokenizer) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_continue_sampling_fields_400 (test_score_api.ContinueSessionTests.test_continue_sampling_fields_400) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+ok
+test_continue_unknown_field_400 (test_score_api.ContinueSessionTests.test_continue_unknown_field_400) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+ok
+test_continue_with_ids_appends_at_cursor (test_score_api.ContinueSessionTests.test_continue_with_ids_appends_at_cursor) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_continue_without_armed_session_is_422_verbatim (test_score_api.ContinueSessionTests.test_continue_without_armed_session_is_422_verbatim) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 422 -
+ok
+test_decisions_keep_requires_boolean (test_score_api.ContinueSessionTests.test_decisions_keep_requires_boolean) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 400 -
+ok
+test_decisions_keep_true_keeps_payload_and_arms (test_score_api.ContinueSessionTests.test_decisions_keep_true_keeps_payload_and_arms) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_decisions_without_keep_clears_session (test_score_api.ContinueSessionTests.test_decisions_without_keep_clears_session) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_score_keep_requires_boolean (test_score_api.ContinueSessionTests.test_score_keep_requires_boolean) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+ok
+test_score_keep_true_arms_session (test_score_api.ContinueSessionTests.test_score_keep_true_arms_session) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_score_without_keep_clears_session (test_score_api.ContinueSessionTests.test_score_without_keep_clears_session) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_session_readonly_and_fresh_state (test_score_api.ContinueSessionTests.test_session_readonly_and_fresh_state) ... score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+ok
+test_candidate_outside_topk_still_scored (test_score_api.DecisionsTests.test_candidate_outside_topk_still_scored) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_candidate_outside_vocabulary_422 (test_score_api.DecisionsTests.test_candidate_outside_vocabulary_422) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 422 -
+ok
+test_choice_normal_label_mass_always_returned (test_score_api.DecisionsTests.test_choice_normal_label_mass_always_returned) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_duplicate_candidate_rejected (test_score_api.DecisionsTests.test_duplicate_candidate_rejected) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 422 -
+ok
+test_low_mass_has_no_confidence_fields (test_score_api.DecisionsTests.test_low_mass_has_no_confidence_fields) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_multi_token_candidate_rejected (test_score_api.DecisionsTests.test_multi_token_candidate_rejected) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 422 -
+ok
+test_score_normal (test_score_api.DecisionsTests.test_score_normal) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_unknown_kind_rejected (test_score_api.DecisionsTests.test_unknown_kind_rejected) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 422 -
+ok
+test_yes_no_normal_and_arity (test_score_api.DecisionsTests.test_yes_no_normal_and_arity) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 422 -
+ok
+test_yes_no_payload_mass_and_scopes (test_score_api.DecisionsTests.test_yes_no_payload_mass_and_scopes) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_label_mass_on_closed_cover (test_score_api.FullCoverTests.test_label_mass_on_closed_cover) ... score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 200 -
+ok
+test_all_engine_endpoints_502_after_quarantine (test_score_api.LinkQuarantineTests.test_all_engine_endpoints_502_after_quarantine) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 502 -
+ok
+test_business_engine_err_is_not_quarantined (test_score_api.LinkQuarantineTests.test_business_engine_err_is_not_quarantined) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_cand_mode_count_bump_now_quarantines (test_score_api.LinkQuarantineTests.test_cand_mode_count_bump_now_quarantines) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_continue_protocol_error_quarantines (test_score_api.LinkQuarantineTests.test_continue_protocol_error_quarantines) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+ok
+test_engine_process_terminated (test_score_api.LinkQuarantineTests.test_engine_process_terminated) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_junk_logprobs_quarantines (test_score_api.LinkQuarantineTests.test_junk_logprobs_quarantines) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_late_legal_lines_are_never_read (test_score_api.LinkQuarantineTests.test_late_legal_lines_are_never_read) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_short_done_quarantines (test_score_api.LinkQuarantineTests.test_short_done_quarantines) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 502 -
+ok
+test_short_logprobs_quarantines_keeping_original_text (test_score_api.LinkQuarantineTests.test_short_logprobs_quarantines_keeping_original_text) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_unrequested_extra_line_quarantines (test_score_api.LinkQuarantineTests.test_unrequested_extra_line_quarantines) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_continue_501 (test_score_api.OfficialBackendSessionTests.test_continue_501) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 501 -
+ok
+test_score_keep_501 (test_score_api.OfficialBackendSessionTests.test_score_keep_501) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+ok
+test_session_501 (test_score_api.OfficialBackendSessionTests.test_session_501) ... score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 501 -
+ok
+test_501_texts_exactly_unchanged (test_score_api.OfficialRoutesTests.test_501_texts_exactly_unchanged) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 501 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 501 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 501 -
+ok
+test_routes_200_supported_false_and_501_spot_check (test_score_api.OfficialRoutesTests.test_routes_200_supported_false_and_501_spot_check) ... score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 501 -
+ok
+test_routes_get_only (test_score_api.RoutesDiscoveryTests.test_routes_get_only) ... score_api: 127.0.0.1 - "POST /v1/routes HTTP/1.1" 404 -
+score_api: 127.0.0.1 - "GET /v1/routes/extra HTTP/1.1" 404 -
+ok
+test_routes_is_read_only (test_score_api.RoutesDiscoveryTests.test_routes_is_read_only) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_routes_matches_capabilities_and_covers_both_backends (test_score_api.RoutesDiscoveryTests.test_routes_matches_capabilities_and_covers_both_backends) ... score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_bad_bodies_400 (test_score_api.ScoreTests.test_bad_bodies_400) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 400 -
+ok
+test_capabilities_passthrough (test_score_api.ScoreTests.test_capabilities_passthrough) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+ok
+test_engine_err_maps_422_with_text (test_score_api.ScoreTests.test_engine_err_maps_422_with_text) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 422 -
+ok
+test_prompt_string_refused_when_tokenizer_unloadable (test_score_api.ScoreTests.test_prompt_string_refused_when_tokenizer_unloadable) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+ok
+test_prompt_string_refused_without_tokenizer (test_score_api.ScoreTests.test_prompt_string_refused_without_tokenizer) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 501 -
+ok
+test_score_normal (test_score_api.ScoreTests.test_score_normal) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_score_topk_default_and_override (test_score_api.ScoreTests.test_score_topk_default_and_override) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_unknown_path_404 (test_score_api.ScoreTests.test_unknown_path_404) ... score_api: 127.0.0.1 - "GET /v1/chat/completions HTTP/1.1" 404 -
+ok
+test_engine_no_response_504_then_dead_502 (test_score_api.TimeoutTests.test_engine_no_response_504_then_dead_502) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 504 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_done_cannot_exceed_requested_limit_even_with_matching_tokens (test_session_correctness.GenerationDoneTests.test_done_cannot_exceed_requested_limit_even_with_matching_tokens) ... ok
+test_done_counter_cannot_claim_more_than_requested_limit (test_session_correctness.GenerationDoneTests.test_done_counter_cannot_claim_more_than_requested_limit) ... ok
+test_legal_length_eos_and_cancel_counts (test_session_correctness.GenerationDoneTests.test_legal_length_eos_and_cancel_counts) ... ok
+test_operation_violations_quarantine_real_pipe_and_http (test_session_correctness.GenerationDoneTests.test_operation_violations_quarantine_real_pipe_and_http) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+ok
+test_score_finish_is_legal_generically_but_illegal_for_generation (test_session_correctness.GenerationDoneTests.test_score_finish_is_legal_generically_but_illegal_for_generation) ... ok
+test_short_length_empty_eos_and_mismatched_counters_are_illegal (test_session_correctness.GenerationDoneTests.test_short_length_empty_eos_and_mismatched_counters_are_illegal) ... ok
+test_bad_probabilities_quarantine_real_pipe_and_never_return_nan (test_session_correctness.ProbabilityBoundaryTests.test_bad_probabilities_quarantine_real_pipe_and_never_return_nan) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+ok
+test_illegal_rows_rejected_in_both_protocol_families (test_session_correctness.ProbabilityBoundaryTests.test_illegal_rows_rejected_in_both_protocol_families) ... ok
+test_invalid_done_fields_fail_protocol_boundary (test_session_correctness.ProbabilityBoundaryTests.test_invalid_done_fields_fail_protocol_boundary) ... ok
+test_nonfinite_request_json_is_400 (test_session_correctness.ProbabilityBoundaryTests.test_nonfinite_request_json_is_400) ... score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+ok
+test_bad_handle_shape_and_unbounded_length_are_rejected_without_mutation (test_session_correctness.SessionOwnershipTests.test_bad_handle_shape_and_unbounded_length_are_rejected_without_mutation) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_failed_mutation_requires_owned_reset (test_session_correctness.SessionOwnershipTests.test_failed_mutation_requires_owned_reset) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_one_revision_has_only_one_successful_mutation (test_session_correctness.SessionOwnershipTests.test_one_revision_has_only_one_successful_mutation) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_other_caller_cannot_append_clear_or_continue (test_session_correctness.SessionOwnershipTests.test_other_caller_cannot_append_clear_or_continue) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/decisions HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+ok
+test_owner_append_release_and_new_identity (test_session_correctness.SessionOwnershipTests.test_owner_append_release_and_new_identity) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+ok
+test_stale_revision_cannot_replay_even_for_same_owner (test_session_correctness.SessionOwnershipTests.test_stale_revision_cannot_replay_even_for_same_owner) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+ok
+test_actual_length_checks_are_never_classified_as_replay (test_session_long.LongEvidenceTests.test_actual_length_checks_are_never_classified_as_replay) ... ok
+test_consistently_reported_short_output_still_fails_structure (test_session_long.LongEvidenceTests.test_consistently_reported_short_output_still_fails_structure) ... ok
+test_done_count_cannot_claim_more_than_actual_token_rows (test_session_long.LongEvidenceTests.test_done_count_cannot_claim_more_than_actual_token_rows) ... ok
+test_failed_save_cannot_be_proved_by_preexisting_identical_files (test_session_long.LongEvidenceTests.test_failed_save_cannot_be_proved_by_preexisting_identical_files) ... ok
+test_length_exit_does_not_prove_stop (test_session_long.LongEvidenceTests.test_length_exit_does_not_prove_stop) ... ok
+test_missing_terminal_response_fails_closed (test_session_long.LongEvidenceTests.test_missing_terminal_response_fails_closed) ... ok
+test_nonfinite_timings_are_rejected (test_session_long.LongEvidenceTests.test_nonfinite_timings_are_rejected) ... ok
+test_original_first_decode_mismatch_remains_failed (test_session_long.LongEvidenceTests.test_original_first_decode_mismatch_remains_failed) ... ok
+test_real_warm_structure_passes_but_numeric_replay_diff_is_retained (test_session_long.LongEvidenceTests.test_real_warm_structure_passes_but_numeric_replay_diff_is_retained) ... ok
+test_requested_512_with_early_eos_is_not_actual_length (test_session_long.LongEvidenceTests.test_requested_512_with_early_eos_is_not_actual_length) ... ok
+test_wrong_committed_cursor_is_detected (test_session_long.LongEvidenceTests.test_wrong_committed_cursor_is_detected) ... ok
+test_bandwidth_table_is_a_table_not_a_measurement (test_strata_autotune.FingerprintUnitTests.test_bandwidth_table_is_a_table_not_a_measurement) ... ok
+test_every_fingerprint_leaf_has_a_known_source (test_strata_autotune.FingerprintUnitTests.test_every_fingerprint_leaf_has_a_known_source) ... ok
+test_model_sha_policy_never_recomputed (test_strata_autotune.FingerprintUnitTests.test_model_sha_policy_never_recomputed) ... ok
+test_nvidia_smi_parse (test_strata_autotune.FingerprintUnitTests.test_nvidia_smi_parse) ... ok
+test_summarize_metadata_experts_and_mtp (test_strata_autotune.FingerprintUnitTests.test_summarize_metadata_experts_and_mtp) ... ok
+test_summarize_metadata_missing_is_unknown (test_strata_autotune.FingerprintUnitTests.test_summarize_metadata_missing_is_unknown) ... ok
+test_unknown_is_not_guessed (test_strata_autotune.FingerprintUnitTests.test_unknown_is_not_guessed) ... ok
+test_budget_monotonic_in_context (test_strata_autotune.PlanTests.test_budget_monotonic_in_context) ... ok
+test_host_pool_fits_pageable_model_plus_staging (test_strata_autotune.PlanTests.test_host_pool_fits_pageable_model_plus_staging) ... ok
+test_modes_change_allocation_only (test_strata_autotune.PlanTests.test_modes_change_allocation_only) ... ok
+test_out_of_bounds_explicitly_rejected (test_strata_autotune.PlanTests.test_out_of_bounds_explicitly_rejected) ... ok
+test_pinned_host_rejected_with_the_recorded_fact (test_strata_autotune.PlanTests.test_pinned_host_rejected_with_the_recorded_fact) ... ok
+test_runtime_clamp_anchor_ctx8192_reproduces_0_22_gib (test_strata_autotune.PlanTests.test_runtime_clamp_anchor_ctx8192_reproduces_0_22_gib) ... ok
+test_runtime_clamp_anchor_reproduces_0_44_gib (test_strata_autotune.PlanTests.test_runtime_clamp_anchor_reproduces_0_44_gib) ... ok
+test_static_chain_order_and_two_pools (test_strata_autotune.PlanTests.test_static_chain_order_and_two_pools) ... ok
+test_static_plan_reports_the_upper_bound_not_the_clamp (test_strata_autotune.PlanTests.test_static_plan_reports_the_upper_bound_not_the_clamp) ... ok
+test_two_pools_are_not_mixed (test_strata_autotune.PlanTests.test_two_pools_are_not_mixed) ... ok
+test_unknown_vram_refuses_to_plan (test_strata_autotune.PlanTests.test_unknown_vram_refuses_to_plan) ... ok
+test_zero_slot_budget_is_a_listed_rejection (test_strata_autotune.PlanTests.test_zero_slot_budget_is_a_listed_rejection) ... ok
+test_every_parameter_has_source_interval_and_spread (test_strata_cost_screen.CostModelTests.test_every_parameter_has_source_interval_and_spread) ... ok
+test_holdout_is_within_batch_and_reports_honestly (test_strata_cost_screen.CostModelTests.test_holdout_is_within_batch_and_reports_honestly) ... ok
+test_in_sample_residuals_and_interval_cover (test_strata_cost_screen.CostModelTests.test_in_sample_residuals_and_interval_cover) ... ok
+test_interval_widens_when_miss_fraction_unknown (test_strata_cost_screen.CostModelTests.test_interval_widens_when_miss_fraction_unknown) ... ok
+test_monotonic_higher_miss_cost_lowers_tps (test_strata_cost_screen.CostModelTests.test_monotonic_higher_miss_cost_lowers_tps) ... ok
+test_more_misses_lower_tps (test_strata_cost_screen.CostModelTests.test_more_misses_lower_tps) ... ok
+test_params_are_direct_ratios_of_recorded_fields (test_strata_cost_screen.CostModelTests.test_params_are_direct_ratios_of_recorded_fields) ... ok
+test_uncalibrated_threads_are_not_guessed (test_strata_cost_screen.CostModelTests.test_uncalibrated_threads_are_not_guessed) ... ok
+test_anchor_prediction_matches_cost_model (test_strata_cost_screen.ScreenTests.test_anchor_prediction_matches_cost_model) ... ok
+test_cache_cost_records (test_strata_cost_screen.ScreenTests.test_cache_cost_records) ... ok
+test_default_space_covers_all_candidates (test_strata_cost_screen.ScreenTests.test_default_space_covers_all_candidates) ... ok
+test_rejections_are_explicit_and_never_silent (test_strata_cost_screen.ScreenTests.test_rejections_are_explicit_and_never_silent) ... ok
+test_rejects_context_beyond_declared_length (test_strata_cost_screen.ScreenTests.test_rejects_context_beyond_declared_length) ... ok
+test_rejects_host_pool_overflow (test_strata_cost_screen.ScreenTests.test_rejects_host_pool_overflow) ... ok
+test_rejects_ubatch_above_context (test_strata_cost_screen.ScreenTests.test_rejects_ubatch_above_context) ... ok
+test_rejects_vram_growth_beyond_recorded_peak_headroom (test_strata_cost_screen.ScreenTests.test_rejects_vram_growth_beyond_recorded_peak_headroom) ... ok
+test_shortlist_cap_and_content (test_strata_cost_screen.ScreenTests.test_shortlist_cap_and_content) ... ok
+test_two_pools_are_not_mixed (test_strata_cost_screen.ScreenTests.test_two_pools_are_not_mixed) ... ok
+test_uncalibrated_cpu_pool_candidate_marked_not_guessed (test_strata_cost_screen.ScreenTests.test_uncalibrated_cpu_pool_candidate_marked_not_guessed) ... ok
+test_unknown_slot_count_cannot_outrank_the_measured_anchor (test_strata_cost_screen.ScreenTests.test_unknown_slot_count_cannot_outrank_the_measured_anchor) ... ok
+test_candidate_generation_small_single_variable_and_no2200 (test_strata_experiment.ExperimentTests.test_candidate_generation_small_single_variable_and_no2200) ... ok
+test_evidence_and_pack_mutation_invalidate (test_strata_experiment.ExperimentTests.test_evidence_and_pack_mutation_invalidate) ... ok
+test_failure_retained_without_retry (test_strata_experiment.ExperimentTests.test_failure_retained_without_retry) ... ok
+test_input_engine_and_budget_guards (test_strata_experiment.ExperimentTests.test_input_engine_and_budget_guards) ... ok
+test_memory_refusal_consumes_no_native (test_strata_experiment.ExperimentTests.test_memory_refusal_consumes_no_native) ... ok
+test_model_runtime_workload_and_device_changes_invalidate (test_strata_experiment.ExperimentTests.test_model_runtime_workload_and_device_changes_invalidate) ... ok
+test_n1_has_no_decode_tps_or_tpot (test_strata_experiment.ExperimentTests.test_n1_has_no_decode_tps_or_tpot) ... ok
+test_profile_and_identity_roundtrip_never_installs_or_selects_baseline (test_strata_experiment.ExperimentTests.test_profile_and_identity_roundtrip_never_installs_or_selects_baseline) ... ok
+test_real_measurement_only_decision_and_drift (test_strata_experiment.ExperimentTests.test_real_measurement_only_decision_and_drift) ... ok
+test_resealed_unmeasured_winner_is_refused (test_strata_experiment.ExperimentTests.test_resealed_unmeasured_winner_is_refused) ... ok
+test_all_modes_are_capacity_policies (test_strata_tune.TuneTests.test_all_modes_are_capacity_policies) ... ok
+test_binary_and_runtime_changes_invalidate (test_strata_tune.TuneTests.test_binary_and_runtime_changes_invalidate) ... ok
+test_cli_roundtrip_stale_exit_and_no_overwrite (test_strata_tune.TuneTests.test_cli_roundtrip_stale_exit_and_no_overwrite) ... ok
+test_corruption_and_unapproved_selection_fail (test_strata_tune.TuneTests.test_corruption_and_unapproved_selection_fail) ... ok
+test_evidence_changed_or_missing (test_strata_tune.TuneTests.test_evidence_changed_or_missing) ... ok
+test_identity_changes_invalidate (test_strata_tune.TuneTests.test_identity_changes_invalidate) ... ok
+test_idle_free_change_not_identity_but_capacity_rechecked (test_strata_tune.TuneTests.test_idle_free_change_not_identity_but_capacity_rechecked) ... ok
+test_invalid_workload_refused (test_strata_tune.TuneTests.test_invalid_workload_refused) ... ok
+test_local_screen_has_counterevidence_no_selection (test_strata_tune.TuneTests.test_local_screen_has_counterevidence_no_selection) ... ok
+test_nonfinite_json_refused (test_strata_tune.TuneTests.test_nonfinite_json_refused) ... ok
+test_profile_schema_fields_and_manual_fallback_required (test_strata_tune.TuneTests.test_profile_schema_fields_and_manual_fallback_required) ... ok
+test_quant_geometry_changes_invalidate (test_strata_tune.TuneTests.test_quant_geometry_changes_invalidate) ... ok
+test_roundtrip_never_selects_or_applies (test_strata_tune.TuneTests.test_roundtrip_never_selects_or_applies) ... ok
+test_schema_required_fields_match_writer (test_strata_tune.TuneTests.test_schema_required_fields_match_writer) ... ok
+test_tool_version_change_invalidate (test_strata_tune.TuneTests.test_tool_version_change_invalidate) ... ok
+test_unknown_identity_is_never_wildcard (test_strata_tune.TuneTests.test_unknown_identity_is_never_wildcard) ... ok
+test_workload_and_policy_changes_invalidate (test_strata_tune.TuneTests.test_workload_and_policy_changes_invalidate) ... ok
+test_chat_cannot_steal_score_owner_and_explicit_owner_reset_releases (test_strata_unified.UnifiedTests.test_chat_cannot_steal_score_owner_and_explicit_owner_reset_releases) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 409 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/continue HTTP/1.1" 409 -
+ok
+test_corrupt_generation_quarantines_same_engine_for_all_routes (test_strata_unified.UnifiedTests.test_corrupt_generation_quarantines_same_engine_for_all_routes) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 502 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 502 -
+ok
+test_invalid_prompt_refusal_cleans_up_before_next_request (test_strata_unified.UnifiedTests.test_invalid_prompt_refusal_cleans_up_before_next_request) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+ok
+test_official_backend_is_not_silently_substituted (test_strata_unified.UnifiedTests.test_official_backend_is_not_silently_substituted) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 501 -
+ok
+test_one_busy_lock_serializes_chat_and_score (test_strata_unified.UnifiedTests.test_one_busy_lock_serializes_chat_and_score) ... score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 503 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_one_entry_discovers_routes_and_chat_clears_private_state (test_strata_unified.UnifiedTests.test_one_entry_discovers_routes_and_chat_clears_private_state) ... score_api: 127.0.0.1 - "GET /v1/capabilities HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/routes HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/models HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "GET /v1/session HTTP/1.1" 200 -
+score_api: 127.0.0.1 - "POST /v1/score HTTP/1.1" 200 -
+ok
+test_server_bind_failure_releases_owned_native_and_link (test_strata_unified.UnifiedTests.test_server_bind_failure_releases_owned_native_and_link) ... ok
+test_unsupported_features_do_not_mutate_engine (test_strata_unified.UnifiedTests.test_unsupported_features_do_not_mutate_engine) ... score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 501 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 400 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+score_api: 127.0.0.1 - "POST /v1/chat/completions HTTP/1.1" 422 -
+ok
+
+----------------------------------------------------------------------
+Ran 191 tests in 64.183s
+
+OK
