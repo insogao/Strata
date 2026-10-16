@@ -1,6 +1,8 @@
 # P3-5: one canonical tuner
 
 Development branch: `codex/single-gpu-autotune`, from PR #5 `47c4b262`.
+Review PR: [#7](https://github.com/insogao/Strata/pull/7). PR #4/#6 are closed
+as superseded, with their branches and historical evidence preserved.
 PR #4 `c320d801` and PR #6 `917df419` remain historical review branches, not
 two implementations to merge in sequence. This new branch supersedes their
 overlapping phase-three changes; it does not merge main or alter their heads.

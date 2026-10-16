@@ -1,0 +1,7 @@
+{
+  "registered_at": "2026-10-16T01:04:22.924060+00:00",
+  "prior_full_runs": 1,
+  "additional_full_runs": 1,
+  "limit_s": 180,
+  "reason": "One new lifecycle cleanup test and final startup lifetime alignment after original full190. No GPU running; no native budget added."
+}

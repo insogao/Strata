@@ -3,11 +3,11 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
-更新时间：2026-10-16。当前唯一后续分支 `codex/single-gpu-autotune`，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
+更新时间：2026-10-16。当前唯一后续分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
 
 ## 0. 一句话状态
 
-**最新 P3-5…P3-9**：PR #4 的保守 Profile 生命周期成为 canonical；PR #6 的 inspect/screen/plan 操作并入同一入口，旧重复 PR 由新 PR 取代，不串联合并。真实单 GPU 自动执行器及统一 Chat/Score/Decisions/Session MVP 已实现。三候选 ABBA/12 native/72 请求均 NO-GO；不安装 Profile，不改3200默认。最终基线身份检查通过；真实集成31门通过。新一日 Decode 下降原因未定位，性能发布门仍开放。完整结果、失败、限制和原始证据索引见 [UNIFIED_SINGLE_GPU_DELIVERY.md](UNIFIED_SINGLE_GPU_DELIVERY.md)。
+**最新 P3-5…P3-9**：PR #4 的保守 Profile 生命周期成为 canonical；PR #6 的 inspect/screen/plan 操作并入同一入口，旧重复 PR 由新 PR 取代，不串联合并。真实单 GPU 自动执行器及统一 Chat/Score/Decisions/Session MVP 已实现。三候选 ABBA/12 native/72 请求均 NO-GO；不安装 Profile，不改3200默认。最终基线身份检查通过；最终191 CPU tests、真实集成31门、307证据复核通过。新一日 Decode 下降原因未定位，性能发布门仍开放。完整结果、失败、限制和原始证据索引见 [UNIFIED_SINGLE_GPU_DELIVERY.md](UNIFIED_SINGLE_GPU_DELIVERY.md)。
 
 以下 PR #5 与 P2R 为保留的验收历史。
 
