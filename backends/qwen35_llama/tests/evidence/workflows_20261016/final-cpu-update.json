@@ -1,0 +1,7 @@
+{
+  "registered_at": "2026-10-16T03:36:35.770893+00:00",
+  "previous_full_runs": 1,
+  "additional_full_runs": 1,
+  "limit_s": 180,
+  "reason": "final shared endpoint abandonment logic changed after205-test run; one new ownership test; no GPU running"
+}

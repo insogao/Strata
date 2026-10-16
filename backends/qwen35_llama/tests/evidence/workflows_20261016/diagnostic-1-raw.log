@@ -1,0 +1,686 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8187 MiB):
+  Device 0: NVIDIA GeForce RTX 4060 Laptop GPU, compute capability 8.9, VMM: yes, VRAM: 8187 MiB
+llama_model_loader: loaded meta data with 54 key-value pairs and 733 tensors from models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35moe
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Qwen3.6-35B-A3B
+llama_model_loader: - kv   6:                           general.basename str              = Qwen3.6-35B-A3B
+llama_model_loader: - kv   7:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv   8:                         general.size_label str              = 35B-A3B
+llama_model_loader: - kv   9:                            general.license str              = apache-2.0
+llama_model_loader: - kv  10:                       general.license.link str              = https://huggingface.co/Qwen/Qwen3.6-3...
+llama_model_loader: - kv  11:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv  12:                   general.base_model.count u32              = 1
+llama_model_loader: - kv  13:                  general.base_model.0.name str              = Qwen3.6 35B A3B
+llama_model_loader: - kv  14:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  15:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen3.6-3...
+llama_model_loader: - kv  16:                               general.tags arr[str,3]       = ["qwen3_5_moe", "qwen", "image-text-t...
+llama_model_loader: - kv  17:                      qwen35moe.block_count u32              = 40
+llama_model_loader: - kv  18:                   qwen35moe.context_length u32              = 262144
+llama_model_loader: - kv  19:                 qwen35moe.embedding_length u32              = 2048
+llama_model_loader: - kv  20:             qwen35moe.attention.head_count u32              = 16
+llama_model_loader: - kv  21:          qwen35moe.attention.head_count_kv u32              = 2
+llama_model_loader: - kv  22:          qwen35moe.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  23:                   qwen35moe.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  24: qwen35moe.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  25:                     qwen35moe.expert_count u32              = 256
+llama_model_loader: - kv  26:                qwen35moe.expert_used_count u32              = 8
+llama_model_loader: - kv  27:             qwen35moe.attention.key_length u32              = 256
+llama_model_loader: - kv  28:           qwen35moe.attention.value_length u32              = 256
+llama_model_loader: - kv  29:       qwen35moe.expert_feed_forward_length u32              = 512
+llama_model_loader: - kv  30: qwen35moe.expert_shared_feed_forward_length u32              = 512
+llama_model_loader: - kv  31:                  qwen35moe.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  32:                   qwen35moe.ssm.state_size u32              = 128
+llama_model_loader: - kv  33:                  qwen35moe.ssm.group_count u32              = 16
+llama_model_loader: - kv  34:               qwen35moe.ssm.time_step_rank u32              = 32
+llama_model_loader: - kv  35:                   qwen35moe.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  36:          qwen35moe.full_attention_interval u32              = 4
+llama_model_loader: - kv  37:             qwen35moe.rope.dimension_count u32              = 64
+llama_model_loader: - kv  38:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  39:                         tokenizer.ggml.pre str              = qwen35
+llama_model_loader: - kv  40:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  41:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  42:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  43:                tokenizer.ggml.eos_token_id u32              = 248046
+llama_model_loader: - kv  44:            tokenizer.ggml.padding_token_id u32              = 248055
+llama_model_loader: - kv  45:                tokenizer.ggml.bos_token_id u32              = 248044
+llama_model_loader: - kv  46:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  47:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
+llama_model_loader: - kv  48:               general.quantization_version u32              = 2
+llama_model_loader: - kv  49:                          general.file_type u32              = 26
+llama_model_loader: - kv  50:                      quantize.imatrix.file str              = Qwen3.6-35B-A3B-GGUF/imatrix_unsloth....
+llama_model_loader: - kv  51:                   quantize.imatrix.dataset str              = unsloth_calibration_Qwen3.6-35B-A3B.txt
+llama_model_loader: - kv  52:             quantize.imatrix.entries_count u32              = 510
+llama_model_loader: - kv  53:              quantize.imatrix.chunks_count u32              = 76
+llama_model_loader: - type  f32:  361 tensors
+llama_model_loader: - type q6_K:  252 tensors
+llama_model_loader: - type iq3_s:   37 tensors
+llama_model_loader: - type iq2_s:   80 tensors
+llama_model_loader: - type iq4_xs:    3 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = IQ3_S - 3.4375 bpw
+print_info: file size   = 12.73 GiB (3.15 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA GeForce RTX 4060 Laptop GPU) (0000:01:00.0) - 6932 MiB free
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 248044 ('<|endoftext|>')
+load:   - 248046 ('<|im_end|>')
+load:   - 248063 ('<|fim_pad|>')
+load:   - 248064 ('<|repo_name|>')
+load:   - 248065 ('<|file_sep|>')
+load: special tokens cache size = 33
+load: token to piece cache size = 1.7581 MB
+print_info: arch                  = qwen35moe
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 262144
+print_info: n_embd_inp            = 2048
+print_info: n_embd                = 2048
+print_info: n_embd_out            = 2048
+print_info: n_layer               = 40
+print_info: n_layer_all           = 40
+print_info: n_head                = 16
+print_info: n_head_kv             = 2
+print_info: n_rot                 = 64
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 256
+print_info: n_embd_head_v         = 256
+print_info: n_gqa                 = 8
+print_info: n_embd_k_gqa          = 512
+print_info: n_embd_v_gqa          = 512
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-06
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 0
+print_info: n_expert              = 256
+print_info: n_expert_used         = 8
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = 40
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 262144
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: mrope sections        = [11, 11, 10, 0]
+print_info: ssm_d_conv            = 4
+print_info: ssm_d_inner           = 4096
+print_info: ssm_d_state           = 128
+print_info: ssm_dt_rank           = 32
+print_info: ssm_n_group           = 16
+print_info: ssm_dt_b_c_rms        = 0
+print_info: model type            = 35B.A3B
+print_info: model params          = 34.66 B
+print_info: general.name          = Qwen3.6-35B-A3B
+print_info: vocab type            = BPE
+print_info: n_vocab               = 248320
+print_info: n_merges              = 247587
+print_info: BOS token             = 248044 '<|endoftext|>'
+print_info: EOS token             = 248046 '<|im_end|>'
+print_info: EOT token             = 248046 '<|im_end|>'
+print_info: PAD token             = 248055 '<|vision_pad|>'
+print_info: LF token              = 198 'Ċ'
+print_info: FIM PRE token         = 248060 '<|fim_prefix|>'
+print_info: FIM SUF token         = 248062 '<|fim_suffix|>'
+print_info: FIM MID token         = 248061 '<|fim_middle|>'
+print_info: FIM PAD token         = 248063 '<|fim_pad|>'
+print_info: FIM REP token         = 248064 '<|repo_name|>'
+print_info: FIM SEP token         = 248065 '<|file_sep|>'
+print_info: EOG token             = 248044 '<|endoftext|>'
+print_info: EOG token             = 248046 '<|im_end|>'
+print_info: EOG token             = 248063 '<|fim_pad|>'
+print_info: EOG token             = 248064 '<|repo_name|>'
+print_info: EOG token             = 248065 '<|file_sep|>'
+print_info: max token length      = 256
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 39 repeating layers to GPU
+load_tensors: offloaded 41/41 layers to GPU
+load_tensors:   CPU_Mapped model buffer size = 12633.97 MiB
+load_tensors:        CUDA0 model buffer size =  1596.81 MiB
+................................................................................................
+strata: native expert tier: 3200 slots x 1228800 B = 3.66 GiB (3.66 GiB API bytes)
+strata qwen35: bridge ready: 40 layers x 256 experts, 2048 x 512 experts top-8, workers 7, native tier on, prompt experts GPU/MMQ (grouped, resident cache + bounded cold ring)
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 4096
+llama_context: n_ctx_seq             = 4096
+llama_context: n_batch               = 4096
+llama_context: n_ubatch              = 4096
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = auto
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 1
+llama_context: n_outputs_max_per_seq = 1
+llama_context: n_ctx_seq (4096) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     0.95 MiB
+llama_kv_cache:      CUDA0 KV buffer size =    80.00 MiB
+llama_kv_cache: size =   80.00 MiB (  4096 cells,  10 layers,  1/1 seqs), K (f16):   40.00 MiB, V (f16):   40.00 MiB
+llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 256
+llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 256
+llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+llama_memory_recurrent: size =   62.81 MiB (     1 cells,  40 layers,  1 seqs  0 rs_seq), R (f32):    2.81 MiB, S (f32):   60.00 MiB, P (f32):    0.00 MiB
+sched_reserve: reserving ...
+resolve_fused_ops: Flash Attention enabled
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+sched_reserve:      CUDA0 compute buffer size =   418.13 MiB
+sched_reserve:  CUDA_Host compute buffer size =   160.19 MiB
+sched_reserve: graph: nodes = 3049, splits = 82, input objects = 4, input tensors = 10
+sched_reserve: reserve took 53.38 ms, sched copies = 1
+READY 4096 stop
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 0 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 4071 957.7
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+T 90
+DONE 1 3896 4073.3 2.2 length 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 1 finish=length produced=1 prompt_ms=4073.3 decode_ms=2.2
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 0 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 2833 1376.2
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+T 90
+DONE 1 3896 2834.8 1.3 length 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 2 finish=length produced=1 prompt_ms=2834.8 decode_ms=1.3
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 0 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 2809 1387.4
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+T 90
+T 198
+T 1
+T 78151
+T 763
+T 220
+T 15
+T 11
+T 198
+T 1
+T 9676
+T 33805
+T 763
+T 867
+T 198
+T 92
+DONE 16 3896 2811.4 914.0 length 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 3 finish=length produced=16 prompt_ms=2811.4 decode_ms=914.0
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 0 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 2799 1392.3
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+T 90
+T 198
+T 1
+T 78151
+T 763
+T 220
+T 15
+T 11
+T 198
+T 1
+T 9676
+T 33805
+T 763
+T 867
+T 198
+T 92
+DONE 16 3896 2801.7 409.2 length 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 4 finish=length produced=16 prompt_ms=2801.7 decode_ms=409.2
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 0 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2724 1401.6
+strata: prompt loan returned: 0 experts refilled in 0.0 ms
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 111737
+T 97190
+T 99139
+T 129072
+T 121765
+T 1076
+T 220
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 97190
+T 109004
+T 95946
+T 220
+T 96311
+T 141313
+T 220
+T 95933
+T 109616
+T 95815
+T 109616
+T 220
+T 96384
+T 96126
+T 1076
+T 220
+T 97190
+T 96076
+T 97850
+T 96537
+T 220
+T 111186
+T 109131
+T 828
+T 198
+DONE 128 3817 2726.7 4473.9 length 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 5 finish=length produced=128 prompt_ms=2726.7 decode_ms=4473.9
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2716 1405.7
+strata: prompt loan: slot 2988 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 102.0 ms
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 111737
+T 97190
+T 99139
+T 129072
+T 121765
+T 220
+T 118413
+T 97382
+T 220
+T 97890
+T 96074
+T 101736
+T 116940
+T 96091
+T 121765
+T 828
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 19
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 96882
+T 100063
+T 220
+T 110833
+T 99155
+T 220
+T 109004
+T 96341
+DONE 128 3817 2820.8 4202.5 length 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 6 finish=length produced=128 prompt_ms=2820.8 decode_ms=4202.5
+PP 1 1 82 12.1
+LOGPROBS 0 1 353:-2.5537
+DONE 0 1 82.5 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 7 finish=score produced=0 prompt_ms=82.5 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 461 slots (540.2 MiB, from slot 2739); 461 resident experts stream during the prompt and are refilled after it
+PP 3817 3817 2711 1408.7
+strata: prompt loan: slot 2988 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 461 experts refilled in 69.1 ms
+LOGPROBS 3816 1 103715:-0.3322
+DONE 0 3817 2782.0 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+serve: req 8 finish=score produced=0 prompt_ms=2782.0 decode_ms=0.0 topk=1 keep=1
+T 103715
+T 103853
+T 147797
+T 98663
+T 139572
+T 3709
+T 105090
+T 98642
+T 96282
+T 96544
+T 98151
+T 109867
+T 98682
+T 4960
+T 271
+T 13962
+T 32464
+T 98663
+T 139572
+T 16
+T 10638
+T 198
+T 332
+T 97043
+T 103741
+T 4960
+T 15
+T 332
+T 271
+T 332
+T 97707
+T 98960
+T 100720
+T 245342
+T 198
+T 16
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 111737
+T 97190
+T 99139
+T 129072
+T 121765
+T 220
+T 118413
+T 97382
+T 220
+T 97890
+T 96074
+T 101736
+T 116940
+T 96091
+T 121765
+T 828
+T 198
+T 17
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 97893
+T 96355
+T 97190
+T 99139
+T 102295
+T 220
+T 108838
+T 2095
+T 96067
+T 95952
+T 121765
+T 110413
+T 101736
+T 220
+T 108554
+T 97045
+T 97325
+T 97195
+T 828
+T 198
+T 18
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 114411
+T 99990
+T 96218
+T 96044
+T 115216
+T 95983
+T 96364
+T 95856
+T 220
+T 111737
+T 97190
+T 97919
+T 220
+T 121765
+T 110656
+T 95847
+T 130009
+T 99596
+T 828
+T 198
+T 19
+T 13
+T 220
+T 2972
+T 32
+T 332
+T 35760
+T 96882
+T 100063
+T 220
+T 110833
+T 99155
+T 220
+T 109004
+T 96341
+DONE 128 0 0.0 3763.3 length 0 0 3817 0 0 0 0 0.0 0 0
+serve: req 9 finish=length produced=128 prompt_ms=0.0 decode_ms=3763.3 cont=1
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4096,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+PP 1 1 73 13.6
+LOGPROBS 0 1 353:-2.5537
+DONE 0 1 73.7 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+serve: req 10 finish=score produced=0 prompt_ms=73.7 decode_ms=0.0 topk=1
+strata: prompt loan: borrowing the cache's last 470 slots (550.8 MiB, from slot 2730); 470 resident experts stream during the prompt and are refilled after it
+PP 3896 3896 2762 1411.3
+strata: prompt loan: slot 2988 read back byte-equal to its expert before the residency restore
+strata: prompt loan returned: 470 experts refilled in 69.8 ms
+LOGPROBS 3895 1 90:-0.1160
+DONE 0 3896 2833.6 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+serve: req 11 finish=score produced=0 prompt_ms=2833.6 decode_ms=0.0 topk=1 keep=1
+T 90
+T 198
+T 1
+T 78151
+T 763
+T 220
+T 15
+T 11
+T 198
+T 1
+T 9676
+T 33805
+T 763
+T 867
+T 198
+T 92
+T 248046
+DONE 17 0 0.0 428.9 stop 0 0 3896 0 0 0 0 0.0 0 0
+serve: req 12 finish=stop produced=17 prompt_ms=0.0 decode_ms=428.9 cont=1
+strata qwen35: router weights device (STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE=1): device_calls 312 legacy_calls 0 weights_d2h_bytes 0 weights_h2d_bytes 0 diag_d2h_bytes 0 check_runs 0 check_elems 0 check_eq 0 check_fail 0 check_nb1 -1 check_nb2 -1 check_alloc_failed 0
+strata qwen35: packed router ids (STRATA_QWEN35_PACKED_IDS=1): packed_calls 312 raw_calls 0 packed_d2h_bytes 38601888 raw_d2h_bytes 0 diag_d2h_bytes 0 check_shapes 0 check_elems 0 check_fail 0 check_nb1 -1
+~llama_context:      CUDA0 compute buffer size of 426.2487 MiB, does not match expectation of 418.1251 MiB

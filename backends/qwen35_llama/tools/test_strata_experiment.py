@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import strata_experiment as ex
 import leased_native  # import/syntax must succeed offline, before any GPU dispatch
@@ -20,6 +21,7 @@ def arm(ms=1000, spread=0):
 
 class ExperimentTests(unittest.TestCase):
     def setUp(self):
+        cpus=patch.object(ex.os,'cpu_count',return_value=32);cpus.start();self.addCleanup(cpus.stop)
         self.tmp = tempfile.TemporaryDirectory(dir=Path(__file__).parent)
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
@@ -123,6 +125,41 @@ class ExperimentTests(unittest.TestCase):
             self.assertNotEqual(c['config']['slots'], 2200)
             self.assertEqual(sum(c['config'][k] != self.spec['baseline']['config'][k] for k in ex.CONFIG_KEYS), 1)
 
+    def test_valid_history_cannot_rank_a_changed_search(self):
+        p = self.profile()
+        self.assertTrue(ex.profile_integrity(p)['valid'])
+        for section, key, value in [('engine', 'sha256', 'b'*64),
+                ('model', 'quant', 'other'), ('runtime', 'id', 'different-path'),
+                ('resources', 'max_gpu_used_mib', 7900), ('policy', 'min_gain', .02)]:
+            current = copy.deepcopy(self.spec); current[section][key] = value
+            with self.subTest(section=section, key=key):
+                self.assertFalse(ex.baseline_compatibility(p, current, self.fp)['valid'])
+        current = copy.deepcopy(self.spec); current['shapes'][0]['sha256'] = 'c'*64
+        self.assertFalse(ex.baseline_compatibility(p, current, self.fp)['valid'])
+        current = copy.deepcopy(self.spec); current['benchmark'] = {**ex.BENCHMARK_V1, 'version':'other'}
+        self.assertFalse(ex.baseline_compatibility(p, current, self.fp)['valid'])
+        self.assertTrue(ex.profile_integrity(p)['valid'])
+
+    def test_compatible_search_controls_and_declared_candidate_only(self):
+        p = self.profile(); current = copy.deepcopy(self.spec)
+        current['baseline_profile'] = str(self.root/'record/profile.json')
+        current['budget']['max_native'] = 12
+        current['candidates'] = [{'id':'threads6','config':{**current['baseline']['config'],'threads':6}}]
+        self.assertTrue(ex.baseline_compatibility(p,current,self.fp)['valid'])
+        current['baseline']['config']['compact'] = True
+        self.assertFalse(ex.baseline_compatibility(p,current,self.fp)['valid'])
+
+    def test_search_fails_before_any_runner_with_valid_but_incompatible_history(self):
+        p = self.profile(); path = self.root/'record/profile.json'
+        current = copy.deepcopy(self.spec); current['baseline_profile'] = str(path)
+        current['shapes'][0]['max_new'] = 1  # valid shape, input identity changed
+        current['runtime']['id'] = 'another-runtime'
+        calls=[]
+        with self.assertRaisesRegex(ValueError, 'baseline Profile incompatible'):
+            ex.execute(current,self.root/'search',runner=lambda *a:calls.append(a),fp=self.fp)
+        self.assertEqual(calls,[])
+        self.assertTrue(ex.profile_integrity(p)['valid'])
+
     def test_input_engine_and_budget_guards(self):
         ex.validate(self.spec)
         for k, value in [('max_native', 100), ('wait_s', 61), ('native_timeout_s', -1)]:
@@ -137,6 +174,15 @@ class ExperimentTests(unittest.TestCase):
                       'decode_ms': 0, 'finish': 'length'}}
         m = ex.metrics(a)
         self.assertIsNone(m['decode_observed_tps']); self.assertIsNone(m['tpot_observed_ms'])
+
+    def test_compact_fallback_is_not_a_measured_compact_candidate(self):
+        spec=copy.deepcopy(self.spec);spec['baseline']['config']['compact']=True
+        with self.assertRaisesRegex(ValueError,'COMPACT requires'):ex.validate(spec)
+        cfg=spec['baseline']['config']
+        with self.assertRaisesRegex(ValueError,'not applied'):
+            leased_native.configuration_evidence(cfg,'compact slots requested but no profile was given; staying uniform\nstrata: native expert tier: 3200 slots')
+        self.assertTrue(leased_native.configuration_evidence(cfg,'strata: native expert tier (compact): 3200 slots')['compact'])
+        with self.assertRaises(ValueError):leased_native.configuration_evidence(cfg,'strata: native expert tier (compact): 2700 slots')
 
 
 if __name__ == '__main__': unittest.main()

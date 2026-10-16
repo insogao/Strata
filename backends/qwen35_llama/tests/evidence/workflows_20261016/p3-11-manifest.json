@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-16T03:04:20.963582+00:00",
+  "stage": "P3-11",
+  "scope": "two same-binary native processes identical P0 P1 S0 S1 L0 L1 plus held-state L128 and short EOS; light250ms telemetry diagnostic",
+  "budget": {
+    "native": 2,
+    "native_timeout_s": 120,
+    "internal_max": 28,
+    "trace": 0,
+    "build": 0,
+    "window_s": 1200,
+    "repair": 0
+  },
+  "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+  "model_registered_sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "mtp": false,
+  "compact": false,
+  "config": {
+    "slots": 3200,
+    "threads": 8,
+    "ubatch": 4096,
+    "ctx": 4096,
+    "compact": false
+  },
+  "ownership": "new diagnostic sampler + isolated experiment directories; no native source modifications",
+  "exit_conditions": "unsafe state/resource/CUDA/NaN fails stop related run; no automatic retry; idle otherGPU -> checkpoint",
+  "missing_counters": "serve DONE hits/lookups/tier hardcoded0; no honest cache-miss service/kernel split available; do not invent"
+}

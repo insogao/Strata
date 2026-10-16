@@ -1,0 +1,19 @@
+test_candidate_generation_small_single_variable_and_no2200 (test_strata_experiment.ExperimentTests.test_candidate_generation_small_single_variable_and_no2200) ... ok
+test_compact_fallback_is_not_a_measured_compact_candidate (test_strata_experiment.ExperimentTests.test_compact_fallback_is_not_a_measured_compact_candidate) ... ok
+test_compatible_search_controls_and_declared_candidate_only (test_strata_experiment.ExperimentTests.test_compatible_search_controls_and_declared_candidate_only) ... ok
+test_evidence_and_pack_mutation_invalidate (test_strata_experiment.ExperimentTests.test_evidence_and_pack_mutation_invalidate) ... ok
+test_failure_retained_without_retry (test_strata_experiment.ExperimentTests.test_failure_retained_without_retry) ... ok
+test_input_engine_and_budget_guards (test_strata_experiment.ExperimentTests.test_input_engine_and_budget_guards) ... ok
+test_memory_refusal_consumes_no_native (test_strata_experiment.ExperimentTests.test_memory_refusal_consumes_no_native) ... ok
+test_model_runtime_workload_and_device_changes_invalidate (test_strata_experiment.ExperimentTests.test_model_runtime_workload_and_device_changes_invalidate) ... ok
+test_n1_has_no_decode_tps_or_tpot (test_strata_experiment.ExperimentTests.test_n1_has_no_decode_tps_or_tpot) ... ok
+test_profile_and_identity_roundtrip_never_installs_or_selects_baseline (test_strata_experiment.ExperimentTests.test_profile_and_identity_roundtrip_never_installs_or_selects_baseline) ... ok
+test_real_measurement_only_decision_and_drift (test_strata_experiment.ExperimentTests.test_real_measurement_only_decision_and_drift) ... ok
+test_resealed_unmeasured_winner_is_refused (test_strata_experiment.ExperimentTests.test_resealed_unmeasured_winner_is_refused) ... ok
+test_search_fails_before_any_runner_with_valid_but_incompatible_history (test_strata_experiment.ExperimentTests.test_search_fails_before_any_runner_with_valid_but_incompatible_history) ... ok
+test_valid_history_cannot_rank_a_changed_search (test_strata_experiment.ExperimentTests.test_valid_history_cannot_rank_a_changed_search) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.740s
+
+OK

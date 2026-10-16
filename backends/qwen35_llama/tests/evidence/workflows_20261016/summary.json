@@ -1,0 +1,5652 @@
+{
+  "schema": "strata-workflow-review/1",
+  "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+  "model_sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "production_approved": false,
+  "selected_configuration": null,
+  "artifacts": [
+    {
+      "path": ".gitattributes",
+      "sha256": "db6e2588f90c39281f86a7d46e89a0f2c8868b8b48d76bca271fbabedec1ab69"
+    },
+    {
+      "path": "abandoned-owner-cpu.log",
+      "sha256": "d27ad26e299c14ce694076fe0e80255f3ea048b5d35a614c64073d775e7b9262"
+    },
+    {
+      "path": "compact-search-compact-on-0-raw.log",
+      "sha256": "de09297c59109d4013f9dc909ebc01d210505238d02bb0d1b7fe9db47a241b71"
+    },
+    {
+      "path": "compact-search-compact-on-0-responses.json",
+      "sha256": "f3d7d8fc7bb38779985bded49e24cbe325336ed8096079572f287da054180256"
+    },
+    {
+      "path": "compact-search-compact-on-0-telemetry.json",
+      "sha256": "7b4ea4efe2173d166e1afdb88d5bba8da69d5b05999724701e02221697c279c8"
+    },
+    {
+      "path": "compact-search-compact-on-1-raw.log",
+      "sha256": "e309f2906b6d98b41b9ae57968a8d644b424902fdd70c211c44093b89c474d4e"
+    },
+    {
+      "path": "compact-search-compact-on-1-responses.json",
+      "sha256": "e3a192db5f43ba46b90e442b8c689240e4f6715e20c99ca39e8d2cc6a088f39b"
+    },
+    {
+      "path": "compact-search-compact-on-1-telemetry.json",
+      "sha256": "68d641fcb3a1aa45305c053b8971eb93e7e200fc4437144e295a525f8c423969"
+    },
+    {
+      "path": "compact-search-compact-on-2-raw.log",
+      "sha256": "c32f7b2dee38afcb95d62935a3ff80d2be6d4fd6ef06d955d37bb756f7df5bf3"
+    },
+    {
+      "path": "compact-search-compact-on-2-responses.json",
+      "sha256": "9227a904f80796ef933347ac210ebc47ef2cac30d85dfb48c0a0d626a071f529"
+    },
+    {
+      "path": "compact-search-compact-on-2-telemetry.json",
+      "sha256": "417d157c4f65e475cd04fb04217c3c53751688f6f3055580a3603202f5c58f20"
+    },
+    {
+      "path": "compact-search-compact-on-3-raw.log",
+      "sha256": "eb597706ae121e9120ef25122f2c71af21cba5481571cada2fde28e2bfb2a0e8"
+    },
+    {
+      "path": "compact-search-compact-on-3-responses.json",
+      "sha256": "08d461f1b341329a429b9082b09e8b84317cbe891c20bd9a1106e8f7b2010585"
+    },
+    {
+      "path": "compact-search-compact-on-3-telemetry.json",
+      "sha256": "87d7adb4b903975832cc1213632cec9a56cacceaae5ef2fb6de35462b61b6a35"
+    },
+    {
+      "path": "compact-search-spec.json",
+      "sha256": "9347795aa124b113143917f7e8a7c8235e470cd2f4edf15bfe19e35cc6253a47"
+    },
+    {
+      "path": "compat-final-cpu.log",
+      "sha256": "45b860bf1c73a99dac63a59bf139733581afe98cecd39d7d7f27f09afbd2697c"
+    },
+    {
+      "path": "cpu-final.txt",
+      "sha256": "4586ab79d3e589ebf1854437dc51d3823ca26f6b86cbf2c36192819f8b237b83"
+    },
+    {
+      "path": "cpu-final206.txt",
+      "sha256": "95fb4b4aa6d110b3ea8632bc0469c34d0583e773c9cb4580d695c16d14384094"
+    },
+    {
+      "path": "diagnose.py",
+      "sha256": "1ef59cf60ae9cf6366f4fa0c7722022f764141d90b39a02413bbaebbd2e037cc"
+    },
+    {
+      "path": "diagnostic-0-raw.log",
+      "sha256": "2626fed192326b77e4542022330d79047505c3005d17dfa7ef16085c7e20b1f3"
+    },
+    {
+      "path": "diagnostic-0-responses.json",
+      "sha256": "6e774714b115acec447cfbce49489aff8b3cdc92421cd6f44e48638c9d31667e"
+    },
+    {
+      "path": "diagnostic-0-telemetry.json",
+      "sha256": "6a5a80ed16e47949ff795e8f5024d2bc50ee24ec870b8b141cc360fdd6153b8c"
+    },
+    {
+      "path": "diagnostic-1-raw.log",
+      "sha256": "197f430d64b33d28956e28e15bc7fc76cd469c4f6db02128648c98fd25639536"
+    },
+    {
+      "path": "diagnostic-1-responses.json",
+      "sha256": "6fbad52dc9f2c831123ec016965145bdeabdee115fc28245e350cbb8ad45ec80"
+    },
+    {
+      "path": "diagnostic-1-telemetry.json",
+      "sha256": "0f1eefecceb30c1e8a37f8998d9bb91a9bf37d7c158a7936414cf5814c3720b0"
+    },
+    {
+      "path": "final-cpu-registration.json",
+      "sha256": "4d1e50dc81e318b0ad2e50a8450a7ae27735031f0e8ace25d037d27980fd7804"
+    },
+    {
+      "path": "final-cpu-update.json",
+      "sha256": "db9af0537021e07c50c40348bba8b1695df6b259ca1577c8bc3dec75027301ad"
+    },
+    {
+      "path": "p3-10-real-history.json",
+      "sha256": "07b546a15110dd96c4f767961c27c031502956072e692b0d6c9491c762013b57"
+    },
+    {
+      "path": "p3-11-manifest.json",
+      "sha256": "0a2b7bd1aac4f63c8851d571e99950632a71f67e566eadacfa8a25311d53ddaf"
+    },
+    {
+      "path": "p3-14-manifest.json",
+      "sha256": "1d87cf852d069830f721509c5f74b0053e5b72b49429facecd426f322d966105"
+    },
+    {
+      "path": "p3-14-repair1.json",
+      "sha256": "5f52f56b84c4982548b45908040056537d17dfb841b9328271bf8b1be7b85a0c"
+    },
+    {
+      "path": "p3-14b-registration.json",
+      "sha256": "0ffc345ff7abaa3ed7299cc6e3054ccca0121c4dddc75d994da387589eb3cacc"
+    },
+    {
+      "path": "power-post-snapshot.json",
+      "sha256": "b231d188e84bee3bab5317b8b2d12cde392a06c6943b4e6de4eb4a94b9543fbd"
+    },
+    {
+      "path": "spec.json",
+      "sha256": "bc89d73948f8bc771de00aed932d7d9f0fd734a45712ce7c41373b3ff4979d86"
+    },
+    {
+      "path": "stream-cpu-final.log",
+      "sha256": "aba286935546a4eab1d70ea02929c66f326b2de9874f91a99903dcb5f57a7581"
+    },
+    {
+      "path": "stream-cpu-first.log",
+      "sha256": "f2029528b27c7d3eb8db76d46868a9397f71fbc4d46dacfe2d6a5ed3c79571ec"
+    },
+    {
+      "path": "stream-cpu-repair1.log",
+      "sha256": "12f0aa2fe3981e29feef7f4c6ed7bba643e656c0a28565ecd156d0e0afe96a80"
+    },
+    {
+      "path": "stream-owner-smoke.log",
+      "sha256": "5527b4fbf89f993159eb5ae1ede170af07451e5ec3f4847e6191222ecc7f37d3"
+    },
+    {
+      "path": "stream-owner-smoke.py",
+      "sha256": "01ad157c1188c0b08b93fdc158555a96853d210f8ccf8ac7401f0a1b38ac731c"
+    },
+    {
+      "path": "stream-service-owner-raw.log",
+      "sha256": "c91b0a370607c6eced5454ec1e4ea7a2bf838fd1223ffece02fc1052e6301766"
+    },
+    {
+      "path": "stream-service-raw.log",
+      "sha256": "5c14dcc261d05c5efde869a118e77219f40085ed5a676f231bde81257b833d1d"
+    },
+    {
+      "path": "stream-service-repair1-raw.log",
+      "sha256": "bdddddd5f3bcf9531de675ee5686e23af7b1dd41dd18c77f5defd9fb418c991e"
+    },
+    {
+      "path": "stream-smoke-first.py",
+      "sha256": "04910252116fa8dcf32b67b4d79c65c0cc24d2883fef9cc2f20a17c89e0e5513"
+    },
+    {
+      "path": "stream-smoke-repair1.log",
+      "sha256": "01e00f447eae0e7783005d94c777055afe8452f6a8c009cafbf3c40b7f7d9775"
+    },
+    {
+      "path": "stream-smoke-repair1.py",
+      "sha256": "c207f4fe0f6e6acacc7e1346c328ff6592ab292641ecf6c2b0f7a48067e02c7b"
+    },
+    {
+      "path": "stream-smoke.log",
+      "sha256": "eed66199106c15c92a2d01cf5937cccefcd926e3c4f5181b18e5fd1470e8d36c"
+    },
+    {
+      "path": "stream-smoke.py",
+      "sha256": "c207f4fe0f6e6acacc7e1346c328ff6592ab292641ecf6c2b0f7a48067e02c7b"
+    },
+    {
+      "path": "workload-cpu.log",
+      "sha256": "7849db2fa9070cdd905171529ae05d2ede714df067a7216ff91eb6659907dca7"
+    },
+    {
+      "path": "workload-manifest.json",
+      "sha256": "0172fbe2121ba25a6732ebdbf39bc20e27f5bbb3aa18cf1b7398812a930f9c92"
+    },
+    {
+      "path": "workload-reference-baseline-profile-raw.log",
+      "sha256": "b005fb95ebda02e363be29aef05a2750b1dc7f0d06f405c5e9f5f9df4ab22e30"
+    },
+    {
+      "path": "workload-reference-baseline-profile-responses.json",
+      "sha256": "1a7b4b144bbf71112ae20d47bef754aaeebb504e38adaaaa6083f2db84624a7c"
+    },
+    {
+      "path": "workload-reference-baseline-profile-telemetry.json",
+      "sha256": "90255d4dec82b1639a65e5d2a42cfe3093637de8cc1886f2eab2344cf4cad201"
+    },
+    {
+      "path": "workload-spec.json",
+      "sha256": "925fcbc57de1591c654220833b5dc3a87fc347f22ccb5cd9af87f875f4b83b55"
+    }
+  ],
+  "runs": {
+    "compact-search/compact-on-0": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:14:01.121",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 37556,
+            "exit_code": 0,
+            "elapsed_seconds": 53.801,
+            "finished_at": "2026-10-16T11:14:54.922",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\compact-search\\compact-on-0\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            37556
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:14:01.120",
+          "removed_at": "2026-10-16T11:14:54.923",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "compact-search-compact-on-0-raw.log",
+      "responses": "compact-search-compact-on-0-responses.json",
+      "telemetry": "compact-search-compact-on-0-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7896.03515625,
+        "host_rss_peak_mib": 14996.11328125,
+        "available_ram_min_mib": 5403.29296875,
+        "violation": null
+      },
+      "measurements": {
+        "metrics": {
+          "P0": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 3412.3,
+            "prefill_tps": 1141.751897547109,
+            "decode_ms": 1.2,
+            "ttft_observed_ms": 3421.817700000247,
+            "e2e_observed_ms": 3421.8877000093926,
+            "last_visible_observed_ms": 3421.817700000247,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "P1": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2769.9,
+            "prefill_tps": 1406.5489728871078,
+            "decode_ms": 1.2,
+            "ttft_observed_ms": 2787.7206000121078,
+            "e2e_observed_ms": 2787.788500005263,
+            "last_visible_observed_ms": 2787.7206000121078,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "W10": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2758.3,
+            "score_response_ms": 2767.832300000009,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2767.8350000060163,
+            "requests_per_s": 0.36129321292556327,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W11": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2765.0,
+            "score_response_ms": 2781.7737000004854,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2781.7763999919407,
+            "requests_per_s": 0.359482523470577,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain0": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2704.4,
+            "score_response_ms": 2715.404699993087,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7357
+              },
+              {
+                "id": 16,
+                "logprob": -9.2326
+              },
+              {
+                "id": 17,
+                "logprob": -13.2729
+              },
+              {
+                "id": 18,
+                "logprob": -11.1285
+              }
+            ],
+            "label_mass": 0.00011715094534210036,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3957.8,
+            "ttft_observed_ms": 12.975900011952035,
+            "e2e_observed_ms": 3970.5169000080787,
+            "last_visible_observed_ms": 3945.2275000076042,
+            "decode_observed_tps": 32.297017820563774,
+            "tpot_observed_ms": 30.96261102358781,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "ba2757262bc74ff8c8a1ef003555282a2cb3206b56d9399e931d683798f99de5",
+            "branch": "explain",
+            "workflow_observed_ms": 6687.324400001671,
+            "requests_per_s": 0.14953663680496046,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain1": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2775.0,
+            "score_response_ms": 2788.685199993779,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3384.7,
+            "ttft_observed_ms": 11.702599993441254,
+            "e2e_observed_ms": 3397.2115999931702,
+            "last_visible_observed_ms": 3378.808299996308,
+            "decode_observed_tps": 37.71785364501384,
+            "tpot_observed_ms": 26.512643307109187,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "explain",
+            "workflow_observed_ms": 6187.55560000136,
+            "requests_per_s": 0.1616147093692023,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain0": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2775.2,
+            "score_response_ms": 2785.114900005283,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2785.118700005114,
+            "requests_per_s": 0.3590511241040333,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain1": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2706.2,
+            "score_response_ms": 2721.6775999986567,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2721.682499992312,
+            "requests_per_s": 0.36741978537277026,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short0": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2781.9,
+            "prefill_tps": 1400.481685179194,
+            "decode_ms": 463.7,
+            "ttft_observed_ms": 2793.4654999990016,
+            "e2e_observed_ms": 3259.281499995268,
+            "last_visible_observed_ms": 3259.224199995515,
+            "decode_observed_tps": 34.35255208355695,
+            "tpot_observed_ms": 29.109918749782082,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3259.281499995268,
+            "requests_per_s": 0.3068160881474803,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short1": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2778.5,
+            "prefill_tps": 1402.195429188411,
+            "decode_ms": 464.1,
+            "ttft_observed_ms": 2790.41140001209,
+            "e2e_observed_ms": 3254.295100006857,
+            "last_visible_observed_ms": 3254.2404999985592,
+            "decode_observed_tps": 34.495463955294625,
+            "tpot_observed_ms": 28.989318749154336,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3254.295100006857,
+            "requests_per_s": 0.3072862076945305,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long0": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2711.5,
+            "prefill_tps": 1407.7079107505072,
+            "decode_ms": 3423.8,
+            "ttft_observed_ms": 2719.6382000111043,
+            "e2e_observed_ms": 6145.644900010666,
+            "last_visible_observed_ms": 6145.584200014127,
+            "decode_observed_tps": 37.0700530597645,
+            "tpot_observed_ms": 26.975952755929317,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6145.644900010666,
+            "requests_per_s": 0.16271685336037955,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long1": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2782.0,
+            "prefill_tps": 1372.0345075485263,
+            "decode_ms": 3327.5,
+            "ttft_observed_ms": 2791.289200002211,
+            "e2e_observed_ms": 6121.685799997067,
+            "last_visible_observed_ms": 6121.631300004083,
+            "decode_observed_tps": 38.13422050543355,
+            "tpot_observed_ms": 26.223166141747022,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6121.685799997067,
+            "requests_per_s": 0.1633536958072038,
+            "quality": "structure/1; business accuracy unverified"
+          }
+        },
+        "load_and_ready_s": 2.667675600008806,
+        "resources": {
+          "period_s": 0.1,
+          "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+          "gpu_peak_mib": 7896.03515625,
+          "host_rss_peak_mib": 14996.11328125,
+          "available_ram_min_mib": 5403.29296875,
+          "violation": null
+        }
+      }
+    },
+    "compact-search/compact-on-1": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:14:55.198",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 35608,
+            "exit_code": 0,
+            "elapsed_seconds": 54.95,
+            "finished_at": "2026-10-16T11:15:50.148",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\compact-search\\compact-on-1\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            35608
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:14:55.190",
+          "removed_at": "2026-10-16T11:15:50.149",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "compact-search-compact-on-1-raw.log",
+      "responses": "compact-search-compact-on-1-responses.json",
+      "telemetry": "compact-search-compact-on-1-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7968.31640625,
+        "host_rss_peak_mib": 14992.8359375,
+        "available_ram_min_mib": 5300.92578125,
+        "violation": null
+      },
+      "measurements": {
+        "metrics": {
+          "P0": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 3593.5,
+            "prefill_tps": 1084.1797690274107,
+            "decode_ms": 1.7,
+            "ttft_observed_ms": 3605.0374999904307,
+            "e2e_observed_ms": 3605.0791000016034,
+            "last_visible_observed_ms": 3605.0374999904307,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "P1": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2810.0,
+            "prefill_tps": 1386.4768683274021,
+            "decode_ms": 1.3,
+            "ttft_observed_ms": 2820.3487999999197,
+            "e2e_observed_ms": 2820.4180000029737,
+            "last_visible_observed_ms": 2820.3487999999197,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "W10": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2806.3,
+            "score_response_ms": 2819.638800006942,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2819.641500012949,
+            "requests_per_s": 0.3546550155384674,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W11": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2806.7,
+            "score_response_ms": 2820.500499990885,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2820.5034999991767,
+            "requests_per_s": 0.35454662616099997,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain0": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2799.0,
+            "score_response_ms": 2809.847299999092,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7357
+              },
+              {
+                "id": 16,
+                "logprob": -9.2326
+              },
+              {
+                "id": 17,
+                "logprob": -13.2729
+              },
+              {
+                "id": 18,
+                "logprob": -11.1285
+              }
+            ],
+            "label_mass": 0.00011715094534210036,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3913.9,
+            "ttft_observed_ms": 7.6911000069230795,
+            "e2e_observed_ms": 3923.3984000020428,
+            "last_visible_observed_ms": 3902.97520000604,
+            "decode_observed_tps": 32.60352691605441,
+            "tpot_observed_ms": 30.671528346449737,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "904e472f40908d18ddc72f0d673bb9b44f4a761594c8d9b34ddeb83c71435090",
+            "branch": "explain",
+            "workflow_observed_ms": 6734.815700008767,
+            "requests_per_s": 0.14848216262231173,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain1": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2783.4,
+            "score_response_ms": 2795.7846000063,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3415.0,
+            "ttft_observed_ms": 13.712600004510023,
+            "e2e_observed_ms": 3423.559600007138,
+            "last_visible_observed_ms": 3404.639700005646,
+            "decode_observed_tps": 37.45288419794028,
+            "tpot_observed_ms": 26.700213385835717,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "explain",
+            "workflow_observed_ms": 6220.906800008379,
+            "requests_per_s": 0.16074826904634756,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain0": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2810.0,
+            "score_response_ms": 2828.246700009913,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2828.2506999967154,
+            "requests_per_s": 0.3535754450626182,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain1": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2750.8,
+            "score_response_ms": 2769.399599987082,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2769.4049999990966,
+            "requests_per_s": 0.3610883926331924,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short0": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2817.3,
+            "prefill_tps": 1382.8843218684556,
+            "decode_ms": 467.5,
+            "ttft_observed_ms": 2830.196500013699,
+            "e2e_observed_ms": 3296.7409000120824,
+            "last_visible_observed_ms": 3296.6992000001483,
+            "decode_observed_tps": 34.29776505144505,
+            "tpot_observed_ms": 29.15641874915309,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3296.7409000120824,
+            "requests_per_s": 0.3033298734505751,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short1": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2795.2,
+            "prefill_tps": 1393.8179736691472,
+            "decode_ms": 468.7,
+            "ttft_observed_ms": 2806.2332999979844,
+            "e2e_observed_ms": 3277.2127999924123,
+            "last_visible_observed_ms": 3277.155200004927,
+            "decode_observed_tps": 33.97590980535015,
+            "tpot_observed_ms": 29.432618750433903,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3277.2127999924123,
+            "requests_per_s": 0.3051373410973847,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long0": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2737.3,
+            "prefill_tps": 1394.4397764220216,
+            "decode_ms": 3643.6,
+            "ttft_observed_ms": 2746.1381000030087,
+            "e2e_observed_ms": 6393.923199997516,
+            "last_visible_observed_ms": 6393.872600005125,
+            "decode_observed_tps": 34.81613039543485,
+            "tpot_observed_ms": 28.722318897654457,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6393.923199997516,
+            "requests_per_s": 0.15639850037616787,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long1": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2802.0,
+            "prefill_tps": 1362.2412562455388,
+            "decode_ms": 3468.6,
+            "ttft_observed_ms": 2825.848099993891,
+            "e2e_observed_ms": 6284.845599991968,
+            "last_visible_observed_ms": 6284.812600002624,
+            "decode_observed_tps": 36.71619064019864,
+            "tpot_observed_ms": 27.235940944950652,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6284.845599991968,
+            "requests_per_s": 0.15911289849368423,
+            "quality": "structure/1; business accuracy unverified"
+          }
+        },
+        "load_and_ready_s": 2.8346616000053473,
+        "resources": {
+          "period_s": 0.1,
+          "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+          "gpu_peak_mib": 7968.31640625,
+          "host_rss_peak_mib": 14992.8359375,
+          "available_ram_min_mib": 5300.92578125,
+          "violation": null
+        }
+      }
+    },
+    "compact-search/compact-on-2": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:15:50.410",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 36908,
+            "exit_code": 0,
+            "elapsed_seconds": 56.242,
+            "finished_at": "2026-10-16T11:16:46.652",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\compact-search\\compact-on-2\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            36908
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:15:50.402",
+          "removed_at": "2026-10-16T11:16:46.653",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "compact-search-compact-on-2-raw.log",
+      "responses": "compact-search-compact-on-2-responses.json",
+      "telemetry": "compact-search-compact-on-2-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7883.97265625,
+        "host_rss_peak_mib": 14991.28515625,
+        "available_ram_min_mib": 5269.62890625,
+        "violation": null
+      },
+      "measurements": {
+        "metrics": {
+          "P0": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 3672.3,
+            "prefill_tps": 1060.9155025460882,
+            "decode_ms": 1.6,
+            "ttft_observed_ms": 3682.871900004102,
+            "e2e_observed_ms": 3682.9143000068143,
+            "last_visible_observed_ms": 3682.871900004102,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "P1": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2833.9,
+            "prefill_tps": 1374.7838667560604,
+            "decode_ms": 1.4,
+            "ttft_observed_ms": 2843.0613999953493,
+            "e2e_observed_ms": 2843.1289000000106,
+            "last_visible_observed_ms": 2843.0613999953493,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "W10": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2877.7,
+            "score_response_ms": 2887.4781999911647,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2887.4814999871887,
+            "requests_per_s": 0.3463225651850711,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W11": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2878.7,
+            "score_response_ms": 2889.0734000015073,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2889.076399995247,
+            "requests_per_s": 0.3461313795653328,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain0": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2742.7,
+            "score_response_ms": 2756.5783000027295,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7357
+              },
+              {
+                "id": 16,
+                "logprob": -9.2326
+              },
+              {
+                "id": 17,
+                "logprob": -13.2729
+              },
+              {
+                "id": 18,
+                "logprob": -11.1285
+              }
+            ],
+            "label_mass": 0.00011715094534210036,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 4115.5,
+            "ttft_observed_ms": 14.260999989346601,
+            "e2e_observed_ms": 4124.378900000011,
+            "last_visible_observed_ms": 4099.013199986075,
+            "decode_observed_tps": 31.09123730935299,
+            "tpot_observed_ms": 32.16340314958054,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "904e472f40908d18ddc72f0d673bb9b44f4a761594c8d9b34ddeb83c71435090",
+            "branch": "explain",
+            "workflow_observed_ms": 6882.321900004172,
+            "requests_per_s": 0.14529980063841447,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain1": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2804.2,
+            "score_response_ms": 2816.655999995419,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3518.0,
+            "ttft_observed_ms": 7.220500003313646,
+            "e2e_observed_ms": 3527.3905000067316,
+            "last_visible_observed_ms": 3512.854700005846,
+            "decode_observed_tps": 36.22739645793855,
+            "tpot_observed_ms": 27.603418897657736,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "explain",
+            "workflow_observed_ms": 6345.8201000030385,
+            "requests_per_s": 0.15758404496835976,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain0": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2839.3,
+            "score_response_ms": 2854.129400002421,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2854.1331000014907,
+            "requests_per_s": 0.35036908404849015,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain1": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2752.0,
+            "score_response_ms": 2770.8190999983344,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2770.8230999996886,
+            "requests_per_s": 0.36090358854021115,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short0": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2801.5,
+            "prefill_tps": 1390.683562377298,
+            "decode_ms": 487.0,
+            "ttft_observed_ms": 2820.735400004196,
+            "e2e_observed_ms": 3300.7224000029964,
+            "last_visible_observed_ms": 3300.6622999964748,
+            "decode_observed_tps": 33.33841049596806,
+            "tpot_observed_ms": 29.995431249517424,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3300.7224000029964,
+            "requests_per_s": 0.30296398146026826,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short1": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2810.8,
+            "prefill_tps": 1386.082254162516,
+            "decode_ms": 493.2,
+            "ttft_observed_ms": 2839.476499997545,
+            "e2e_observed_ms": 3323.6635999928694,
+            "last_visible_observed_ms": 3323.612199994386,
+            "decode_observed_tps": 33.04858534519226,
+            "tpot_observed_ms": 30.25848124980257,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3323.6635999928694,
+            "requests_per_s": 0.30087280794667226,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long0": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2799.1,
+            "prefill_tps": 1363.6526026222714,
+            "decode_ms": 3773.3,
+            "ttft_observed_ms": 2821.9344000099227,
+            "e2e_observed_ms": 6581.690300008631,
+            "last_visible_observed_ms": 6581.639200012432,
+            "decode_observed_tps": 33.779247774962336,
+            "tpot_observed_ms": 29.60397480316937,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6581.690300008631,
+            "requests_per_s": 0.15193665371928675,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long1": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2781.9,
+            "prefill_tps": 1372.0838275998417,
+            "decode_ms": 3868.0,
+            "ttft_observed_ms": 2796.7586999875493,
+            "e2e_observed_ms": 6663.907199996174,
+            "last_visible_observed_ms": 6663.84829999879,
+            "decode_observed_tps": 32.84123543442873,
+            "tpot_observed_ms": 30.44952440953733,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6663.907199996174,
+            "requests_per_s": 0.15006211371019304,
+            "quality": "structure/1; business accuracy unverified"
+          }
+        },
+        "load_and_ready_s": 2.842436299994006,
+        "resources": {
+          "period_s": 0.1,
+          "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+          "gpu_peak_mib": 7883.97265625,
+          "host_rss_peak_mib": 14991.28515625,
+          "available_ram_min_mib": 5269.62890625,
+          "violation": null
+        }
+      }
+    },
+    "compact-search/compact-on-3": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:16:46.926",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 26908,
+            "exit_code": 0,
+            "elapsed_seconds": 57.555,
+            "finished_at": "2026-10-16T11:17:44.481",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\compact-search\\compact-on-3\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            26908
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:16:46.919",
+          "removed_at": "2026-10-16T11:17:44.482",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "compact-search-compact-on-3-raw.log",
+      "responses": "compact-search-compact-on-3-responses.json",
+      "telemetry": "compact-search-compact-on-3-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7878.03515625,
+        "host_rss_peak_mib": 14992.01953125,
+        "available_ram_min_mib": 5306.69140625,
+        "violation": null
+      },
+      "measurements": {
+        "metrics": {
+          "P0": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 3638.1,
+            "prefill_tps": 1070.8886506693054,
+            "decode_ms": 1.4,
+            "ttft_observed_ms": 3649.328300001798,
+            "e2e_observed_ms": 3649.3712999945274,
+            "last_visible_observed_ms": 3649.328300001798,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "P1": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2830.5,
+            "prefill_tps": 1376.4352587882,
+            "decode_ms": 1.4,
+            "ttft_observed_ms": 2842.7260000025854,
+            "e2e_observed_ms": 2842.7744999935385,
+            "last_visible_observed_ms": 2842.7260000025854,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "W10": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2839.0,
+            "score_response_ms": 2852.395699999761,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2852.398400005768,
+            "requests_per_s": 0.3505821627154109,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W11": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2832.7,
+            "score_response_ms": 2845.7818000024417,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2845.784899996943,
+            "requests_per_s": 0.3513969028372715,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain0": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2782.4,
+            "score_response_ms": 2792.173299996648,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7357
+              },
+              {
+                "id": 16,
+                "logprob": -9.2326
+              },
+              {
+                "id": 17,
+                "logprob": -13.2729
+              },
+              {
+                "id": 18,
+                "logprob": -11.1285
+              }
+            ],
+            "label_mass": 0.00011715094534210036,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 4770.6,
+            "ttft_observed_ms": 16.788099994300865,
+            "e2e_observed_ms": 4784.208500001114,
+            "last_visible_observed_ms": 4741.677199999685,
+            "decode_observed_tps": 26.878937751122088,
+            "tpot_observed_ms": 37.20385118114476,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "904e472f40908d18ddc72f0d673bb9b44f4a761594c8d9b34ddeb83c71435090",
+            "branch": "explain",
+            "workflow_observed_ms": 7577.901900003781,
+            "requests_per_s": 0.1319626478668853,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain1": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2846.3,
+            "score_response_ms": 2861.241999999038,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3707.2,
+            "ttft_observed_ms": 13.112200002069585,
+            "e2e_observed_ms": 3716.7794999986654,
+            "last_visible_observed_ms": 3690.6930999975884,
+            "decode_observed_tps": 34.533570695930784,
+            "tpot_observed_ms": 28.95732992122456,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "explain",
+            "workflow_observed_ms": 6579.714099992998,
+            "requests_per_s": 0.1519822874980334,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain0": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2835.2,
+            "score_response_ms": 2845.854400002281,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2845.858300002874,
+            "requests_per_s": 0.3513878396542056,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain1": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2753.4,
+            "score_response_ms": 2769.6529000095325,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2769.6566000086023,
+            "requests_per_s": 0.3610555907894481,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short0": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2820.1,
+            "prefill_tps": 1381.5112939257474,
+            "decode_ms": 537.4,
+            "ttft_observed_ms": 2833.4982999949716,
+            "e2e_observed_ms": 3370.6520999985514,
+            "last_visible_observed_ms": 3370.6113999942318,
+            "decode_observed_tps": 29.788884315094975,
+            "tpot_observed_ms": 33.56956874995376,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3370.6520999985514,
+            "requests_per_s": 0.2966784973152316,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short1": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2879.7,
+            "prefill_tps": 1352.9187068097372,
+            "decode_ms": 502.8,
+            "ttft_observed_ms": 2900.29720000166,
+            "e2e_observed_ms": 3399.318999989191,
+            "last_visible_observed_ms": 3399.262999999337,
+            "decode_observed_tps": 32.06632598882426,
+            "tpot_observed_ms": 31.18536249985482,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3399.318999989191,
+            "requests_per_s": 0.2941765688960582,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long0": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2763.1,
+            "prefill_tps": 1381.4194202164235,
+            "decode_ms": 3979.2,
+            "ttft_observed_ms": 2773.371200004476,
+            "e2e_observed_ms": 6754.699800003436,
+            "last_visible_observed_ms": 6754.663300001994,
+            "decode_observed_tps": 31.89919172222485,
+            "tpot_observed_ms": 31.34875669289384,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6754.699800003436,
+            "requests_per_s": 0.14804506930115402,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long1": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2760.7,
+            "prefill_tps": 1382.6203499112544,
+            "decode_ms": 3940.4,
+            "ttft_observed_ms": 2773.507999998401,
+            "e2e_observed_ms": 6711.715099998401,
+            "last_visible_observed_ms": 6711.660799992387,
+            "decode_observed_tps": 32.2486217396628,
+            "tpot_observed_ms": 31.00907716530698,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6711.715099998401,
+            "requests_per_s": 0.14899321337406565,
+            "quality": "structure/1; business accuracy unverified"
+          }
+        },
+        "load_and_ready_s": 2.979154100001324,
+        "resources": {
+          "period_s": 0.1,
+          "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+          "gpu_peak_mib": 7878.03515625,
+          "host_rss_peak_mib": 14992.01953125,
+          "available_ram_min_mib": 5306.69140625,
+          "violation": null
+        }
+      }
+    },
+    "diagnostic-0": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:04:22.651",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 34260,
+            "exit_code": 0,
+            "elapsed_seconds": 48.087,
+            "finished_at": "2026-10-16T11:05:10.738",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\diagnostic-0\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            34260
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:04:22.651",
+          "removed_at": "2026-10-16T11:05:10.738",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "diagnostic-0-raw.log",
+      "responses": "diagnostic-0-responses.json",
+      "telemetry": "diagnostic-0-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7893.84765625,
+        "host_rss_peak_mib": 14986.77734375,
+        "available_ram_min_mib": 5169.0234375,
+        "violation": null
+      }
+    },
+    "diagnostic-1": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:05:11.049",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 35776,
+            "exit_code": 0,
+            "elapsed_seconds": 42.668,
+            "finished_at": "2026-10-16T11:05:53.718",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\diagnostic-1\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            35776
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:05:11.049",
+          "removed_at": "2026-10-16T11:05:53.718",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "diagnostic-1-raw.log",
+      "responses": "diagnostic-1-responses.json",
+      "telemetry": "diagnostic-1-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7912.50390625,
+        "host_rss_peak_mib": 14985.32421875,
+        "available_ram_min_mib": 5202.6484375,
+        "violation": null
+      }
+    },
+    "stream-service": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:22:25.932",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 5016,
+            "exit_code": 0,
+            "elapsed_seconds": 18.725,
+            "finished_at": "2026-10-16T11:22:44.657",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\stream-service\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            5016
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:22:25.931",
+          "removed_at": "2026-10-16T11:22:44.657",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "stream-service-raw.log",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7925.171875,
+        "host_rss_peak_mib": 14837.55859375,
+        "available_ram_min_mib": 4829.1015625,
+        "violation": null
+      },
+      "actual_configuration": {
+        "requested": {
+          "slots": 3200,
+          "threads": 8,
+          "ubatch": 4096,
+          "ctx": 4096,
+          "compact": false
+        },
+        "actual": {
+          "compact": false,
+          "slots": 3200,
+          "startup_line": "native expert tier: 3200 slots"
+        }
+      }
+    },
+    "stream-service-repair1": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:25:54.100",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 33432,
+            "exit_code": 0,
+            "elapsed_seconds": 23.014,
+            "finished_at": "2026-10-16T11:26:17.114",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\stream-service-repair1\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            33432
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:25:54.100",
+          "removed_at": "2026-10-16T11:26:17.115",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "stream-service-repair1-raw.log",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7888.41015625,
+        "host_rss_peak_mib": 14860.8125,
+        "available_ram_min_mib": 4701.26953125,
+        "violation": null
+      },
+      "actual_configuration": {
+        "requested": {
+          "slots": 3200,
+          "threads": 8,
+          "ubatch": 4096,
+          "ctx": 4096,
+          "compact": false
+        },
+        "actual": {
+          "compact": false,
+          "slots": 3200,
+          "startup_line": "native expert tier: 3200 slots"
+        }
+      }
+    },
+    "workload-reference/baseline-profile": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:09:53.302",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 21928,
+            "exit_code": 0,
+            "elapsed_seconds": 53.681,
+            "finished_at": "2026-10-16T11:10:46.983",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\workload-reference\\baseline-profile\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            21928
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:09:53.301",
+          "removed_at": "2026-10-16T11:10:46.983",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "workload-reference-baseline-profile-raw.log",
+      "responses": "workload-reference-baseline-profile-responses.json",
+      "telemetry": "workload-reference-baseline-profile-telemetry.json",
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7895.91015625,
+        "host_rss_peak_mib": 14993.12109375,
+        "available_ram_min_mib": 5337.6875,
+        "violation": null
+      },
+      "measurements": {
+        "metrics": {
+          "P0": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 3432.1,
+            "prefill_tps": 1135.1650592931442,
+            "decode_ms": 1.1,
+            "ttft_observed_ms": 3438.5712000075728,
+            "e2e_observed_ms": 3438.6441000096966,
+            "last_visible_observed_ms": 3438.5712000075728,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "P1": {
+            "n": 1,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2776.2,
+            "prefill_tps": 1403.3571068366832,
+            "decode_ms": 1.3,
+            "ttft_observed_ms": 2785.89829998964,
+            "e2e_observed_ms": 2785.9695999941323,
+            "last_visible_observed_ms": 2785.89829998964,
+            "decode_observed_tps": null,
+            "tpot_observed_ms": null,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+          },
+          "W10": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2766.1,
+            "score_response_ms": 2777.7206000027945,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2777.723400009563,
+            "requests_per_s": 0.36000704749672235,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W11": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2824.5,
+            "score_response_ms": 2843.0878999934066,
+            "pos": 3895,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -10.7875
+              },
+              {
+                "id": 16,
+                "logprob": -9.15
+              },
+              {
+                "id": 17,
+                "logprob": -12.0814
+              },
+              {
+                "id": 18,
+                "logprob": -9.8165
+              }
+            ],
+            "label_mass": 0.00018708394323084887,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2843.090199996368,
+            "requests_per_s": 0.3517299591835945,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain0": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2688.5,
+            "score_response_ms": 2697.158399998443,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7357
+              },
+              {
+                "id": 16,
+                "logprob": -9.2326
+              },
+              {
+                "id": 17,
+                "logprob": -13.2729
+              },
+              {
+                "id": 18,
+                "logprob": -11.1285
+              }
+            ],
+            "label_mass": 0.00011715094534210036,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3636.3,
+            "ttft_observed_ms": 7.039699994493276,
+            "e2e_observed_ms": 3649.122000002535,
+            "last_visible_observed_ms": 3628.6852000048384,
+            "decode_observed_tps": 35.066932972770864,
+            "tpot_observed_ms": 28.51689370086886,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "904e472f40908d18ddc72f0d673bb9b44f4a761594c8d9b34ddeb83c71435090",
+            "branch": "explain",
+            "workflow_observed_ms": 6347.670000002836,
+            "requests_per_s": 0.15753812028658598,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2Explain1": {
+            "n": 128,
+            "finish": "length",
+            "prefill_ms": 2763.5,
+            "score_response_ms": 2774.159200009308,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "prompt_tokens": 0,
+            "prompt_read": 0,
+            "eos": false,
+            "prefill_tps": null,
+            "decode_ms": 3367.0,
+            "ttft_observed_ms": 12.005299999145791,
+            "e2e_observed_ms": 3388.462200004142,
+            "last_visible_observed_ms": 3358.6856000038097,
+            "decode_observed_tps": 37.94805258208351,
+            "tpot_observed_ms": 26.351813385863494,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "explain",
+            "workflow_observed_ms": 6164.084400006686,
+            "requests_per_s": 0.1622300953567273,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain0": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2762.4,
+            "score_response_ms": 2773.1936999916798,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2773.1977999937953,
+            "requests_per_s": 0.36059454540250874,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W2NoExplain1": {
+            "n": 0,
+            "finish": "score",
+            "prefill_ms": 2694.6,
+            "score_response_ms": 2706.355499991332,
+            "pos": 3816,
+            "candidate_logprobs": [
+              {
+                "id": 15,
+                "logprob": -12.7367
+              },
+              {
+                "id": 16,
+                "logprob": -9.22
+              },
+              {
+                "id": 17,
+                "logprob": -13.279
+              },
+              {
+                "id": 18,
+                "logprob": -11.1201
+              }
+            ],
+            "label_mass": 0.00011850149465573529,
+            "choice": 16,
+            "calibrated": false,
+            "branch": "score-only",
+            "workflow_observed_ms": 2706.359599993448,
+            "requests_per_s": 0.3695000472230006,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short0": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2792.3,
+            "prefill_tps": 1395.2655516957345,
+            "decode_ms": 515.0,
+            "ttft_observed_ms": 2830.6604999961564,
+            "e2e_observed_ms": 3319.8023999866564,
+            "last_visible_observed_ms": 3319.7657999990042,
+            "decode_observed_tps": 32.71279211226466,
+            "tpot_observed_ms": 30.569081250177987,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3319.8023999866564,
+            "requests_per_s": 0.3012227474755785,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Short1": {
+            "n": 17,
+            "prompt_tokens": 3896,
+            "prompt_read": 3896,
+            "finish": "stop",
+            "eos": true,
+            "prefill_ms": 2826.5,
+            "prefill_tps": 1378.3831593843977,
+            "decode_ms": 442.4,
+            "ttft_observed_ms": 2853.884800002561,
+            "e2e_observed_ms": 3286.35779999604,
+            "last_visible_observed_ms": 3286.29770000407,
+            "decode_observed_tps": 37.00167131911227,
+            "tpot_observed_ms": 27.02580625009432,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+            "branch": "chat",
+            "workflow_observed_ms": 3286.35779999604,
+            "requests_per_s": 0.30428823057586885,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long0": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2701.9,
+            "prefill_tps": 1412.7095747436988,
+            "decode_ms": 3328.4,
+            "ttft_observed_ms": 2712.6725999987684,
+            "e2e_observed_ms": 6054.463599997689,
+            "last_visible_observed_ms": 6054.422000001068,
+            "decode_observed_tps": 38.004046622979146,
+            "tpot_observed_ms": 26.312987401592913,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6054.463599997689,
+            "requests_per_s": 0.16516739814909148,
+            "quality": "structure/1; business accuracy unverified"
+          },
+          "W3Long1": {
+            "n": 128,
+            "prompt_tokens": 3817,
+            "prompt_read": 3817,
+            "finish": "length",
+            "eos": false,
+            "prefill_ms": 2765.6,
+            "prefill_tps": 1380.1706682094302,
+            "decode_ms": 3475.5,
+            "ttft_observed_ms": 2777.4160000117263,
+            "e2e_observed_ms": 6253.611000007368,
+            "last_visible_observed_ms": 6242.262200001278,
+            "decode_observed_tps": 36.65386359728838,
+            "tpot_observed_ms": 27.282253543224815,
+            "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+            "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+            "branch": "chat",
+            "workflow_observed_ms": 6253.611000007368,
+            "requests_per_s": 0.15990761177803062,
+            "quality": "structure/1; business accuracy unverified"
+          }
+        },
+        "load_and_ready_s": 2.64429859998927,
+        "resources": {
+          "period_s": 0.1,
+          "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+          "gpu_peak_mib": 7895.91015625,
+          "host_rss_peak_mib": 14993.12109375,
+          "available_ram_min_mib": 5337.6875,
+          "violation": null
+        }
+      }
+    },
+    "stream-service-owner": {
+      "receipt": {
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T11:33:10.166",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 1568,
+            "exit_code": 0,
+            "elapsed_seconds": 25.969,
+            "finished_at": "2026-10-16T11:33:36.136",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\next-20261016\\stream-service-owner\\raw\\child_00.log"
+          }
+        ],
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            1568
+          ]
+        },
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T11:33:10.165",
+          "removed_at": "2026-10-16T11:33:36.136",
+          "retained": false,
+          "outcome": null
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+      },
+      "raw": "stream-service-owner-raw.log",
+      "actual_configuration": {
+        "requested": {
+          "slots": 3200,
+          "threads": 8,
+          "ubatch": 4096,
+          "ctx": 4096,
+          "compact": false
+        },
+        "actual": {
+          "compact": false,
+          "slots": 3200,
+          "startup_line": "native expert tier: 3200 slots"
+        }
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7892.41015625,
+        "host_rss_peak_mib": 14865.59765625,
+        "available_ram_min_mib": 4569.10546875,
+        "violation": null
+      }
+    }
+  },
+  "diagnostic_windows": {
+    "diagnostic-0": {
+      "S0": {
+        "n": 16,
+        "decode_observed_tps": 11.980975169960182,
+        "median_itl_ms": 76.14699999976438,
+        "max_itl_ms": 125.54290000116453,
+        "samples": 4,
+        "sm_mhz": [
+          1410,
+          2535.0,
+          2535
+        ],
+        "memory_mhz": [
+          7001,
+          7001.0,
+          8001
+        ],
+        "power": [
+          29.296,
+          34.999,
+          39.32
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          54,
+          54.0,
+          55
+        ],
+        "util": [
+          25,
+          28.5,
+          99
+        ],
+        "throttle_reasons": [
+          0,
+          0.0,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 32858,
+        "system_disk_read_delta_mib": 93.22265625
+      },
+      "S1": {
+        "n": 16,
+        "decode_observed_tps": 37.72317976186024,
+        "median_itl_ms": 26.476700004423037,
+        "max_itl_ms": 40.36469999118708,
+        "samples": 1,
+        "sm_mhz": [
+          1455,
+          1455,
+          1455
+        ],
+        "memory_mhz": [
+          7001,
+          7001,
+          7001
+        ],
+        "power": [
+          39.837,
+          39.837,
+          39.837
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          56,
+          56,
+          56
+        ],
+        "util": [
+          99,
+          99,
+          99
+        ],
+        "throttle_reasons": [
+          4,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 0,
+        "system_disk_read_delta_mib": 0.0
+      },
+      "L0": {
+        "n": 128,
+        "decode_observed_tps": 29.63530398217553,
+        "median_itl_ms": 29.016200001933612,
+        "max_itl_ms": 106.24610001104884,
+        "samples": 13,
+        "sm_mhz": [
+          1800,
+          2100,
+          2535
+        ],
+        "memory_mhz": [
+          7001,
+          8001,
+          8001
+        ],
+        "power": [
+          35.262,
+          38.546,
+          39.667
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          55,
+          56,
+          58
+        ],
+        "util": [
+          30,
+          54,
+          93
+        ],
+        "throttle_reasons": [
+          0,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 122001,
+        "system_disk_read_delta_mib": 69.92333984375
+      },
+      "L1": {
+        "n": 128,
+        "decode_observed_tps": 31.959056975241634,
+        "median_itl_ms": 31.01540000352543,
+        "max_itl_ms": 58.180499996524304,
+        "samples": 12,
+        "sm_mhz": [
+          2100,
+          2340.0,
+          2505
+        ],
+        "memory_mhz": [
+          7001,
+          8001.0,
+          8001
+        ],
+        "power": [
+          36.609,
+          38.7155,
+          39.719
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          55,
+          57.5,
+          58
+        ],
+        "util": [
+          35,
+          44.0,
+          99
+        ],
+        "throttle_reasons": [
+          0,
+          4.0,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 90943,
+        "system_disk_read_delta_mib": 19.87939453125
+      },
+      "held": {
+        "n": 128,
+        "decode_observed_tps": 33.889937757181656,
+        "median_itl_ms": 30.203999995137565,
+        "max_itl_ms": 48.97849999542814,
+        "samples": 11,
+        "sm_mhz": [
+          1785,
+          2265,
+          2490
+        ],
+        "memory_mhz": [
+          7001,
+          8001,
+          8001
+        ],
+        "power": [
+          38.174,
+          39.685,
+          39.993
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          58,
+          58,
+          59
+        ],
+        "util": [
+          36,
+          48,
+          99
+        ],
+        "throttle_reasons": [
+          4,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 83700,
+        "system_disk_read_delta_mib": 0.08251953125
+      }
+    },
+    "diagnostic-1": {
+      "S0": {
+        "n": 16,
+        "decode_observed_tps": 16.130501347760557,
+        "median_itl_ms": 64.79489999765065,
+        "max_itl_ms": 104.81859999708831,
+        "samples": 3,
+        "sm_mhz": [
+          2445,
+          2445,
+          2475
+        ],
+        "memory_mhz": [
+          7001,
+          7001,
+          8001
+        ],
+        "power": [
+          32.398,
+          32.398,
+          35.97
+        ],
+        "power_limit": [
+          40.0,
+          40.606,
+          40.606
+        ],
+        "temp": [
+          57,
+          57,
+          58
+        ],
+        "util": [
+          42,
+          66,
+          66
+        ],
+        "throttle_reasons": [
+          0,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 28537,
+        "system_disk_read_delta_mib": 0.66015625
+      },
+      "S1": {
+        "n": 16,
+        "decode_observed_tps": 36.747521012821025,
+        "median_itl_ms": 28.22389999346342,
+        "max_itl_ms": 38.65179998683743,
+        "samples": 1,
+        "sm_mhz": [
+          1470,
+          1470,
+          1470
+        ],
+        "memory_mhz": [
+          7001,
+          7001,
+          7001
+        ],
+        "power": [
+          39.685,
+          39.685,
+          39.685
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          59,
+          59,
+          59
+        ],
+        "util": [
+          98,
+          98,
+          98
+        ],
+        "throttle_reasons": [
+          4,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 0,
+        "system_disk_read_delta_mib": 0.0
+      },
+      "L0": {
+        "n": 128,
+        "decode_observed_tps": 28.353103930429718,
+        "median_itl_ms": 35.151300005964,
+        "max_itl_ms": 77.90409999142867,
+        "samples": 14,
+        "sm_mhz": [
+          1410,
+          2355.0,
+          2535
+        ],
+        "memory_mhz": [
+          7001,
+          8001.0,
+          8001
+        ],
+        "power": [
+          37.462,
+          38.647000000000006,
+          39.775
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          58,
+          59.0,
+          59
+        ],
+        "util": [
+          34,
+          44.5,
+          99
+        ],
+        "throttle_reasons": [
+          0,
+          4.0,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 125667,
+        "system_disk_read_delta_mib": 1.640625
+      },
+      "L1": {
+        "n": 128,
+        "decode_observed_tps": 30.236217713034012,
+        "median_itl_ms": 31.655400001909584,
+        "max_itl_ms": 53.317799989599735,
+        "samples": 13,
+        "sm_mhz": [
+          1350,
+          2100,
+          2490
+        ],
+        "memory_mhz": [
+          7001,
+          8001,
+          8001
+        ],
+        "power": [
+          37.688,
+          39.161,
+          39.987
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          59,
+          59,
+          60
+        ],
+        "util": [
+          35,
+          47,
+          99
+        ],
+        "throttle_reasons": [
+          1,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 93858,
+        "system_disk_read_delta_mib": 0.0
+      },
+      "held": {
+        "n": 128,
+        "decode_observed_tps": 34.029490975074424,
+        "median_itl_ms": 30.50769999390468,
+        "max_itl_ms": 51.628100001835264,
+        "samples": 11,
+        "sm_mhz": [
+          1635,
+          2190,
+          2310
+        ],
+        "memory_mhz": [
+          7001,
+          8001,
+          8001
+        ],
+        "power": [
+          38.344,
+          39.697,
+          39.866
+        ],
+        "power_limit": [
+          40.0,
+          40.0,
+          40.0
+        ],
+        "temp": [
+          59,
+          60,
+          60
+        ],
+        "util": [
+          36,
+          47,
+          99
+        ],
+        "throttle_reasons": [
+          4,
+          4,
+          4
+        ],
+        "thermal_flag_seen": false,
+        "power_cap_seen": true,
+        "sampled_fault_delta": 80919,
+        "system_disk_read_delta_mib": 0.0625
+      }
+    }
+  },
+  "notes": [
+    "read-only public review extract; original Profiles remain immutable and local",
+    "COMPACT request was not applied; mathematical NO-GO is not a layout comparison"
+  ],
+  "workloads": [
+    {
+      "id": "W1",
+      "kind": "score",
+      "shape": "S",
+      "weight": 0.5,
+      "candidates": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "quality": "structure/1"
+    },
+    {
+      "id": "W2Explain",
+      "kind": "conditional",
+      "shape": "L",
+      "weight": 0.2,
+      "candidates": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "max_new": 128,
+      "explain_if": {
+        "mode": "always"
+      },
+      "quality": "structure/1"
+    },
+    {
+      "id": "W2NoExplain",
+      "kind": "conditional",
+      "shape": "L",
+      "weight": 0.1,
+      "candidates": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "max_new": 128,
+      "explain_if": {
+        "mode": "never"
+      },
+      "quality": "structure/1"
+    },
+    {
+      "id": "W3Short",
+      "kind": "chat",
+      "shape": "S",
+      "weight": 0.1,
+      "max_new": 32,
+      "quality": "structure/1"
+    },
+    {
+      "id": "W3Long",
+      "kind": "chat",
+      "shape": "L",
+      "weight": 0.1,
+      "max_new": 128,
+      "quality": "structure/1"
+    }
+  ],
+  "search_identity": {
+    "hardware": {
+      "gpu": {
+        "index": 0,
+        "uuid": "GPU-0a2bdfeb-eea7-313b-946c-03515fd4e1da",
+        "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "compute_capability": "8.9",
+        "vram_total_mib": 8188,
+        "driver_version": "591.74",
+        "cuda_driver_max": "13.1"
+      },
+      "cpu": {
+        "model_name": "AMD Ryzen 9 7945HX with Radeon Graphics",
+        "physical_cores": 16,
+        "logical_cores": 32,
+        "isa": {
+          "avx": true,
+          "avx2": true,
+          "avx512f": true
+        }
+      },
+      "ram": {
+        "total_mib": 32448.5,
+        "commit_limit_mib": 51469.7
+      },
+      "os": "Windows-11-10.0.26200-SP0"
+    },
+    "model": {
+      "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+      "size_bytes": 13676723168,
+      "mtime_utc": "2026-10-08T02:12:47.857127+00:00",
+      "gguf": {
+        "architecture": "qwen35moe",
+        "block_count": 40,
+        "context_length": 262144,
+        "embedding_length": 2048,
+        "expert_count": 256,
+        "expert_used_count": 8,
+        "expert_feed_forward_length": 512,
+        "full_attention_interval": 4,
+        "attention": {
+          "head_count": 16,
+          "head_count_kv": 2,
+          "key_length": 256,
+          "value_length": 256
+        },
+        "ssm": {
+          "conv_kernel": 4,
+          "state_size": 128,
+          "group_count": 16,
+          "time_step_rank": 32,
+          "inner_size": 4096
+        },
+        "nextn_predict_layers": 0,
+        "has_mtp_block": false,
+        "nextn_tensor_bytes": 0,
+        "tensor_count": 733,
+        "tensor_bytes_total": 13665733120,
+        "routed_expert_bytes_total": 11574181888,
+        "non_expert_bytes_total": 2091551232,
+        "routed_expert_layers": 40,
+        "routed_expert_layer_bytes": [
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          287309824,
+          287309824,
+          287309824,
+          314572800,
+          314572800
+        ],
+        "role_quant": {
+          "blk.N.attn_gate.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_k_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_output.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_q_norm.weight": [
+            "F32"
+          ],
+          "blk.N.attn_qkv.weight": [
+            "Q6_K"
+          ],
+          "blk.N.attn_v.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_down_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_gate_inp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_inp_shexp.weight": [
+            "F32"
+          ],
+          "blk.N.ffn_gate_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.ffn_up_shexp.weight": [
+            "Q6_K"
+          ],
+          "blk.N.post_attention_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_a": [
+            "F32"
+          ],
+          "blk.N.ssm_alpha.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_beta.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_conv1d.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_dt.bias": [
+            "F32"
+          ],
+          "blk.N.ssm_norm.weight": [
+            "F32"
+          ],
+          "blk.N.ssm_out.weight": [
+            "Q6_K"
+          ],
+          "ffn_down_exps": [
+            "IQ3_S",
+            "IQ4_XS"
+          ],
+          "ffn_gate_exps": [
+            "IQ2_S"
+          ],
+          "ffn_up_exps": [
+            "IQ2_S"
+          ],
+          "output.weight": [
+            "Q6_K"
+          ],
+          "output_norm.weight": [
+            "F32"
+          ],
+          "token_embd.weight": [
+            "Q6_K"
+          ]
+        },
+        "role_bytes": {
+          "blk.N.attn_gate.weight": 206438400,
+          "blk.N.attn_k.weight": 8601600,
+          "blk.N.attn_k_norm.weight": 10240,
+          "blk.N.attn_norm.weight": 327680,
+          "blk.N.attn_output.weight": 68812800,
+          "blk.N.attn_q.weight": 137625600,
+          "blk.N.attn_q_norm.weight": 10240,
+          "blk.N.attn_qkv.weight": 412876800,
+          "blk.N.attn_v.weight": 8601600,
+          "blk.N.ffn_down_shexp.weight": 34406400,
+          "blk.N.ffn_gate_inp.weight": 83886080,
+          "blk.N.ffn_gate_inp_shexp.weight": 327680,
+          "blk.N.ffn_gate_shexp.weight": 34406400,
+          "blk.N.ffn_up_shexp.weight": 34406400,
+          "blk.N.post_attention_norm.weight": 327680,
+          "blk.N.ssm_a": 3840,
+          "blk.N.ssm_alpha.weight": 7864320,
+          "blk.N.ssm_beta.weight": 7864320,
+          "blk.N.ssm_conv1d.weight": 3932160,
+          "blk.N.ssm_dt.bias": 3840,
+          "blk.N.ssm_norm.weight": 15360,
+          "blk.N.ssm_out.weight": 206438400,
+          "ffn_down_exps": 4695523328,
+          "ffn_gate_exps": 3439329280,
+          "ffn_up_exps": 3439329280,
+          "output.weight": 417177600,
+          "output_norm.weight": 8192,
+          "token_embd.weight": 417177600
+        }
+      }
+    },
+    "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+    "runtime_id": "CUDA12.8.1/MSVC ea06 canonical serve",
+    "tool_sha256": {
+      "strata_tune.py": "c58c4c37a6da0e6a91456bffcb2b7d9e59f0e62fcc7adde8850fd75db56a3a3e",
+      "strata_fingerprint.py": "f48828574ef613fe299a1a2d1bf229d8a475afdbd9e2e1e7a2c605694b2d22a6",
+      "strata_plan.py": "ffe4885536bc3a951422d86318451d86cda1a6c63452e4aff002756fc5587966",
+      "strata_screen.py": "1d874a2536b1e4fb293676ba9729f2a3e5cfbb7a8277817e05dab6ac361e9b8b",
+      "strata_cost_model.py": "29b2bb73d93934de7d82e7bca94adf7454ce0b7e9c336417aa8b2ba105a912c7",
+      "gguf_reader.py": "5ecf739bb3c2f07bc7f889f7f3a455e3dfdb40068409e10781a1a9b2be289b5e",
+      "_paths.py": "31b0f4d27d66b32793074ad1ff00a7a9b5938dc63dca3ffe79a8de5df7b37d27",
+      "strata_experiment.py": "360b7bef3327f07ebc6f89f4fd0086aeb169141eea1000a282ec98795f25c2eb",
+      "leased_native.py": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111"
+    },
+    "workload": {
+      "context": 4096,
+      "max_new": 128,
+      "batch": 1,
+      "manifest_sha256": "d250d8c04541b79e249ae01c410a63980e9ce2e186df4ead4a4aad31b445b6bc"
+    },
+    "policy": {
+      "mode": "safe",
+      "kv_bytes": 4
+    },
+    "experiment_tools": {
+      "strata_experiment.py": "360b7bef3327f07ebc6f89f4fd0086aeb169141eea1000a282ec98795f25c2eb",
+      "leased_native.py": "7013ccbfb9e84fa7afad73558880509cfc7fe805b812d35ca3e904424c934bbb",
+      "gpu_lock.py": "337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111",
+      "strata_tokenizer.py": "9b0327e25aa62754406a924db6cc137e6edb1d93c7af76a4f3d14a8920ea72c8",
+      "score_api.py": "046a0b311470fdc21a6011f3ba80072f9d6ad165fb9204a2accea261a2e3b22c",
+      "strata_workloads.py": "ef8ff62b8f2fb2b4efb3e006334774f6999c4593d79f67a6c858d97f6802ecdb",
+      "strata_diagnostics.py": "840c59a1e9680dafa16eef46fec75563a4f6677ba60f2759e1945f2af56b3081"
+    },
+    "telemetry_source_sha256": "aa5bdf75f55861ce761115ddab4c4f3c38410c841284e52d1fc7a069ca9b3a7f",
+    "quant": "UD-IQ3_S",
+    "python": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "packages": {
+      "psutil": "7.2.2",
+      "pywin32": "312",
+      "regex": "2026.9.29",
+      "jinja2": "3.1.6"
+    },
+    "baseline_profile_sha256": "063a6bca8644161fb5b9089addf85321f893b7ae717679a87ce144c95dc8c64e",
+    "pack_index_sha256": "91224828e55ccdf519a81cb2af5b9ca7df3178b25f7ffaa0782db731b2bbd6da",
+    "pack_files": {
+      "native_experts.txt": [
+        2672,
+        1791514612920853700
+      ]
+    }
+  },
+  "raw_candidate_result": [
+    {
+      "id": "compact-on",
+      "config": {
+        "slots": 3200,
+        "threads": 8,
+        "ubatch": 4096,
+        "ctx": 4096,
+        "compact": true
+      },
+      "verdict": "NO-GO",
+      "objective_gain_fraction": -0.005142226517559134,
+      "drift_fraction": 0.09195213406004356,
+      "paired_directions_positive": false,
+      "shapes": {
+        "W1": {
+          "baseline_ms": [
+            2781.7763999919407,
+            2845.784899996943
+          ],
+          "candidate_ms": [
+            2820.5034999991767,
+            2889.076399995247
+          ],
+          "ratio": 1.0145744480838799,
+          "drift_fraction": 0.02402029613286861
+        },
+        "W2Explain": {
+          "baseline_ms": [
+            6187.55560000136,
+            6579.714099992998
+          ],
+          "candidate_ms": [
+            6220.906800008379,
+            6345.8201000030385
+          ],
+          "ratio": 0.9842924286323309,
+          "drift_fraction": 0.0614318502242983
+        },
+        "W2NoExplain": {
+          "baseline_ms": [
+            2721.682499992312,
+            2769.6566000086023
+          ],
+          "candidate_ms": [
+            2769.4049999990966,
+            2770.8230999996886
+          ],
+          "ratio": 1.0089029286131435,
+          "drift_fraction": 0.017472641606227645
+        },
+        "W3Short": {
+          "baseline_ms": [
+            3254.295100006857,
+            3399.318999989191
+          ],
+          "candidate_ms": [
+            3277.2127999924123,
+            3323.6635999928694
+          ],
+          "ratio": 0.9920738264621031,
+          "drift_fraction": 0.04359251913405085
+        },
+        "W3Long": {
+          "baseline_ms": [
+            6121.685799997067,
+            6711.715099998401
+          ],
+          "candidate_ms": [
+            6284.845599991968,
+            6663.907199996174
+          ],
+          "ratio": 1.0089884124162845,
+          "drift_fraction": 0.09195213406004356
+        }
+      },
+      "prefill_ratio": 1.0077673023355476,
+      "quality": "structure only; not business accuracy",
+      "production_approved": false
+    }
+  ],
+  "configuration_verdict": "INVALID_CONFIGURATION: compact requested without expert profile; both B arms stayed uniform",
+  "workflow_reference": {
+    "P0": {
+      "n": 1,
+      "prompt_tokens": 3896,
+      "prompt_read": 3896,
+      "finish": "length",
+      "eos": false,
+      "prefill_ms": 3432.1,
+      "prefill_tps": 1135.1650592931442,
+      "decode_ms": 1.1,
+      "ttft_observed_ms": 3438.5712000075728,
+      "e2e_observed_ms": 3438.6441000096966,
+      "last_visible_observed_ms": 3438.5712000075728,
+      "decode_observed_tps": null,
+      "tpot_observed_ms": null,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+    },
+    "P1": {
+      "n": 1,
+      "prompt_tokens": 3896,
+      "prompt_read": 3896,
+      "finish": "length",
+      "eos": false,
+      "prefill_ms": 2776.2,
+      "prefill_tps": 1403.3571068366832,
+      "decode_ms": 1.3,
+      "ttft_observed_ms": 2785.89829998964,
+      "e2e_observed_ms": 2785.9695999941323,
+      "last_visible_observed_ms": 2785.89829998964,
+      "decode_observed_tps": null,
+      "tpot_observed_ms": null,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "a84008063efed1c9b2748f2e71222aaa0449298aeabd82ca3314caf81d9c981e"
+    },
+    "W10": {
+      "n": 0,
+      "finish": "score",
+      "prefill_ms": 2766.1,
+      "score_response_ms": 2777.7206000027945,
+      "pos": 3895,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -10.7875
+        },
+        {
+          "id": 16,
+          "logprob": -9.15
+        },
+        {
+          "id": 17,
+          "logprob": -12.0814
+        },
+        {
+          "id": 18,
+          "logprob": -9.8165
+        }
+      ],
+      "label_mass": 0.00018708394323084887,
+      "choice": 16,
+      "calibrated": false,
+      "branch": "score-only",
+      "workflow_observed_ms": 2777.723400009563,
+      "requests_per_s": 0.36000704749672235,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W11": {
+      "n": 0,
+      "finish": "score",
+      "prefill_ms": 2824.5,
+      "score_response_ms": 2843.0878999934066,
+      "pos": 3895,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -10.7875
+        },
+        {
+          "id": 16,
+          "logprob": -9.15
+        },
+        {
+          "id": 17,
+          "logprob": -12.0814
+        },
+        {
+          "id": 18,
+          "logprob": -9.8165
+        }
+      ],
+      "label_mass": 0.00018708394323084887,
+      "choice": 16,
+      "calibrated": false,
+      "branch": "score-only",
+      "workflow_observed_ms": 2843.090199996368,
+      "requests_per_s": 0.3517299591835945,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W2Explain0": {
+      "n": 128,
+      "finish": "length",
+      "prefill_ms": 2688.5,
+      "score_response_ms": 2697.158399998443,
+      "pos": 3816,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -12.7357
+        },
+        {
+          "id": 16,
+          "logprob": -9.2326
+        },
+        {
+          "id": 17,
+          "logprob": -13.2729
+        },
+        {
+          "id": 18,
+          "logprob": -11.1285
+        }
+      ],
+      "label_mass": 0.00011715094534210036,
+      "choice": 16,
+      "calibrated": false,
+      "prompt_tokens": 0,
+      "prompt_read": 0,
+      "eos": false,
+      "prefill_tps": null,
+      "decode_ms": 3636.3,
+      "ttft_observed_ms": 7.039699994493276,
+      "e2e_observed_ms": 3649.122000002535,
+      "last_visible_observed_ms": 3628.6852000048384,
+      "decode_observed_tps": 35.066932972770864,
+      "tpot_observed_ms": 28.51689370086886,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "904e472f40908d18ddc72f0d673bb9b44f4a761594c8d9b34ddeb83c71435090",
+      "branch": "explain",
+      "workflow_observed_ms": 6347.670000002836,
+      "requests_per_s": 0.15753812028658598,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W2Explain1": {
+      "n": 128,
+      "finish": "length",
+      "prefill_ms": 2763.5,
+      "score_response_ms": 2774.159200009308,
+      "pos": 3816,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -12.7367
+        },
+        {
+          "id": 16,
+          "logprob": -9.22
+        },
+        {
+          "id": 17,
+          "logprob": -13.279
+        },
+        {
+          "id": 18,
+          "logprob": -11.1201
+        }
+      ],
+      "label_mass": 0.00011850149465573529,
+      "choice": 16,
+      "calibrated": false,
+      "prompt_tokens": 0,
+      "prompt_read": 0,
+      "eos": false,
+      "prefill_tps": null,
+      "decode_ms": 3367.0,
+      "ttft_observed_ms": 12.005299999145791,
+      "e2e_observed_ms": 3388.462200004142,
+      "last_visible_observed_ms": 3358.6856000038097,
+      "decode_observed_tps": 37.94805258208351,
+      "tpot_observed_ms": 26.351813385863494,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+      "branch": "explain",
+      "workflow_observed_ms": 6164.084400006686,
+      "requests_per_s": 0.1622300953567273,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W2NoExplain0": {
+      "n": 0,
+      "finish": "score",
+      "prefill_ms": 2762.4,
+      "score_response_ms": 2773.1936999916798,
+      "pos": 3816,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -12.7367
+        },
+        {
+          "id": 16,
+          "logprob": -9.22
+        },
+        {
+          "id": 17,
+          "logprob": -13.279
+        },
+        {
+          "id": 18,
+          "logprob": -11.1201
+        }
+      ],
+      "label_mass": 0.00011850149465573529,
+      "choice": 16,
+      "calibrated": false,
+      "branch": "score-only",
+      "workflow_observed_ms": 2773.1977999937953,
+      "requests_per_s": 0.36059454540250874,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W2NoExplain1": {
+      "n": 0,
+      "finish": "score",
+      "prefill_ms": 2694.6,
+      "score_response_ms": 2706.355499991332,
+      "pos": 3816,
+      "candidate_logprobs": [
+        {
+          "id": 15,
+          "logprob": -12.7367
+        },
+        {
+          "id": 16,
+          "logprob": -9.22
+        },
+        {
+          "id": 17,
+          "logprob": -13.279
+        },
+        {
+          "id": 18,
+          "logprob": -11.1201
+        }
+      ],
+      "label_mass": 0.00011850149465573529,
+      "choice": 16,
+      "calibrated": false,
+      "branch": "score-only",
+      "workflow_observed_ms": 2706.359599993448,
+      "requests_per_s": 0.3695000472230006,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W3Short0": {
+      "n": 17,
+      "prompt_tokens": 3896,
+      "prompt_read": 3896,
+      "finish": "stop",
+      "eos": true,
+      "prefill_ms": 2792.3,
+      "prefill_tps": 1395.2655516957345,
+      "decode_ms": 515.0,
+      "ttft_observed_ms": 2830.6604999961564,
+      "e2e_observed_ms": 3319.8023999866564,
+      "last_visible_observed_ms": 3319.7657999990042,
+      "decode_observed_tps": 32.71279211226466,
+      "tpot_observed_ms": 30.569081250177987,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+      "branch": "chat",
+      "workflow_observed_ms": 3319.8023999866564,
+      "requests_per_s": 0.3012227474755785,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W3Short1": {
+      "n": 17,
+      "prompt_tokens": 3896,
+      "prompt_read": 3896,
+      "finish": "stop",
+      "eos": true,
+      "prefill_ms": 2826.5,
+      "prefill_tps": 1378.3831593843977,
+      "decode_ms": 442.4,
+      "ttft_observed_ms": 2853.884800002561,
+      "e2e_observed_ms": 3286.35779999604,
+      "last_visible_observed_ms": 3286.29770000407,
+      "decode_observed_tps": 37.00167131911227,
+      "tpot_observed_ms": 27.02580625009432,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "0249473d1c2c6934b4d77486e257f1beb71817ebec696d97098ab59c2625d7ca",
+      "branch": "chat",
+      "workflow_observed_ms": 3286.35779999604,
+      "requests_per_s": 0.30428823057586885,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W3Long0": {
+      "n": 128,
+      "prompt_tokens": 3817,
+      "prompt_read": 3817,
+      "finish": "length",
+      "eos": false,
+      "prefill_ms": 2701.9,
+      "prefill_tps": 1412.7095747436988,
+      "decode_ms": 3328.4,
+      "ttft_observed_ms": 2712.6725999987684,
+      "e2e_observed_ms": 6054.463599997689,
+      "last_visible_observed_ms": 6054.422000001068,
+      "decode_observed_tps": 38.004046622979146,
+      "tpot_observed_ms": 26.312987401592913,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+      "branch": "chat",
+      "workflow_observed_ms": 6054.463599997689,
+      "requests_per_s": 0.16516739814909148,
+      "quality": "structure/1; business accuracy unverified"
+    },
+    "W3Long1": {
+      "n": 128,
+      "prompt_tokens": 3817,
+      "prompt_read": 3817,
+      "finish": "length",
+      "eos": false,
+      "prefill_ms": 2765.6,
+      "prefill_tps": 1380.1706682094302,
+      "decode_ms": 3475.5,
+      "ttft_observed_ms": 2777.4160000117263,
+      "e2e_observed_ms": 6253.611000007368,
+      "last_visible_observed_ms": 6242.262200001278,
+      "decode_observed_tps": 36.65386359728838,
+      "tpot_observed_ms": 27.282253543224815,
+      "timing_scope": "file observations after engine fflush,5ms polling; not exact native flush timestamps",
+      "token_ids_sha256": "817570c7e658e6ba1047e4e7c6e260a5bb20f884f82e106c4b68f20d46cdcbd8",
+      "branch": "chat",
+      "workflow_observed_ms": 6253.611000007368,
+      "requests_per_s": 0.15990761177803062,
+      "quality": "structure/1; business accuracy unverified"
+    }
+  },
+  "stream_first": {
+    "gates": {
+      "caps": true,
+      "sse_eos_complete_json": true,
+      "disconnect_early": true,
+      "generation_disconnect_reset": true,
+      "score_keep": true,
+      "stream_owner_409": true,
+      "continue16": true,
+      "stale_revision": true,
+      "continue_eos": true,
+      "decisions": true,
+      "decision_release": true
+    },
+    "responses": [
+      {
+        "path": "/v1/capabilities",
+        "status": 200,
+        "response": {
+          "protocol": "strata-serve-v1",
+          "continuous_requests": true,
+          "cancel": true,
+          "state_isolation": true,
+          "prefix_cache": false,
+          "batching": false,
+          "mtp": {
+            "available": false,
+            "enabled": false,
+            "default": false,
+            "k": null
+          },
+          "expert_formats": [
+            "Q4_0",
+            "Q4_1",
+            "Q5_0",
+            "Q5_1",
+            "Q8_0",
+            "Q4_K",
+            "Q5_K",
+            "Q6_K",
+            "IQ2_XXS",
+            "IQ2_XS",
+            "IQ3_XXS",
+            "IQ4_NL",
+            "IQ3_S",
+            "IQ2_S",
+            "IQ4_XS",
+            "IQ1_M",
+            "Q2_0"
+          ],
+          "context_max": 4096,
+          "logits_read": true,
+          "score_explicit_candidate_ids": true,
+          "score_max_candidate_ids": 2048,
+          "state_keep_score": true,
+          "session_continue": true,
+          "state_export": true,
+          "disk_kv": false,
+          "vision": false,
+          "backend": "qwen35_llama",
+          "batching_contract": "1",
+          "service": "strata-unified-mvp/1",
+          "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+          "active_backend": "qwen35_llama",
+          "service_session_contract": "opaque-lease-revision/1",
+          "chat_completions": true,
+          "chat_streaming": true,
+          "chat_disconnect_cancel": true,
+          "queue_policy": "no queue; busy503 Retry-After1",
+          "chat_prefix_reuse": false,
+          "shared_executor": true,
+          "model_alias": "strata-qwen35"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        }
+      },
+      {
+        "path": "/v1/score",
+        "status": 200,
+        "response": {
+          "logprobs": [
+            {
+              "id": 90,
+              "logprob": -0.116
+            },
+            {
+              "id": 4754,
+              "logprob": -2.2494
+            },
+            {
+              "id": 13215,
+              "logprob": -6.1471
+            },
+            {
+              "id": 1,
+              "logprob": -7.3827
+            },
+            {
+              "id": 5202,
+              "logprob": -8.6236
+            }
+          ],
+          "pos": 3895,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 3896,
+            "prompt_ms": 2854.8,
+            "prompt_read": 3896
+          },
+          "keep": true,
+          "session": {
+            "id": "OfLQWGz1qioydYp6OoFyQRhBzvA1s9rjpJvtAugQ_Dw",
+            "revision": 1
+          }
+        }
+      },
+      {
+        "path": "/v1/chat/completions",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            90,
+            198,
+            1,
+            78151,
+            763,
+            220,
+            15,
+            11,
+            198,
+            1,
+            9676,
+            33805,
+            763,
+            867,
+            198,
+            92
+          ],
+          "text": "{\n\"risk\": 0,\n\"violation\": false\n}",
+          "finish": "length",
+          "reused": 3896,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 16,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "OfLQWGz1qioydYp6OoFyQRhBzvA1s9rjpJvtAugQ_Dw",
+            "revision": 2
+          }
+        }
+      },
+      {
+        "path": "/v1/continue",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            248046
+          ],
+          "text": "<|im_end|>",
+          "finish": "stop",
+          "reused": 3912,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 1,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "OfLQWGz1qioydYp6OoFyQRhBzvA1s9rjpJvtAugQ_Dw",
+            "revision": 3
+          }
+        }
+      },
+      {
+        "path": "/v1/decisions",
+        "status": 200,
+        "response": {
+          "kind": "choice",
+          "candidates": [
+            {
+              "token_ids": [
+                15
+              ],
+              "logprob": -8.0052,
+              "full_vocab_probability": 0.0003337227498409023,
+              "conditional_probability": 0.033323070265056584,
+              "probability": 0.0003337227498409023
+            },
+            {
+              "token_ids": [
+                16
+              ],
+              "logprob": -5.1229,
+              "full_vocab_probability": 0.005958717533512767,
+              "conditional_probability": 0.5949931886679365,
+              "probability": 0.005958717533512767
+            },
+            {
+              "token_ids": [
+                17
+              ],
+              "logprob": -5.9473,
+              "full_vocab_probability": 0.0026128857946511237,
+              "conditional_probability": 0.26090333059773935,
+              "probability": 0.0026128857946511237
+            },
+            {
+              "token_ids": [
+                18
+              ],
+              "logprob": -6.8039,
+              "full_vocab_probability": 0.001109439884027598,
+              "conditional_probability": 0.11078041046926762,
+              "probability": 0.001109439884027598
+            }
+          ],
+          "pos": 0,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 1,
+            "prompt_ms": 36.3,
+            "prompt_read": 1
+          },
+          "keep": false,
+          "label_mass": 0.01001476596203239,
+          "label_mass_covers_distribution": false,
+          "label_mass_tolerance": 0.001,
+          "calibrated": false,
+          "probability_scopes": {
+            "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable across requests; the sum over this candidate set is at most 1.",
+            "conditional_probability": "full_vocab_probability / label_mass: meaningful only within this candidate set; not comparable across different candidate sets.",
+            "business_confidence": "not provided: no calibration exists, so these numbers are not confidences; e.g. a label_mass of 0.31 means about 69% of the distribution mass lies outside the candidate set."
+          },
+          "session": null
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        }
+      }
+    ],
+    "server_pid": 34556,
+    "server_exit": 0
+  },
+  "stream_final": {
+    "gates": {
+      "caps": true,
+      "sse_eos_complete_json": true,
+      "disconnect_early": true,
+      "generation_disconnect_reset": true,
+      "score_keep": true,
+      "stream_owner_409": true,
+      "continue16": true,
+      "stale_revision": true,
+      "continue_eos": true,
+      "decisions": true,
+      "decision_release": true,
+      "prefill_disconnect_reset": true,
+      "abandoned_score_owner_reset": true,
+      "new_owner_not_blocked": true,
+      "next_message_chat": true,
+      "final_reset": true,
+      "graceful_cli_exit": true,
+      "lease_cleanup": true,
+      "real_gen_cancel": true,
+      "port_released": true
+    },
+    "responses": [
+      {
+        "path": "/v1/capabilities",
+        "status": 200,
+        "response": {
+          "protocol": "strata-serve-v1",
+          "continuous_requests": true,
+          "cancel": true,
+          "state_isolation": true,
+          "prefix_cache": false,
+          "batching": false,
+          "mtp": {
+            "available": false,
+            "enabled": false,
+            "default": false,
+            "k": null
+          },
+          "expert_formats": [
+            "Q4_0",
+            "Q4_1",
+            "Q5_0",
+            "Q5_1",
+            "Q8_0",
+            "Q4_K",
+            "Q5_K",
+            "Q6_K",
+            "IQ2_XXS",
+            "IQ2_XS",
+            "IQ3_XXS",
+            "IQ4_NL",
+            "IQ3_S",
+            "IQ2_S",
+            "IQ4_XS",
+            "IQ1_M",
+            "Q2_0"
+          ],
+          "context_max": 4096,
+          "logits_read": true,
+          "score_explicit_candidate_ids": true,
+          "score_max_candidate_ids": 2048,
+          "state_keep_score": true,
+          "session_continue": true,
+          "state_export": true,
+          "disk_kv": false,
+          "vision": false,
+          "backend": "qwen35_llama",
+          "batching_contract": "1",
+          "service": "strata-unified-mvp/1",
+          "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+          "active_backend": "qwen35_llama",
+          "service_session_contract": "opaque-lease-revision/1",
+          "chat_completions": true,
+          "chat_streaming": true,
+          "chat_disconnect_cancel": true,
+          "queue_policy": "no queue; busy503 Retry-After1",
+          "chat_prefix_reuse": false,
+          "shared_executor": true,
+          "model_alias": "strata-qwen35"
+        },
+        "http_e2e_ms": 158.2369999960065
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 21.13380000810139
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 26.06020000530407
+      },
+      {
+        "path": "/v1/score",
+        "status": 200,
+        "response": {
+          "logprobs": [
+            {
+              "id": 90,
+              "logprob": -0.116
+            },
+            {
+              "id": 4754,
+              "logprob": -2.2494
+            },
+            {
+              "id": 13215,
+              "logprob": -6.1471
+            },
+            {
+              "id": 1,
+              "logprob": -7.3827
+            },
+            {
+              "id": 5202,
+              "logprob": -8.6236
+            }
+          ],
+          "pos": 3895,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 3896,
+            "prompt_ms": 2814.7,
+            "prompt_read": 3896
+          },
+          "keep": true,
+          "session": {
+            "id": "wYBMjPZqzUsUq-piGw0pWdycsIBkJVnesPsZN-VMeyw",
+            "revision": 1
+          }
+        },
+        "http_e2e_ms": 2847.5879000034183
+      },
+      {
+        "path": "/v1/chat/completions",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.1813999919686466
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            90,
+            198,
+            1,
+            78151,
+            763,
+            220,
+            15,
+            11,
+            198,
+            1,
+            9676,
+            33805,
+            763,
+            867,
+            198,
+            92
+          ],
+          "text": "{\n\"risk\": 0,\n\"violation\": false\n}",
+          "finish": "length",
+          "reused": 3896,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 16,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "wYBMjPZqzUsUq-piGw0pWdycsIBkJVnesPsZN-VMeyw",
+            "revision": 2
+          }
+        },
+        "http_e2e_ms": 385.2531000011368
+      },
+      {
+        "path": "/v1/continue",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 13.199099994380958
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            248046
+          ],
+          "text": "<|im_end|>",
+          "finish": "stop",
+          "reused": 3912,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 1,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "wYBMjPZqzUsUq-piGw0pWdycsIBkJVnesPsZN-VMeyw",
+            "revision": 3
+          }
+        },
+        "http_e2e_ms": 41.371400002390146
+      },
+      {
+        "path": "/v1/decisions",
+        "status": 200,
+        "response": {
+          "kind": "choice",
+          "candidates": [
+            {
+              "token_ids": [
+                15
+              ],
+              "logprob": -10.7875,
+              "full_vocab_probability": 2.0656097576282375e-05,
+              "conditional_probability": 0.1104108520462077,
+              "probability": 2.0656097576282375e-05
+            },
+            {
+              "token_ids": [
+                16
+              ],
+              "logprob": -9.15,
+              "full_vocab_probability": 0.00010621980274645875,
+              "conditional_probability": 0.5677654688697188,
+              "probability": 0.00010621980274645875
+            },
+            {
+              "token_ids": [
+                17
+              ],
+              "logprob": -12.0814,
+              "full_vocab_probability": 5.663887862818725e-06,
+              "conditional_probability": 0.0302745803033982,
+              "probability": 5.663887862818725e-06
+            },
+            {
+              "token_ids": [
+                18
+              ],
+              "logprob": -9.8165,
+              "full_vocab_probability": 5.4544155045289024e-05,
+              "conditional_probability": 0.2915490987806754,
+              "probability": 5.4544155045289024e-05
+            }
+          ],
+          "pos": 3895,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 3896,
+            "prompt_ms": 2821.6,
+            "prompt_read": 3896
+          },
+          "keep": false,
+          "label_mass": 0.00018708394323084887,
+          "label_mass_covers_distribution": false,
+          "label_mass_tolerance": 0.001,
+          "calibrated": false,
+          "probability_scopes": {
+            "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable across requests; the sum over this candidate set is at most 1.",
+            "conditional_probability": "full_vocab_probability / label_mass: meaningful only within this candidate set; not comparable across different candidate sets.",
+            "business_confidence": "not provided: no calibration exists, so these numbers are not confidences; e.g. a label_mass of 0.31 means about 69% of the distribution mass lies outside the candidate set."
+          },
+          "session": null
+        },
+        "http_e2e_ms": 2856.7513000016334
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 33.059099994716235
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 24.471900003845803
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 18.614400003571063
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 18.24059999489691
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 20.158100000116974
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 17.348600013065152
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.077500001178123
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 15.910500005702488
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 23.251099992194213
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 22.630000006756745
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.3880999942775816
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.4532999959774315
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 15.340900004957803
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 24.055700007011183
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 25.469900007010438
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 1.9973999878857285
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 17.55800000682939
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 1.8324000120628625
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 1.807399996323511
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 16.450800001621246
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.4890000058803707
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 12.933999998494983
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 18.28910000040196
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 17.29430000705179
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 16.823500001919456
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.331299998331815
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 17.27680000476539
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 25.318200001493096
+      },
+      {
+        "path": "/v1/score",
+        "status": 200,
+        "response": {
+          "logprobs": [
+            {
+              "id": 5328,
+              "logprob": -3.5437
+            },
+            {
+              "id": 12195,
+              "logprob": -3.868
+            },
+            {
+              "id": 7734,
+              "logprob": -4.1103
+            },
+            {
+              "id": 4993,
+              "logprob": -4.3594
+            },
+            {
+              "id": 4660,
+              "logprob": -4.3653
+            }
+          ],
+          "pos": 0,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 1,
+            "prompt_ms": 31.9,
+            "prompt_read": 1
+          },
+          "keep": false
+        },
+        "http_e2e_ms": 64.74180000077467
+      },
+      {
+        "path": "/v1/chat/completions",
+        "status": 200,
+        "response": {
+          "id": "chatcmpl-3e5bce401f2b463180beb9a3260f07d5",
+          "object": "chat.completion",
+          "created": 1792121614,
+          "model": "strata-qwen35",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "好"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 18,
+            "completion_tokens": 2,
+            "total_tokens": 20
+          },
+          "session": null,
+          "prefix_reused": false,
+          "engine_timing": {
+            "prefill_ms": 164.6,
+            "decode_ms": 86.1
+          }
+        },
+        "http_e2e_ms": 635.0632999965455
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 29.94320000289008
+      },
+      {
+        "native_prefill_cancel_reason_seen": false,
+        "semantics": "in-flight Prefill block may finish before cancellation; generation is skipped and private state reset"
+      }
+    ],
+    "server_pid": 5804,
+    "server_exit": 0
+  },
+  "diagnostic_manifest": {
+    "started_at": "2026-10-16T03:04:20.963582+00:00",
+    "stage": "P3-11",
+    "scope": "two same-binary native processes identical P0 P1 S0 S1 L0 L1 plus held-state L128 and short EOS; light250ms telemetry diagnostic",
+    "budget": {
+      "native": 2,
+      "native_timeout_s": 120,
+      "internal_max": 28,
+      "trace": 0,
+      "build": 0,
+      "window_s": 1200,
+      "repair": 0
+    },
+    "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+    "model_registered_sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+    "mtp": false,
+    "compact": false,
+    "config": {
+      "slots": 3200,
+      "threads": 8,
+      "ubatch": 4096,
+      "ctx": 4096,
+      "compact": false
+    },
+    "ownership": "new diagnostic sampler + isolated experiment directories; no native source modifications",
+    "exit_conditions": "unsafe state/resource/CUDA/NaN fails stop related run; no automatic retry; idle otherGPU -> checkpoint",
+    "missing_counters": "serve DONE hits/lookups/tier hardcoded0; no honest cache-miss service/kernel split available; do not invent"
+  },
+  "counts": {
+    "native_launches": 10,
+    "diagnostic_natives": 2,
+    "workflow_reference": 1,
+    "unapplied_compact_trial": 4,
+    "streaming_natives": 3
+  },
+  "cpu": {
+    "tests": 206,
+    "seconds": 72.797,
+    "public_log": "cpu-final206.txt",
+    "original_log_sha256": "1faf4b027729887614d120ac68871a8d21bb795e60c9839ff9cab7c05f6454cb"
+  },
+  "stream_repair1": {
+    "gates": {
+      "caps": true,
+      "sse_eos_complete_json": true,
+      "disconnect_early": true,
+      "generation_disconnect_reset": true,
+      "score_keep": true,
+      "stream_owner_409": true,
+      "continue16": true,
+      "stale_revision": true,
+      "continue_eos": true,
+      "decisions": true,
+      "decision_release": true,
+      "prefill_disconnect_reset": true,
+      "next_message_chat": true,
+      "final_reset": true,
+      "graceful_cli_exit": true,
+      "lease_cleanup": true,
+      "real_gen_cancel": true,
+      "port_released": true
+    },
+    "responses": [
+      {
+        "path": "/v1/capabilities",
+        "status": 200,
+        "response": {
+          "protocol": "strata-serve-v1",
+          "continuous_requests": true,
+          "cancel": true,
+          "state_isolation": true,
+          "prefix_cache": false,
+          "batching": false,
+          "mtp": {
+            "available": false,
+            "enabled": false,
+            "default": false,
+            "k": null
+          },
+          "expert_formats": [
+            "Q4_0",
+            "Q4_1",
+            "Q5_0",
+            "Q5_1",
+            "Q8_0",
+            "Q4_K",
+            "Q5_K",
+            "Q6_K",
+            "IQ2_XXS",
+            "IQ2_XS",
+            "IQ3_XXS",
+            "IQ4_NL",
+            "IQ3_S",
+            "IQ2_S",
+            "IQ4_XS",
+            "IQ1_M",
+            "Q2_0"
+          ],
+          "context_max": 4096,
+          "logits_read": true,
+          "score_explicit_candidate_ids": true,
+          "score_max_candidate_ids": 2048,
+          "state_keep_score": true,
+          "session_continue": true,
+          "state_export": true,
+          "disk_kv": false,
+          "vision": false,
+          "backend": "qwen35_llama",
+          "batching_contract": "1",
+          "service": "strata-unified-mvp/1",
+          "engine_sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+          "active_backend": "qwen35_llama",
+          "service_session_contract": "opaque-lease-revision/1",
+          "chat_completions": true,
+          "chat_streaming": true,
+          "chat_disconnect_cancel": true,
+          "queue_policy": "no queue; busy503 Retry-After1",
+          "chat_prefix_reuse": false,
+          "shared_executor": true,
+          "model_alias": "strata-qwen35"
+        },
+        "http_e2e_ms": 147.1049999963725
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 13.615699994261377
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 23.812199986423366
+      },
+      {
+        "path": "/v1/score",
+        "status": 200,
+        "response": {
+          "logprobs": [
+            {
+              "id": 90,
+              "logprob": -0.116
+            },
+            {
+              "id": 4754,
+              "logprob": -2.2494
+            },
+            {
+              "id": 13215,
+              "logprob": -6.1471
+            },
+            {
+              "id": 1,
+              "logprob": -7.3827
+            },
+            {
+              "id": 5202,
+              "logprob": -8.6236
+            }
+          ],
+          "pos": 3895,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 3896,
+            "prompt_ms": 2807.2,
+            "prompt_read": 3896
+          },
+          "keep": true,
+          "session": {
+            "id": "nAMCRIhUTrs2GNCVx8Dgp-KXeNORcWxQtwgLyu6XMb4",
+            "revision": 1
+          }
+        },
+        "http_e2e_ms": 2843.023399997037
+      },
+      {
+        "path": "/v1/chat/completions",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 26.950599989504553
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            90,
+            198,
+            1,
+            78151,
+            763,
+            220,
+            15,
+            11,
+            198,
+            1,
+            9676,
+            33805,
+            763,
+            867,
+            198,
+            92
+          ],
+          "text": "{\n\"risk\": 0,\n\"violation\": false\n}",
+          "finish": "length",
+          "reused": 3896,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 16,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "nAMCRIhUTrs2GNCVx8Dgp-KXeNORcWxQtwgLyu6XMb4",
+            "revision": 2
+          }
+        },
+        "http_e2e_ms": 375.16529999265913
+      },
+      {
+        "path": "/v1/continue",
+        "status": 409,
+        "response": {
+          "error": "session ownership or revision conflict; no engine command was sent",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 25.82599999732338
+      },
+      {
+        "path": "/v1/continue",
+        "status": 200,
+        "response": {
+          "tokens": [
+            248046
+          ],
+          "text": "<|im_end|>",
+          "finish": "stop",
+          "reused": 3912,
+          "prompt_read": 0,
+          "prompt_tokens": 0,
+          "generated_tokens": 1,
+          "usage": {
+            "prompt_tokens": 0,
+            "prompt_ms": 0.0,
+            "prompt_read": 0
+          },
+          "session": {
+            "id": "nAMCRIhUTrs2GNCVx8Dgp-KXeNORcWxQtwgLyu6XMb4",
+            "revision": 3
+          }
+        },
+        "http_e2e_ms": 53.70180000318214
+      },
+      {
+        "path": "/v1/decisions",
+        "status": 200,
+        "response": {
+          "kind": "choice",
+          "candidates": [
+            {
+              "token_ids": [
+                15
+              ],
+              "logprob": -10.7875,
+              "full_vocab_probability": 2.0656097576282375e-05,
+              "conditional_probability": 0.1104108520462077,
+              "probability": 2.0656097576282375e-05
+            },
+            {
+              "token_ids": [
+                16
+              ],
+              "logprob": -9.15,
+              "full_vocab_probability": 0.00010621980274645875,
+              "conditional_probability": 0.5677654688697188,
+              "probability": 0.00010621980274645875
+            },
+            {
+              "token_ids": [
+                17
+              ],
+              "logprob": -12.0814,
+              "full_vocab_probability": 5.663887862818725e-06,
+              "conditional_probability": 0.0302745803033982,
+              "probability": 5.663887862818725e-06
+            },
+            {
+              "token_ids": [
+                18
+              ],
+              "logprob": -9.8165,
+              "full_vocab_probability": 5.4544155045289024e-05,
+              "conditional_probability": 0.2915490987806754,
+              "probability": 5.4544155045289024e-05
+            }
+          ],
+          "pos": 3895,
+          "full_vocab_softmax": true,
+          "generated_tokens": 0,
+          "usage": {
+            "prompt_tokens": 3896,
+            "prompt_ms": 2830.2,
+            "prompt_read": 3896
+          },
+          "keep": false,
+          "label_mass": 0.00018708394323084887,
+          "label_mass_covers_distribution": false,
+          "label_mass_tolerance": 0.001,
+          "calibrated": false,
+          "probability_scopes": {
+            "full_vocab_probability": "exp(logprob) under the full-vocabulary softmax: comparable across requests; the sum over this candidate set is at most 1.",
+            "conditional_probability": "full_vocab_probability / label_mass: meaningful only within this candidate set; not comparable across different candidate sets.",
+            "business_confidence": "not provided: no calibration exists, so these numbers are not confidences; e.g. a label_mass of 0.31 means about 69% of the distribution mass lies outside the candidate set."
+          },
+          "session": null
+        },
+        "http_e2e_ms": 2865.2593000006163
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 31.804600002942607
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 23.866899995482527
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 22.894000008818693
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 14.830600004643202
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 18.35719999508001
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 16.898500005481765
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.2326999896904454
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 15.437099995324388
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 1.7478999943705276
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 28.016299998853356
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 2.023399996687658
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 19.25489999121055
+      },
+      {
+        "path": "/v1/session",
+        "status": 503,
+        "response": {
+          "error": "a request is already in flight; this service serializes requests on one engine (no queue, retry later)",
+          "error_source": "service"
+        },
+        "http_e2e_ms": 17.79529999475926
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 30.85339999233838
+      },
+      {
+        "path": "/v1/chat/completions",
+        "status": 200,
+        "response": {
+          "id": "chatcmpl-deae8941646747858e1c1a99deffb53e",
+          "object": "chat.completion",
+          "created": 1792121175,
+          "model": "strata-qwen35",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "好"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 18,
+            "completion_tokens": 2,
+            "total_tokens": 20
+          },
+          "session": null,
+          "prefix_reused": false,
+          "engine_timing": {
+            "prefill_ms": 158.0,
+            "decode_ms": 104.7
+          }
+        },
+        "http_e2e_ms": 678.5393000027398
+      },
+      {
+        "path": "/v1/session",
+        "status": 200,
+        "response": {
+          "engine_state": {
+            "loaded": false,
+            "pos": 0,
+            "bytes": 748,
+            "path": null,
+            "covers": [
+              "attn_kv",
+              "gdn_state",
+              "conv",
+              "pos"
+            ],
+            "session": false,
+            "origin": null,
+            "file_bytes": null,
+            "payload_bytes": null,
+            "max_context": 4096,
+            "container_version": 1,
+            "model_fp_prefix": "0d4160ef57f03a80",
+            "not_covered": [
+              "logits",
+              "sampler_rng_state",
+              "expert_cache",
+              "pack",
+              "bridge_counters",
+              "rollback_history"
+            ]
+          },
+          "armed": false
+        },
+        "http_e2e_ms": 29.571000006399117
+      },
+      {
+        "native_prefill_cancel_reason_seen": false,
+        "semantics": "in-flight Prefill block may finish before cancellation; generation is skipped and private state reset"
+      }
+    ],
+    "server_pid": 30488,
+    "server_exit": 0
+  },
+  "configuration_adjudication": {
+    "verdict": "INVALID_CONFIGURATION",
+    "source": "B raw logs explicitly no profile/staying uniform",
+    "original_profile_sha256": "583045ffdc590013eafdb35013667b89648c240a88fa456c0449e9303ebf5f21",
+    "all_raw_preserved": true,
+    "not_a_compact_performance_result": true,
+    "current_guard": "preflight expert-profile registration + actual native startup layout/slot confirmation"
+  },
+  "cpu_previous": {
+    "tests": 205,
+    "seconds": 71.092,
+    "original_log_sha256": "4075f7171844ce3dd0fa0868a9e63576ece5b1a860b1ad2194a4430149d684d0"
+  }
+}

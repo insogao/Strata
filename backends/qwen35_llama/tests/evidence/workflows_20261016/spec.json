@@ -1,0 +1,79 @@
+{
+  "schema": "strata-single-gpu-experiment/1",
+  "cwd": "D:/work/StrataUnified",
+  "engine": {
+    "path": "D:/work/StrataUnified/build-session-correctness/strata.exe",
+    "sha256": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619"
+  },
+  "model": {
+    "path": "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+    "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+    "quant": "UD-IQ3_S",
+    "sha_trust": "registered previously fully verified; no rehash"
+  },
+  "pack": "models/pack",
+  "lease": {
+    "tool": "D:\\work\\StrataUnified\\strata\\backends\\qwen35_llama\\tools\\gpu_lock.py",
+    "lock": "D:\\work\\Strata\u9b54\u6539\\results\\runtime\\gpu.lock"
+  },
+  "runtime": {
+    "id": "CUDA12.8.1/MSVC ea06 canonical serve",
+    "cuda_bin": "D:\\work\\Strata\u9b54\u6539\\runtime\\cuda-12.8.1\\bin",
+    "env": {
+      "STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1",
+      "STRATA_QWEN35_PACKED_IDS": "1",
+      "STRATA_QWEN35_EXPERT_ORDER": "count_desc"
+    }
+  },
+  "budget": {
+    "max_native": 1,
+    "native_timeout_s": 120,
+    "window_s": 1200,
+    "wait_s": 60
+  },
+  "resources": {
+    "max_gpu_used_mib": 8060,
+    "max_host_rss_mib": 28000,
+    "min_available_ram_mib": 256,
+    "baseline_gpu_estimate_mib": 7800,
+    "estimated_host_mib": 14000
+  },
+  "baseline": {
+    "id": "production-reference",
+    "config": {
+      "slots": 3200,
+      "threads": 8,
+      "ubatch": 4096,
+      "ctx": 4096,
+      "compact": false
+    }
+  },
+  "candidates": [],
+  "shapes": [
+    {
+      "id": "P",
+      "tokens_file": "D:\\work\\Strata\u9b54\u6539\\results\\20261012-qwen35-decode-quality157\\fixtures\\fixture-benign\\prompt.tokens",
+      "sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+      "prompt_tokens": 3896,
+      "max_new": 1
+    },
+    {
+      "id": "S",
+      "tokens_file": "D:\\work\\Strata\u9b54\u6539\\results\\20261012-qwen35-decode-quality157\\fixtures\\fixture-benign\\prompt.tokens",
+      "sha256": "4e6b2529aaab49d3c7a0b4f8f34bf5312b3c18dacbc688befd437421ad6a631d",
+      "prompt_tokens": 3896,
+      "max_new": 16
+    },
+    {
+      "id": "L",
+      "tokens_file": "D:\\work\\Strata\u9b54\u6539\\results\\20261012-qwen35-decode-m0-repair156\\fixtures\\l-risk-explain\\prompt.tokens",
+      "sha256": "a920a130b9ab81ebc8f958edd396ffd0393403bfe1658b5347076900ff0a3ac5",
+      "prompt_tokens": 3817,
+      "max_new": 128
+    }
+  ],
+  "policy": {
+    "min_gain": 0.05,
+    "early_regression": 0.15
+  }
+}

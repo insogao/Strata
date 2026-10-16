@@ -14,10 +14,22 @@ import subprocess
 import sys
 import threading
 import time
+import re
 
 
 def save(path, data):
     Path(path).write_text(json.dumps(data, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+
+
+def configuration_evidence(config, raw):
+    compact=re.search(r'native expert tier \(compact\): (\d+) slots',raw)
+    uniform=re.search(r'native expert tier: (\d+) slots',raw)
+    match=compact or uniform
+    actual={'compact':bool(compact),'slots':int(match.group(1)) if match else None,
+            'startup_line':match.group(0) if match else None}
+    if actual['compact']!=config['compact'] or actual['slots']!=config['slots']:
+        raise ValueError('requested cache layout/slots not applied: '+str(actual))
+    return actual
 
 
 class ResourceMonitor:
@@ -110,6 +122,8 @@ class LeasedNative:
         argv = [exe, '--qwen35-model', spec['model']['path'], '--qwen35-pack', spec['pack'],
                 '--serve', '--max-context', str(config['ctx']), '--qwen35-threads', str(config['threads']),
                 '--qwen35-cache-slots', str(config['slots']), '--qwen35-ubatch', str(config['ubatch'])]
+        if spec.get('expert_profile'):
+            argv += ['--qwen35-profile',spec['expert_profile']['path']]
         if not all(s.isascii() for s in argv):
             raise ValueError('engine argv must be ASCII (use relative model/pack paths)')
         job = {'authorized': True, 'job': self.job_id, 'task': 'opt-in single-GPU experiment',
@@ -153,6 +167,8 @@ class LeasedNative:
             self.monitor.start(self.proc)
             while not self.line(self.started + bound)[0].startswith('READY '):
                 pass
+            actual=configuration_evidence(config,(self.out/'raw/child_00.log').read_text(encoding='utf-8',errors='replace'))
+            save(self.out/'actual-configuration.json',{'requested':config,'actual':actual})
             self.load_ready_s = time.monotonic() - self.started
         except BaseException:
             self.close(abort=True)

@@ -1,0 +1,4 @@
+* -text whitespace=-blank-at-eol,cr-at-eol
+* linguist-generated=true
+*-telemetry.json -diff
+*-responses.json -diff

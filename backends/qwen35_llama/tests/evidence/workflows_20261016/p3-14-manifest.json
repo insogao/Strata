@@ -1,0 +1,27 @@
+{
+  "started_at": "2026-10-16T03:22:24.087688+00:00",
+  "stage": "P3-14",
+  "scope": "one real CLI finite service lifecycle with SSE EOS, GEN disconnect, prefill disconnect, owner conflict, next-request recovery, SIGBREAK cleanup; no performance claims",
+  "budget": {
+    "native": 1,
+    "service_lifetime_s": 90,
+    "internal_commands_max": 50,
+    "controller_timeout_s": 150,
+    "window_s": 1200,
+    "build": 0,
+    "trace": 0,
+    "repair": 0
+  },
+  "source_sha": {
+    "strata_unified.py": "94c6b68a447a49b79c9577feb22aeec7eaf70acf5fe3301c37aa371df4e52386",
+    "strata_streaming.py": "e8e19d8b2d1968d2ebc159159f179b820a35e52a651dd4cd64185b4d4c4a3f50",
+    "leased_native.py": "44a31a0c2392e368cf893c5273c127cb0e7884deb058a2c026a3b4b9692fd5ab"
+  },
+  "config": {
+    "slots": 3200,
+    "threads": 8,
+    "ubatch": 4096,
+    "ctx": 4096,
+    "compact": false
+  }
+}

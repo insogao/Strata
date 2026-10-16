@@ -1,0 +1,10 @@
+{
+  "registered_at": "2026-10-16T03:24:57.858449+00:00",
+  "evidence": "first11 gates passed inclGENcancel6<128. Harness pref-cancel bound2s shorter than native2.738s in-flightchunk; HTTP daemon threads caused server_close not to wait, closing pipe while private cleanup still pending. No native safety/fence/OOM.",
+  "repair": "non-daemon HTTP handlers joined before nativeclose; finite5s cancel completion check; do not require native cancel reason when currentPrefillchunk completed andgeneration skipped",
+  "additional_native": 1,
+  "lifetime_s": 90,
+  "internal_cap": 50,
+  "window": "original P3-14 started_at, no reset",
+  "no_auto_retry": true
+}

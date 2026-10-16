@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "D:\work\Strata魔改\results\unified-p3-next-20261016\stream-smoke.py", line 64, in <module>
+    time.sleep(.1);conn.close();time.sleep(.2);idle('prefill_disconnect_reset')
+                                               ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\work\Strata魔改\results\unified-p3-next-20261016\stream-smoke.py", line 25, in idle
+    raise AssertionError('cancel did not drain promptly')
+AssertionError: cancel did not drain promptly

@@ -25,11 +25,69 @@ TOOLS = Path(__file__).resolve().parent
 LOCK_SHA = '337426d63d5e36f199b8bca3e46bea041987a5d68272f426a5976f50da2a7111'
 CONFIG_KEYS = {'slots', 'threads', 'ubatch', 'ctx', 'compact'}
 ENV = {'STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE', 'STRATA_QWEN35_PACKED_IDS', 'STRATA_QWEN35_EXPERT_ORDER'}
+BENCHMARK_V1 = {'version': 'psl-90-10/1', 'path': 'qwen35-serve/GEN',
+    'order': ['P0', 'P1', 'S0', 'S1', 'L0', 'L1'], 'warm_request': 1,
+    'timing': 'file-observation-5ms/1', 'objective': {'S': .9, 'L': .1},
+    'quality': 'actual-length/finish/isolation/json-structure/1'}
 
 
 def save(path, value):
     with Path(path).open('x', encoding='utf-8') as f:
         json.dump(value, f, indent=2, allow_nan=False); f.write('\n')
+
+
+def benchmark(spec):
+    """Old Profiles have an explicit documented interpretation, not a new schema."""
+    if spec.get('workloads'):
+        return {'version':'business-workflows/1','path':'qwen35-serve/SCORE+GEN',
+                'timing':'file-observation-5ms/1','objective':'weighted-normalized-workflow-E2E/1',
+                'workloads':spec['workloads']}
+    return spec.get('benchmark', BENCHMARK_V1)
+
+
+def profile_integrity(profile):
+    """Historical artifact validation, independent of today's task or tool version."""
+    reasons = []
+    if profile.get('schema') != 'strata-measured-profile/1':
+        reasons.append('schema mismatch')
+    if profile.get('content_sha256') != st.digest({k: v for k, v in profile.items() if k != 'content_sha256'}):
+        reasons.append('profile content changed')
+    if profile.get('identity_sha256') != st.digest(profile.get('identity')):
+        reasons.append('identity checksum mismatch')
+    if not profile.get('evidence'):
+        reasons.append('missing measurement evidence')
+    for item in profile.get('evidence', []):
+        if not Path(item['path']).is_file() or st.file_sha(item['path']) != item['sha256']:
+            reasons.append('evidence missing/changed: ' + item['path'])
+    if profile.get('failure'):
+        reasons.append('incomplete experiment')
+    return {'valid': not reasons, 'reasons': reasons}
+
+
+def baseline_compatibility(measured, current, fp):
+    """Search-only fields may differ; measured workload/environment may not."""
+    historic = measured['spec']
+    old_identity = measured['identity']
+    now_identity = identity(current, fp)
+    reasons = []
+    # Budget/run-directory/baseline_profile/candidate list are execution controls.
+    # Every changed candidate configuration is separately constrained by validate().
+    for key in ('engine', 'model', 'pack', 'runtime', 'shapes', 'baseline', 'resources', 'policy', 'workloads', 'benchmark', 'telemetry', 'expert_profile'):
+        if historic.get(key) != current.get(key):
+            reasons.append('baseline incompatible: ' + key)
+    if measured.get('benchmark',BENCHMARK_V1) != benchmark(current):
+        reasons.append('baseline incompatible: benchmark/objective')
+    # The full manifest digest differs for a search; compare actual identity fields
+    # instead. This includes hardware UUID, driver, CPU/RAM, Python/packages, pack
+    # stat, engine and tool hashes. No old measurement is silently migrated.
+    ignored = {'workload', 'baseline_profile_sha256'}
+    for key in (set(old_identity) | set(now_identity)) - ignored:
+        if old_identity.get(key) != now_identity.get(key):
+            reasons.append('baseline incompatible identity: ' + key)
+    if measured.get('fallback') != current['baseline']['config']:
+        reasons.append('baseline configuration mismatch')
+    return {'valid': not reasons, 'reasons': reasons,
+            'contract': 'baseline-search-compatibility/1'}
 
 
 def token_ids(path):
@@ -52,6 +110,10 @@ def validate(spec):
         raise ValueError('engine SHA mismatch')
     if st.file_sha(spec['lease']['tool']) != LOCK_SHA:
         raise ValueError('canonical lease SHA mismatch')
+    if spec.get('expert_profile'):
+        registered=spec['expert_profile']
+        if registered.get('model_sha256')!=spec['model']['sha256'] or st.file_sha(Path(spec['cwd'])/registered['path'])!=registered['sha256']:
+            raise ValueError('expert profile identity/model mismatch')
     budget = spec['budget']
     for k, maximum in [('max_native', 16), ('native_timeout_s', 300), ('window_s', 1200), ('wait_s', 60)]:
         if type(budget[k]) is not int or not 0 < budget[k] <= maximum:
@@ -80,6 +142,8 @@ def validate(spec):
                 raise ValueError('invalid configuration ' + k)
         if cfg['ubatch'] > cfg['ctx']:
             raise ValueError('ubatch exceeds context')
+        if cfg['compact'] and not spec.get('expert_profile'):
+            raise ValueError('COMPACT requires a registered expert profile; native otherwise falls back to uniform')
         if c in candidates:
             changed = [k for k in CONFIG_KEYS if cfg[k] != spec['baseline']['config'][k]]
             if len(changed) != 1 or changed == ['ctx']:
@@ -101,6 +165,11 @@ def validate(spec):
             raise ValueError('illegal context budget')
     if not 0 < spec['policy']['min_gain'] <= .5 or not 0 < spec['policy']['early_regression'] <= .5:
         raise ValueError('invalid decision policy')
+    if 'workloads' in spec:
+        from strata_workloads import validate as validate_workloads
+        validate_workloads(spec)
+    if 'benchmark' in spec and spec['benchmark'] != benchmark({k:v for k,v in spec.items() if k!='benchmark'}):
+        raise ValueError('benchmark descriptor must match the actual registered runner/objective version')
 
 
 def fingerprint(spec):
@@ -122,7 +191,7 @@ def identity(spec, fp):
     binding = st.binding(fp, spec['engine']['path'], work, 'safe', 4, spec['runtime']['id'])
     binding['experiment_tools'] = {p: st.file_sha(TOOLS / p) for p in
                                   ('strata_experiment.py', 'leased_native.py', 'gpu_lock.py',
-                                   'strata_tokenizer.py', 'score_api.py')}
+                                   'strata_tokenizer.py', 'score_api.py', 'strata_workloads.py', 'strata_diagnostics.py')}
     binding['telemetry_source_sha256'] = st.file_sha(TOOLS.parents[2] / 'serve/telemetry.py')
     binding['quant'] = spec['model']['quant']
     binding['python'] = sys.version
@@ -178,6 +247,9 @@ def metrics(answer):
 
 
 def run_arm(spec, config, directory, started):
+    if spec.get('workloads'):
+        from strata_workloads import run
+        return run(spec, config, directory, started)
     from leased_native import LeasedNative, save as overwrite
     native = LeasedNative(spec, config, directory, started)
     rows = {}
@@ -214,8 +286,11 @@ def run_arm(spec, config, directory, started):
     return report
 
 
-def compare(arms, policy):
+def compare(arms, policy, workloads=None):
     """A B B A; warm rq2 only. Exact independent text is not a decision gate."""
+    if workloads:
+        from strata_workloads import compare as compare_workloads
+        return compare_workloads(arms, policy, workloads)
     if len(arms) != 4:
         return {'verdict': 'NO-GO', 'reason': 'incomplete ABBA evidence'}
     a = [arms[0], arms[3]]; b = [arms[1], arms[2]]
@@ -272,9 +347,14 @@ def execute(spec, out, smoke=False, runner=run_arm, fp=None):
     candidates = spec['candidates']
     if not smoke:
         measured = st.read_json(spec['baseline_profile'])
-        if not check(measured, measured['spec'], fp)['valid'] or measured['fallback'] != spec['baseline']['config']:
-            raise ValueError('baseline Profile invalid or configuration mismatch; profile before searching')
+        integrity = profile_integrity(measured)
+        compatibility = baseline_compatibility(measured, spec, fp)
+        save(out / 'baseline-validation.json', {'integrity': integrity, 'compatibility': compatibility})
+        if not integrity['valid'] or not compatibility['valid']:
+            raise ValueError('baseline Profile incompatible: ' + str(integrity['reasons'] + compatibility['reasons']))
         if not candidates:
+            if spec.get('workloads'):
+                raise ValueError('business search needs explicit hypothesis-backed candidates; no legacy grid')
             candidates = generate_candidates(spec, measured)
         save(out / 'candidate-plan.json', candidates)
     def arm(label, config):
@@ -305,11 +385,13 @@ def execute(spec, out, smoke=False, runner=run_arm, fp=None):
                 for i, config in enumerate((base, c['config'], c['config'], base)):
                     trials.append(arm(c['id'] + '-' + str(i), config))
                     if i == 1:
-                        reg = max(trials[1]['metrics'][s + '1']['e2e_observed_ms'] /
-                                  trials[0]['metrics'][s + '1']['e2e_observed_ms'] - 1 for s in ('S', 'L'))
+                        names = [w['id'] for w in spec['workloads']] if spec.get('workloads') else ['S','L']
+                        metric = 'workflow_observed_ms' if spec.get('workloads') else 'e2e_observed_ms'
+                        reg = max(trials[1]['metrics'][s + '1'][metric] /
+                                  trials[0]['metrics'][s + '1'][metric] - 1 for s in names)
                         if reg > spec['policy']['early_regression']:
                             break
-                all_candidates.append({'id': c['id'], 'config': c['config'], **compare(trials, spec['policy'])})
+                all_candidates.append({'id': c['id'], 'config': c['config'], **compare(trials, spec['policy'],spec.get('workloads'))})
     except BaseException as exc:
         save(out / 'failure.json', {'error': str(exc), 'native_budget_consumed': arms_used,
                                    'unsafe_feature_stopped': True, 'retry': False})
@@ -329,7 +411,7 @@ def execute(spec, out, smoke=False, runner=run_arm, fp=None):
         'native_attempts': arms_used,
         'native_launches': sum(bool(c.get('pid')) for p in out.rglob('result.json')
                                for c in st.read_json(p).get('commands', [])),
-        'candidate_plan': candidates, 'evidence': evidence,
+        'candidate_plan': candidates, 'benchmark':benchmark(spec), 'evidence': evidence,
         'invalidation': 'any engine/model/quant/device/runtime/input/tool/evidence change'}
     profile['failure'] = failure
     if failure:

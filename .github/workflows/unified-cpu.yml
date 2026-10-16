@@ -1,0 +1,33 @@
+name: Unified backend CPU contracts
+on:
+  push:
+    paths: ['backends/qwen35_llama/tools/**', 'tools/strata_*.py', '.github/workflows/unified-cpu.yml']
+  pull_request:
+    paths: ['backends/qwen35_llama/**', 'tools/strata_*.py', '.github/workflows/unified-cpu.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+jobs:
+  cpu:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Syntax and import contracts
+        run: python -m compileall -q backends/qwen35_llama/tools tools/strata_tune.py tools/strata_server.py
+      - name: CPU protocol, session, tuner and lifecycle tests
+        run: python -B -m unittest discover -s backends/qwen35_llama/tools -p "test_*.py" -v
+      - name: Independent historical GPU evidence arithmetic (no GPU)
+        run: python backends/qwen35_llama/tools/verify_single_gpu_evidence.py backends/qwen35_llama/tests/evidence/single_gpu_20261016
+      - name: Independent workflow and diagnostic evidence (no GPU)
+        run: python backends/qwen35_llama/tools/verify_workflow_evidence.py backends/qwen35_llama/tests/evidence/workflows_20261016
