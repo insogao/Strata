@@ -1,0 +1,2 @@
+# Hash-bound anonymized observations must survive Windows checkout byte-exact.
+*.json -text whitespace=-blank-at-eol,cr-at-eol

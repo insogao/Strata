@@ -1,0 +1,943 @@
+{
+  "paired": {
+    "audit": {
+      "n": 4,
+      "dataset_sha256": "3935af3ade5b237fa23782ad3617c1dcb66261b54736870294c339588030037a",
+      "risk_counts": {
+        "0": 1,
+        "1": 1,
+        "2": 1,
+        "3": 1
+      },
+      "scenario_counts": {
+        "none": 1,
+        "other_illicit_coordination": 1,
+        "fraud_scam": 1,
+        "bribery_corruption": 1
+      },
+      "reference_counts": {
+        "synthetic_design_label": 4
+      },
+      "status_counts": {
+        "provisional": 4
+      },
+      "human_adjudicated_n": 0,
+      "accuracy_status": "BLOCKED_NO_GOLD_DATA"
+    },
+    "speed": {
+      "A0": {
+        "n": 4,
+        "valid_completed_reviews": 4,
+        "mean_e2e_ms": 1765.6183750041237,
+        "median_e2e_ms": 1455.971800001862,
+        "p90_e2e_ms": null,
+        "p95_e2e_ms": null,
+        "tail_note": "tails withheld below100; warm requests are not proof of steady state",
+        "valid_reviews_per_s_service_sum": 0.5663738065694205,
+        "mean_actual_output_tokens": 16,
+        "errors": {}
+      },
+      "A1": {
+        "n": 4,
+        "valid_completed_reviews": 4,
+        "mean_e2e_ms": 1051.1624749960902,
+        "median_e2e_ms": 1052.4820499922498,
+        "p90_e2e_ms": null,
+        "p95_e2e_ms": null,
+        "tail_note": "tails withheld below100; warm requests are not proof of steady state",
+        "valid_reviews_per_s_service_sum": 0.951327719345879,
+        "mean_actual_output_tokens": 2,
+        "errors": {}
+      },
+      "B1": {
+        "n": 4,
+        "valid_completed_reviews": 4,
+        "mean_e2e_ms": 882.0678750016668,
+        "median_e2e_ms": 905.4129500000272,
+        "p90_e2e_ms": null,
+        "p95_e2e_ms": null,
+        "tail_note": "tails withheld below100; warm requests are not proof of steady state",
+        "valid_reviews_per_s_service_sum": 1.1336996033305378,
+        "mean_actual_output_tokens": 0,
+        "errors": {}
+      }
+    },
+    "human_gold": {
+      "A0": {
+        "n": 0,
+        "valid": 0,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "exact_accuracy": null,
+        "within_one_accuracy": null,
+        "mae_valid_only": null,
+        "mse_valid_only": null,
+        "mae_failure_penalty_3": null,
+        "mse_failure_penalty_9": null,
+        "severe_error_rate_all": null,
+        "severe_or_invalid_rate": null,
+        "per_class_recall": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "macro_f1_supported": null,
+        "absent_classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "risk3_recall": null,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": null,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": null
+      },
+      "A1": {
+        "n": 0,
+        "valid": 0,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "exact_accuracy": null,
+        "within_one_accuracy": null,
+        "mae_valid_only": null,
+        "mse_valid_only": null,
+        "mae_failure_penalty_3": null,
+        "mse_failure_penalty_9": null,
+        "severe_error_rate_all": null,
+        "severe_or_invalid_rate": null,
+        "per_class_recall": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "macro_f1_supported": null,
+        "absent_classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "risk3_recall": null,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": null,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": null
+      },
+      "B1": {
+        "n": 0,
+        "valid": 0,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "exact_accuracy": null,
+        "within_one_accuracy": null,
+        "mae_valid_only": null,
+        "mse_valid_only": null,
+        "mae_failure_penalty_3": null,
+        "mse_failure_penalty_9": null,
+        "severe_error_rate_all": null,
+        "severe_or_invalid_rate": null,
+        "per_class_recall": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "macro_f1_supported": null,
+        "absent_classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "risk3_recall": null,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": null,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": null
+      }
+    },
+    "quality_qualified_reviews_per_s": null,
+    "business_release": "NOT_APPROVED",
+    "disputed_n": 0,
+    "synthetic_reference_diagnostics": {
+      "A0": {
+        "n": 4,
+        "valid": 4,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "exact_accuracy": 0.25,
+        "within_one_accuracy": 0.5,
+        "mae_valid_only": 1.25,
+        "mse_valid_only": 2.25,
+        "mae_failure_penalty_3": 1.25,
+        "mse_failure_penalty_9": 2.25,
+        "severe_error_rate_all": 0.5,
+        "severe_or_invalid_rate": 0.5,
+        "per_class_recall": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "macro_f1_supported": 0.125,
+        "absent_classes": [],
+        "risk3_recall": 1.0,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": 0.0,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": 0.0
+      },
+      "A1": {
+        "n": 4,
+        "valid": 4,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "exact_accuracy": 0.25,
+        "within_one_accuracy": 0.5,
+        "mae_valid_only": 1.5,
+        "mse_valid_only": 3.5,
+        "mae_failure_penalty_3": 1.5,
+        "mse_failure_penalty_9": 3.5,
+        "severe_error_rate_all": 0.5,
+        "severe_or_invalid_rate": 0.5,
+        "per_class_recall": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "macro_f1_supported": 0.1,
+        "absent_classes": [],
+        "risk3_recall": 1.0,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": 0.0,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": 0.0
+      },
+      "B1": {
+        "n": 4,
+        "valid": 4,
+        "invalid": 0,
+        "failures": {},
+        "confusion_gold_rows": [
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ],
+        "invalid_by_gold": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "support": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "exact_accuracy": 0.25,
+        "within_one_accuracy": 0.5,
+        "mae_valid_only": 1.5,
+        "mse_valid_only": 3.5,
+        "mae_failure_penalty_3": 1.5,
+        "mse_failure_penalty_9": 3.5,
+        "severe_error_rate_all": 0.5,
+        "severe_or_invalid_rate": 0.5,
+        "per_class_recall": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "macro_f1_supported": 0.1,
+        "absent_classes": [],
+        "risk3_recall": 1.0,
+        "risk3_to2": 0,
+        "risk3_severe_underestimate_rate": 0.0,
+        "risk3_invalid": 0,
+        "high_risk_underestimation": {},
+        "flow_failure_rate": 0.0
+      }
+    },
+    "paired_human_gold": {
+      "A0-B1": {
+        "clusters": 0,
+        "n": 0,
+        "corrected_by_b": 0,
+        "introduced_by_b": 0,
+        "both_valid": 0,
+        "agreement_all": null,
+        "direction": "B minus A",
+        "bootstrap_seed": 0,
+        "bootstrap_draws": 1000,
+        "status": "INCONCLUSIVE",
+        "deltas": {
+          "exact_accuracy": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "within_one_accuracy": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "mae_failure_penalty_3": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "severe_or_invalid_rate": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "risk3_recall": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "risk3_severe_underestimate_rate": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          }
+        }
+      },
+      "A1-B1": {
+        "clusters": 0,
+        "n": 0,
+        "corrected_by_b": 0,
+        "introduced_by_b": 0,
+        "both_valid": 0,
+        "agreement_all": null,
+        "direction": "B minus A",
+        "bootstrap_seed": 0,
+        "bootstrap_draws": 1000,
+        "status": "INCONCLUSIVE",
+        "deltas": {
+          "exact_accuracy": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "within_one_accuracy": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "mae_failure_penalty_3": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "severe_or_invalid_rate": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "risk3_recall": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          },
+          "risk3_severe_underestimate_rate": {
+            "estimate": null,
+            "ci95": null,
+            "defined_draws": 0
+          }
+        }
+      }
+    },
+    "comparison_scope": {
+      "A0-B1": "business prompt and output format both change",
+      "A1-B1": "same prompt token IDs; complete ordinary label generation vs score, no forced label normalization"
+    }
+  },
+  "mixed_corrected": {
+    "status": "NO-GO",
+    "arms": {
+      "M0": {
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "503": 0,
+        "wall_ms": 6451.446699997177,
+        "valid_completed_per_s": 0.6200159725417479,
+        "mean_queue_wait_ms": 0,
+        "max_queue_wait_ms": 0,
+        "mean_client_e2e_ms": 1612.8413500046008,
+        "p95_client_e2e_ms": null,
+        "tail_note": "bounded pilot<100; no reliable p95",
+        "mean_actual_output_tokens": 16,
+        "completion_by_submission": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "quality_qualified_per_s": null
+      },
+      "M1": {
+        "submitted": 4,
+        "completed": 0,
+        "failed": 4,
+        "503": 0,
+        "wall_ms": 4691.275899996981,
+        "valid_completed_per_s": 0.0,
+        "mean_queue_wait_ms": 0,
+        "max_queue_wait_ms": 0,
+        "mean_client_e2e_ms": 1172.798524999962,
+        "p95_client_e2e_ms": null,
+        "tail_note": "bounded pilot<100; no reliable p95",
+        "mean_actual_output_tokens": 1,
+        "completion_by_submission": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "quality_qualified_per_s": null
+      },
+      "M2": {
+        "submitted": 4,
+        "completed": 0,
+        "failed": 4,
+        "503": 0,
+        "wall_ms": 4659.334099997068,
+        "valid_completed_per_s": 0.0,
+        "mean_queue_wait_ms": 863.6886249987583,
+        "max_queue_wait_ms": 1203.296899999259,
+        "mean_client_e2e_ms": 2028.2349999979488,
+        "p95_client_e2e_ms": null,
+        "tail_note": "bounded pilot<100; no reliable p95",
+        "mean_actual_output_tokens": 1,
+        "completion_by_submission": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "quality_qualified_per_s": null
+      }
+    },
+    "reason": "SCORE classify succeeded but all8 explanation branches returned EOS only. Raw pre-fix summaries counted these incorrectly; originals retained. M0 JSON and M1 explanation policies also differ, no equal-quality speed claim.",
+    "gpu_parallelism": false,
+    "quality_qualified_per_s": null
+  },
+  "native": {
+    "paired": {
+      "original_files_sha256": {
+        "evidence-index.json": "bd2213fa5e378b35f3eca7a7d55ff1f255f0bfd20abc77ac9a42eb445e92aa9c",
+        "load.json": "7174cc4ca618bff6e1f195d6ffe9bddecb98f0da89fac46770532c8eeadd6e9d",
+        "prefill-regression.json": "bec0b189e3a10a24eedeed97d531d31c5f8677bde6a965eaeac602eb1a08c8a4",
+        "preregistration.json": "9c3f2d8d7cdd540051f0dd8bfe67577abe95d3516b2ace8cce40cd4e09699eba",
+        "private-results.jsonl": "67b9109ccb8b6a2dcc9b81ef94feaad24f79b8722a84d952c2dc20124dee989f",
+        "receipt.json": "90882802f1c279a26a4931c2878c0e6cf5b9d7f2eb378edca7966f99dd9af1f9",
+        "summary.json": "accb84fc9943889f1d687eb07cd23ba1d4e87132fe9ec7c875f2190ecc9d1937",
+        "tokenizer-audit.json": "b32b09d16899eca0ac4de33d9d6d7f46e14e324a2b1983baa1bd25a93a633302",
+        "native\\actual-configuration.json": "3ef246347403181d178fcb3d0f1014e51ca7a8e64d4349ec1436d0767f379fe5",
+        "native\\audit.json": "8dddc38a16ae370668a9499090dfd06f40341794e72aedc541607b22e58ad361",
+        "native\\job.json": "677401c89fbc87cc0d0ec2d07d9cfdc3b6ce2a8b8c0cf8a70c13abadbafce5af",
+        "native\\lease.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "native\\preregistration.json": "86c230f163c14a596402b0a9524ed0518309fba2d1608956bd8a5e23f8dbb1d1",
+        "native\\ready.json": "03c6618931430c1456ad119d0c152879f71593145b3fcc648509a7ba51d928b6",
+        "native\\resources.json": "80483f6a06b8d2b1cb3443f3b319d5b868d714b7f808b99c06ff1061aceb2293",
+        "native\\result.json": "4aef510199f5b4dffa38797f6051e6af8b840f78172a250eb9c0de6b27419fcd",
+        "native\\raw\\child_00.log": "4d81691b66986d67936d49ef7e72bf70b27deab1ef6ed15110533b62de9fa757"
+      },
+      "receipt": {
+        "mode": "run",
+        "started_at": "2026-10-16T12:44:37.952",
+        "argv": [
+          "run",
+          "--lock",
+          "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock",
+          "--job",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\job.json",
+          "--audit",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\audit.json",
+          "--result",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\result.json",
+          "--ready-file",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\ready.json",
+          "--child-log-dir",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\raw",
+          "--cwd",
+          "D:/work/StrataUnified",
+          "--wait-seconds",
+          "60",
+          "--retry-interval-seconds",
+          "10",
+          "--cleanup-wait-seconds",
+          "15",
+          "--expect-job",
+          "strata-tune-native",
+          "--source",
+          "single-gpu-autotuner",
+          "--stdin-file",
+          "\\\\.\\pipe\\strata-tune-native-12716"
+        ],
+        "lock_path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock",
+        "marker_path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "wait_seconds": 60.0,
+        "retry_interval_seconds": 10.0,
+        "cleanup_wait_seconds": 15.0,
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T12:44:38.062",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 34176,
+            "exit_code": 0,
+            "elapsed_seconds": 32.101,
+            "finished_at": "2026-10-16T12:45:10.164",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\p4-20261016\\paired\\native\\raw\\child_00.log"
+          }
+        ],
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T12:44:38.054",
+          "removed_at": "2026-10-16T12:45:10.164",
+          "retained": false,
+          "outcome": null
+        },
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            34176
+          ]
+        },
+        "job": "strata-tune-native",
+        "task": "opt-in single-GPU experiment",
+        "acquired_at": "2026-10-16T12:44:37.960",
+        "wait": {
+          "attempts": 1,
+          "wait_elapsed_seconds": 0.0
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+        "job_closed_at": "2026-10-16T12:45:10.164",
+        "released_at": "2026-10-16T12:45:10.164",
+        "exit_code": 0
+      },
+      "load": {
+        "load_ready_s": 2.9555685999948764,
+        "scope": "cold native startup; following requests are within this process"
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7982.359375,
+        "host_rss_peak_mib": 14896.3828125,
+        "available_ram_min_mib": 4731.265625,
+        "violation": null
+      },
+      "prefill_regression": [
+        {
+          "prefill_ms": 9513.5,
+          "decode_ms": 115.7
+        },
+        {
+          "prefill_ms": 2836.4,
+          "decode_ms": 28.5
+        }
+      ],
+      "native_done_operations": 44,
+      "evaluation_source_sha256": {
+        "strata_risk_eval.py": "19041e0d1f52202c1103b2c9d220c6824fbe5046777e59d9894c4aa47e585cb7",
+        "strata_risk_data.py": "4f39af0e2698572fee167b166a2b3c60a1d6c23743431778d0f400d43b1ffeb5",
+        "strata_ordinal_metrics.py": "d0a45158c4fdb6654a97a980500472c80bba1e80ae862603b7a90b8658f62c42",
+        "strata_mixed_load.py": "5c28a9569e517294fa6164d7fb3a635f2ab4488ca832e924752bfff032792fa4"
+      }
+    },
+    "mixed": {
+      "original_files_sha256": {
+        "evidence-index.json": "7d5f4b3a6a6e6f8ae8bfdee22d9bf86bc830c84d728b29ec5df6807bfa17fed4",
+        "load.json": "1de1d079e522fca81ffc1715f0d12a08805ee6ea75268d8e6586c3267d2e627f",
+        "prefill-regression.json": "b242e240f424af96d46ab316004c0e949263faae4ecff558345fc25881f9c292",
+        "preregistration.json": "5539e74ede8f1e2b9d000d9b904622d4151887a01bcd84b9dc34b580a4b380b1",
+        "private-results.jsonl": "9cfabc276f427af91a3e9f301d056d381ab775f837f9ea362d745bc637b9ef8e",
+        "receipt.json": "ee6cb001ecf8e0926083f4edc59a5524dea596da776d3fbcd185bb788df8c925",
+        "summary.json": "ee700aaf7d5fc3547c64e5f3f119ed9ce90904096a997e5c07c4a562d0c8389f",
+        "tokenizer-audit.json": "b32b09d16899eca0ac4de33d9d6d7f46e14e324a2b1983baa1bd25a93a633302",
+        "native\\actual-configuration.json": "3ef246347403181d178fcb3d0f1014e51ca7a8e64d4349ec1436d0767f379fe5",
+        "native\\audit.json": "836803dff70fe78070d9847ed86925e74d519759144f302cef03d488c10f496d",
+        "native\\job.json": "677401c89fbc87cc0d0ec2d07d9cfdc3b6ce2a8b8c0cf8a70c13abadbafce5af",
+        "native\\lease.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "native\\preregistration.json": "fc8e6dca9656fcf1070f874f2b5c943a1cfb5121beb0b2515072d2c223dff012",
+        "native\\ready.json": "b94a32960c7ea4eb1d7e28e374ebce35792d2720086c614d356ebb9b58f2ee77",
+        "native\\resources.json": "37ee84a5da80210e6a2dbeb9da388be6ac8e4e9377e6396e726f1fb0cbfc42e7",
+        "native\\result.json": "fba71115336f70bb1e1fb72073a78a43d0bb23512e0b3c6adcfc017927dae722",
+        "native\\raw\\child_00.log": "ee5dba27311038b431d0559704a38e63c7f01a1d06301d5fe354f4adfde8393c"
+      },
+      "receipt": {
+        "mode": "run",
+        "started_at": "2026-10-16T12:45:29.524",
+        "argv": [
+          "run",
+          "--lock",
+          "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock",
+          "--job",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\job.json",
+          "--audit",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\audit.json",
+          "--result",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\result.json",
+          "--ready-file",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\ready.json",
+          "--child-log-dir",
+          "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\raw",
+          "--cwd",
+          "D:/work/StrataUnified",
+          "--wait-seconds",
+          "60",
+          "--retry-interval-seconds",
+          "10",
+          "--cleanup-wait-seconds",
+          "15",
+          "--expect-job",
+          "strata-tune-native",
+          "--source",
+          "single-gpu-autotuner",
+          "--stdin-file",
+          "\\\\.\\pipe\\strata-tune-native-36416"
+        ],
+        "lock_path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock",
+        "marker_path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+        "wait_seconds": 60.0,
+        "retry_interval_seconds": 10.0,
+        "cleanup_wait_seconds": 15.0,
+        "commands": [
+          {
+            "argv": [
+              "D:\\work\\StrataUnified\\build-session-correctness\\strata.exe",
+              "--qwen35-model",
+              "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+              "--qwen35-pack",
+              "models/pack",
+              "--serve",
+              "--max-context",
+              "4096",
+              "--qwen35-threads",
+              "8",
+              "--qwen35-cache-slots",
+              "3200",
+              "--qwen35-ubatch",
+              "4096"
+            ],
+            "started_at": "2026-10-16T12:45:29.623",
+            "timed_out": false,
+            "lifecycle_error": null,
+            "exited": true,
+            "pid": 32140,
+            "exit_code": 0,
+            "elapsed_seconds": 27.128,
+            "finished_at": "2026-10-16T12:45:56.751",
+            "log_path": "D:\\work\\StrataUnified\\experiments\\p4-20261016\\mixed\\native\\raw\\child_00.log"
+          }
+        ],
+        "marker": {
+          "path": "D:\\work\\Strata魔改\\results\\runtime\\gpu.lock.cleanup-required.json",
+          "written_at": "2026-10-16T12:45:29.622",
+          "removed_at": "2026-10-16T12:45:56.751",
+          "retained": false,
+          "outcome": null
+        },
+        "child_cleanup": {
+          "all_exited": true,
+          "roots_exited": true,
+          "active_processes_zero": true,
+          "confirm_seconds": 0.0,
+          "confirm_after_terminate_seconds": null,
+          "no_go": false,
+          "processes": [
+            32140
+          ]
+        },
+        "job": "strata-tune-native",
+        "task": "opt-in single-GPU experiment",
+        "acquired_at": "2026-10-16T12:45:29.526",
+        "wait": {
+          "attempts": 1,
+          "wait_elapsed_seconds": 0.0
+        },
+        "binary_sha256_actual": "ea06d39411e160f5784f9c4ef160f5e9bcc1746fb92fd9b798677aabb0dd0619",
+        "job_closed_at": "2026-10-16T12:45:56.751",
+        "released_at": "2026-10-16T12:45:56.751",
+        "exit_code": 0
+      },
+      "load": {
+        "load_ready_s": 2.931842300007702,
+        "scope": "cold native startup; following requests are within this process"
+      },
+      "resources": {
+        "period_s": 0.1,
+        "peak_kind": "sampled whole-card high-water; not exact allocator peak",
+        "gpu_peak_mib": 7897.046875,
+        "host_rss_peak_mib": 14912.3125,
+        "available_ram_min_mib": 4745.2109375,
+        "violation": null
+      },
+      "prefill_regression": [
+        {
+          "prefill_ms": 3490.8,
+          "decode_ms": 88.4
+        },
+        {
+          "prefill_ms": 2876.3,
+          "decode_ms": 49.9
+        }
+      ],
+      "native_done_operations": 48,
+      "evaluation_source_sha256": {
+        "strata_risk_eval.py": "19041e0d1f52202c1103b2c9d220c6824fbe5046777e59d9894c4aa47e585cb7",
+        "strata_risk_data.py": "4f39af0e2698572fee167b166a2b3c60a1d6c23743431778d0f400d43b1ffeb5",
+        "strata_ordinal_metrics.py": "d0a45158c4fdb6654a97a980500472c80bba1e80ae862603b7a90b8658f62c42",
+        "strata_mixed_load.py": "5c28a9569e517294fa6164d7fb3a635f2ab4488ca832e924752bfff032792fa4"
+      }
+    }
+  }
+}

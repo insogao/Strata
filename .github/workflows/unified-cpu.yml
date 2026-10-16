@@ -24,10 +24,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Syntax and import contracts
-        run: python -m compileall -q backends/qwen35_llama/tools tools/strata_tune.py tools/strata_server.py
+        run: python -m compileall -q backends/qwen35_llama/tools tools/strata_tune.py tools/strata_server.py tools/strata_risk_eval.py tools/strata_mixed_load.py
+      - name: Optional read-only YAML evaluation importer
+        run: python -m pip install -r backends/qwen35_llama/tools/requirements-evaluation.txt
       - name: CPU protocol, session, tuner and lifecycle tests
         run: python -B -m unittest discover -s backends/qwen35_llama/tools -p "test_*.py" -v
       - name: Independent historical GPU evidence arithmetic (no GPU)
         run: python backends/qwen35_llama/tools/verify_single_gpu_evidence.py backends/qwen35_llama/tests/evidence/single_gpu_20261016
       - name: Independent workflow and diagnostic evidence (no GPU)
         run: python backends/qwen35_llama/tools/verify_workflow_evidence.py backends/qwen35_llama/tests/evidence/workflows_20261016
+      - name: P4 anonymized ordinal and failed-explanation arithmetic (no GPU)
+        run: python backends/qwen35_llama/tools/verify_risk_evidence.py backends/qwen35_llama/tests/evidence/risk_20261016

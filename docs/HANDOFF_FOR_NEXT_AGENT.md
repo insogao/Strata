@@ -1,3 +1,25 @@
+# Current continuation — P4 / 2026-10-16
+
+Branch `codex/p4-ordinal-mixed-evaluation`, based on PR #8 `18e1f88e`.
+Read [PHASE4_LOGITS_QUALITY_AND_MIXED_LOAD.md](PHASE4_LOGITS_QUALITY_AND_MIXED_LOAD.md).
+Jev SQLite/YAML found:3385 parseable accepted synthetic references, NOT human gold.
+Source DB is read-only; accepted folder also holds66 review cases.2 malformed
+YAML originals preserved. Conservative lineage grouping is nearly one giant
+cluster; do not quietly random-split rows or claim independent human accuracy.
+Paired4 development cases measured; B1/A1 prompt hashes match; digits15..18
+verified on production GGUF. Mixed8 explanation requests return EOS only:
+NO-GO, fixed driver counts failures; original misleading summaries retained.
+No quality/production release, M3, native/default/MTP changes or automation.
+Local originals: D:/work/Strata魔改/results/unified-p4-20261016/ and
+D:/work/StrataUnified/experiments/p4-20261016/. Public evidence is anonymized
+statistics with SHA indexes, not the original private transcripts.
+Next: independently adjudicated labels/lineage and a real explanation-output
+contract before a new paired mixed experiment. No automatic rerun.
+
+The following are historical handoffs.
+
+---
+
 # Current continuation — P3-10…P3-14 / 2026-10-16
 
 Branch codex/workload-decode-diagnostics, based on PR #7 7a30da89.
