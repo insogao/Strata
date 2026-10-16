@@ -177,6 +177,10 @@ class Client:
         with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=65) as response:
             return json.load(response)
 
+    def get(self,path):
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(self.url+path,timeout=65) as response:
+            return json.load(response)
+
     def prompt(self,sample,method):
         system=self.config['a0_system'] if method=='A0' else self.config['label_system']
         return self.service.encode_messages([{'role':'system','content':system}]+sample['messages'],self.tokenizer)
@@ -201,6 +205,10 @@ class Client:
                     generated_tokens=response['usage']['completion_tokens'],finish=response['choices'][0]['finish_reason'],
                     **response['engine_timing'])
                 row['session']=response['session']
+                if self.config.get('require_explanation'):
+                    try:reason=json.loads(text).get('explanation')
+                    except (ValueError,AttributeError):reason=None
+                    if not isinstance(reason,str) or not reason.strip():row['invalid_reason']='explanation_empty'
             else:
                 scored_at=time.perf_counter()
                 response=self.post('/v1/decisions',{'kind':'choice','prompt_ids':ids,
@@ -217,16 +225,42 @@ class Client:
                 if conditional and route(row['parsed_risk']):
                     suffix=self.config.get('explanation_suffix')
                     if not isinstance(suffix,str) or not suffix.strip():raise ValueError('explicit explanation_suffix required')
-                    extra=self.tokenizer.encode(suffix,parse_special=False)
-                    if len(ids)+len(extra)+maximum>self.ctx:raise ValueError('explanation exceeds context')
-                    gen=self.post('/v1/continue',{'session':lease,'max_new':maximum,'ids':extra})
-                    lease=gen['session'];row['session']=lease
-                    visible=visible_generation(self.tokenizer,gen['tokens'])
-                    row.update(generated_tokens=gen['generated_tokens'],finish=gen['finish'],text=visible)
-                    if not visible.strip(): row['invalid_reason']='explanation_empty'
-                    row['appended_prompt_tokens']=len(extra)
-                    row['continuation_prompt_read']=gen['prompt_read'];row['continuation_reused']=gen['reused']
-                    if gen['prompt_read']!=len(extra) or gen['reused']!=len(ids): raise ValueError('continuation repeated prefill/state cursor mismatch')
+                    new_turn=self.config.get('explanation_mode','inline')=='new_turn'
+                    label_n=0;can_explain=True
+                    if new_turn:
+                        # Complete the REAL greedy assistant label and EOS before
+                        # asking a new user question. Never force the B1 choice
+                        # into a fabricated generated-token history.
+                        label=self.post('/v1/continue',{'session':lease,'max_new':self.config['label_max_new']})
+                        lease=label['session'];row['session']=lease;label_n=label['generated_tokens']
+                        row['label_generated_tokens']=label_n
+                        label_text=visible_generation(self.tokenizer,label['tokens'])
+                        row['label_generated_text']=label_text
+                        if label['prompt_read']!=0 or label['reused']!=len(ids):raise ValueError('label repeated original prefill')
+                        if label['finish']!='stop' or parse_generated(label_text,'A1')!=row['parsed_risk']:
+                            row.update(invalid_reason='explanation_label_invalid',generated_tokens=label_n,finish=label['finish'],text=label_text)
+                            can_explain=False
+                        fragment=self.service.encode_messages([{'role':'user','content':suffix}],self.tokenizer)
+                        if not self.tokenizer.decode(fragment).startswith('<|im_start|>user\n'):
+                            raise ValueError('GGUF template does not form the expected new user turn')
+                        extra=self.tokenizer.encode('\n',parse_special=False)+fragment
+                    else:extra=self.tokenizer.encode(suffix,parse_special=False)
+                    if can_explain:
+                        carried=len(ids)+label_n
+                        if carried+len(extra)+maximum>self.ctx:raise ValueError('explanation exceeds context')
+                        gen=self.post('/v1/continue',{'session':lease,'max_new':maximum,'ids':extra})
+                        lease=gen['session'];row['session']=lease
+                        visible=visible_generation(self.tokenizer,gen['tokens'])
+                        row.update(generated_tokens=label_n+gen['generated_tokens'],explanation_generated_tokens=gen['generated_tokens'],finish=gen['finish'],text=visible)
+                        if not visible.strip():row['invalid_reason']='explanation_empty'
+                        row['appended_prompt_tokens']=len(extra)
+                        row['continuation_prompt_read']=gen['prompt_read'];row['continuation_reused']=gen['reused']
+                        if gen['prompt_read']!=len(extra) or gen['reused']!=carried:raise ValueError('continuation repeated prefill/state cursor mismatch')
+                        if new_turn:
+                            state=self.get('/v1/session')
+                            expected=carried+len(extra)+gen['generated_tokens']
+                            if not state['armed'] or state['engine_state']['pos']!=expected:raise ValueError('explanation state cursor mismatch')
+                            row['state_cursor_verified']=expected
                     row['branch']='explain'
                 else: row['branch']='score-only'
                 if conditional:
@@ -272,7 +306,7 @@ def run(args):
     write(out/'preregistration.json',{'data':audit(rows),'config':config,'config_sha256':digest(config),
         'spec':spec,'identity':ex.identity(spec,fp),'started_at_epoch':started,
         'authorized_steps':['tokenizer_audit','paired_development' if not args.mixed else 'mixed_development'],
-        'max_native':1,'max_internal_requests':len(rows)*12+8,
+        'max_native':1,'max_internal_requests':len(rows)*(16 if args.mixed and config.get('explanation_mode')=='new_turn' else 12)+8,
         'accuracy_status':audit(rows)['accuracy_status'],'tools':{p:hashlib.sha256(Path(__file__).with_name(p).read_bytes()).hexdigest() for p in ('strata_risk_eval.py','strata_risk_data.py','strata_ordinal_metrics.py','strata_mixed_load.py')}})
     tokenizer=Tokenizer.from_gguf(Path(spec['cwd'])/spec['model']['path'])
     write(out/'tokenizer-audit.json',tokenizer_audit(tokenizer))

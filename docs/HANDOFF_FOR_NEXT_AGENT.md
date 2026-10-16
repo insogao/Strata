@@ -1,3 +1,26 @@
+# Current continuation — P4 balanced600 complete / 2026-10-16
+
+Latest user accepts synthetic_design_label as formal experiment reference. Human gold is NOT a blocker.
+PR9, branch codex/p4-ordinal-mixed-evaluation;600 fixed cases/1800 records completed,
+20 clean native leases, no runtime retry. No need to rerun the600.
+Read [P4_BALANCED600_COMPARISON_20261016.md](P4_BALANCED600_COMPARISON_20261016.md).
+A1/B1 match600/600; B1 is14.35% lower E2E on matched580 warm cases. A0 observed
+Exact is2pp higher. Risk1 recall is weak; do not relabel references to fit outputs.
+SCORE->Continue empty explanation fixed in explicit explanation_mode=new_turn:
+real greedy label/EOS, trusted GGUF new-user turn, real reason, cursor/revision
+checks.8-case mixed smoke all24 flows complete,12 nonempty reasons with EOS;
+M2~0.4% vsM1 is not reliable scheduling gain. Old inline failure originals kept.
+232 CPU tests pass. Public balanced600 CSV/matrices/SHA and repaired flow evidence
+are in tests/evidence/risk_balanced600_20261016. Inputs/original IDs remain private.
+Next: investigate grade1/2/3 prompt boundary on a separately frozen design; then
+repeated matched-policy mixed blocks, not native batching. Remaining2785 optional
+population set not run; do not merge its distribution with the balanced result.
+Main/production/native/defaults unchanged; no automation restarted.
+
+The following handoffs are historical.
+
+---
+
 # Current continuation — P4 / 2026-10-16
 
 Branch `codex/p4-ordinal-mixed-evaluation`, based on PR #8 `18e1f88e`.

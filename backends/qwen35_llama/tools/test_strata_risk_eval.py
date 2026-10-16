@@ -100,5 +100,28 @@ class RiskTests(unittest.TestCase):
         client.post=post
         self.assertEqual(client.one(sample(),'B1')['parsed_risk'],0)
 
+    def test_new_turn_uses_real_label_and_current_revision(self):
+        class Tokens:
+            special_tokens={'<eos>':99};control_tokens=['<eos>']
+            def encode(self,s,**kw):return [int(s.strip())+15] if s.strip() in {'0','1','2','3'} else [2]
+            def decode(self,ids):
+                if ids==[100,101]:return '<|im_start|>user\nexplain'
+                return ''.join(str(i-15) if i in range(15,19) else 'reason' if i==42 else '' for i in ids)
+        class Service:
+            def encode_messages(self,*a):return [100,101]
+        client=Client('',Service(),Tokens(),{'label_system':'label','label_max_new':16,'explanation_suffix':'explain','explanation_mode':'new_turn'},4096)
+        calls=[]
+        def post(path,body):
+            calls.append((path,body))
+            if path=='/v1/decisions':return {'candidates':[{'token_ids':[i],'logprob':-2.0} for i in range(15,19)],'label_mass':.4,'calibrated':False,'usage':{'prompt_ms':1,'prompt_read':2},'session':{'id':'x','revision':1}}
+            if path=='/v1/continue' and 'ids' not in body:return {'session':{'id':'x','revision':2},'generated_tokens':2,'tokens':[15,99],'finish':'stop','prompt_read':0,'reused':2}
+            if path=='/v1/continue':return {'session':{'id':'x','revision':3},'generated_tokens':2,'tokens':[42,99],'finish':'stop','prompt_read':3,'reused':4}
+            return {'session':None}
+        client.post=post;client.get=lambda _: {'armed':True,'engine_state':{'pos':9}}
+        r=client.one(sample(),'B1',conditional=True,route=lambda _:True)
+        self.assertIsNone(r['invalid_reason']);self.assertEqual(r['generated_tokens'],4)
+        self.assertEqual(r['text'],'reason');self.assertEqual(r['state_cursor_verified'],9)
+        self.assertEqual(calls[-1][1]['session']['revision'],3)
+
 
 if __name__=='__main__':unittest.main()

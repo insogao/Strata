@@ -96,10 +96,11 @@ def experiment(rows,client,guard,record,clients,capacity,maximum):
         'clients':clients,'queue_capacity':capacity,'explanation_limit':maximum,
         'status':'INCONCLUSIVE','gpu_parallelism':False,'batching':False,
         'schedule_gain':None,'reduced_work_gain':None,
-        'reason':'Small development pilot, fixed arm order, no adjudicated business quality equivalence; raw arithmetic is not a validated gain.',
-        'M0_M1_scope':'Business prompt/output policy changes; must validate explanation quality against gold.',
+        'reason':'Small development pilot and fixed arm order; explanation semantic equivalence unmeasured. Synthetic-reference evaluation is authorized; raw arithmetic is not a validated gain.',
+        'M0_M1_scope':'Business prompt/output policy changes; reference-risk scoring alone does not establish explanation semantic equivalence.',
         'M1_M2_scope':'Same samples and predicted policy, serial GPU; failed queue admissions stay in denominator.',
-        'oracle':'not run: no human gold','next':'interleave repeated M1/M2 blocks only after quality/data gate; M3 not authorized'}
+        'oracle':'not run; predicted routing only, human labels are not a prerequisite',
+        'next':'interleave repeated M1/M2 blocks with the same valid output contract; M3 not authorized'}
 
 
 def main(argv=None):

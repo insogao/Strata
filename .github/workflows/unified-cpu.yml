@@ -35,3 +35,5 @@ jobs:
         run: python backends/qwen35_llama/tools/verify_workflow_evidence.py backends/qwen35_llama/tests/evidence/workflows_20261016
       - name: P4 anonymized ordinal and failed-explanation arithmetic (no GPU)
         run: python backends/qwen35_llama/tools/verify_risk_evidence.py backends/qwen35_llama/tests/evidence/risk_20261016
+      - name: P4 balanced600 synthetic-reference comparison (no GPU)
+        run: python backends/qwen35_llama/tools/verify_risk_campaign_evidence.py backends/qwen35_llama/tests/evidence/risk_balanced600_20261016
