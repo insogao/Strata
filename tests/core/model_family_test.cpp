@@ -216,6 +216,37 @@ int main(int argc, char** argv) {
         fixture::write(miss, kv, {});
         check(strata::check_architecture(strata::GgufFile(miss.string())).find("ssm.time_step_rank") != std::string::npos,
               "a qwen35moe file without ssm.time_step_rank is refused, naming the key");
+        // nextn_predict_layers is optional for a non-MTP file: absent or explicit 0 means no in-file draft block.
+        Dims non_mtp = kQwen36;
+        non_mtp.block_count = 40;
+        non_mtp.nextn = 0;
+        std::vector<Kv> absent = metadata("qwen35moe", non_mtp, 8);
+        for (auto it = absent.begin(); it != absent.end(); ++it)
+            if (it->key == "qwen35moe.nextn_predict_layers") { absent.erase(it); break; }
+        std::vector<Kv> malformed = metadata("qwen35moe", non_mtp, 8);
+        for (auto& e : malformed)
+            if (e.key == "qwen35moe.nextn_predict_layers") e = fixture::str(e.key, "1");
+        Dims too_many = kTiny36;
+        too_many.nextn = too_many.block_count;
+        const fs::path nomtp = d.path / "nomtp.gguf", zero = d.path / "zero.gguf",
+                        badtype = d.path / "badtype.gguf", toomany = d.path / "toomany.gguf";
+        fixture::write(nomtp, absent, {});
+        fixture::write(zero, metadata("qwen35moe", non_mtp, 8), {});
+        fixture::write(badtype, malformed, {});
+        fixture::write(toomany, metadata("qwen35moe", too_many, 8), {});
+        strata::core::ModelGeometry ng;
+        int64_t nk = 0;
+        std::string nerr;
+        check(strata::check_architecture(strata::GgufFile(nomtp.string())).empty() &&
+                  geometry_of(nomtp, ng, nk, nerr) && ng.n_layers == 40 && ng.n_mtp_layers == 0,
+              "an absent nextn_predict_layers is a non-MTP 40-layer model");
+        check(strata::check_architecture(strata::GgufFile(zero.string())).empty() &&
+                  geometry_of(zero, ng, nk, nerr) && ng.n_layers == 40 && ng.n_mtp_layers == 0,
+              "an explicit nextn_predict_layers 0 is also a non-MTP 40-layer model");
+        check(strata::check_architecture(strata::GgufFile(badtype.string())).find("not a number") != std::string::npos,
+              "a present but non-numeric nextn_predict_layers is still refused");
+        check(strata::check_architecture(strata::GgufFile(toomany.string())).find("not smaller than") != std::string::npos,
+              "nextn_predict_layers >= block_count is still refused");
     }
     {
         // the geometry of the real models, from their metadata values
