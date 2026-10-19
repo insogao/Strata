@@ -3,6 +3,8 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
+2026-10-19 性能模式复测：用户开启笔记本性能模式后，同exe/GGUF、3200/t8/u4096/MTP OFF，2个native干净完成。热P Prefill1772.22 TPS、L128 Decode40.75 TPS、held44.59 TPS、原生SCORE2.082s；较10月16日历史分别+28.1%/+31.0%/+31.3%/耗时−26.8%。跨日参考，非严格因果配对；冷S0仍18–21TPS。完整原件及口径见[复测报告](PERFORMANCE_MODE_RETEST_20261019.md)。无引擎变更或生产发布声明；下一次上游对照必须重建同日高性能模式基线。
+
 2026-10-19 上游研究：本分支 `codex/upstream-v0145-decode-review` 从 PR #9 `4704d8b4` 建立，功能源码与下列 P4 完成状态不变。[v0.1.42–v0.1.45 差异/可行性报告](UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md) 已完成：根目录已有0.1.44.1优化，但当前服务走独立llama桥；同生产GGUF头部支持静态GO进入隔离加载，实际加载/性能尚未测试；上游缺本地SCORE/Session协议，不能直接替换。重算既有600条计数/候选排名通过，0 build/0 GPU native；下一动作是隔离同文件加载资格验证。没有生产合并或提速声明。
 
 更新时间：2026-10-16。当前研发分支 `codex/p4-ordinal-mixed-evaluation`，基于 PR #8 `18e1f88e`；P4 交付见下。上一轮分支 `codex/workload-decode-diagnostics`，对应 [PR #8](https://github.com/insogao/Strata/pull/8)，基于 PR #7；以下上一轮分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
