@@ -46,7 +46,15 @@ static double rel(const std::vector<float>& a, const std::vector<float>& b) {
 
 namespace {
 constexpr int NT = 3, E = 7;
-constexpr int64_t H = 2560, FF = 640;
+// The expert geometry, compile-time so the same test serves another model (native_expert_q36_parity: Qwen3.6-35B-A3B's
+// 2048/512, where the 2560/640 default's FF 640 cannot hold the IQ3_S down projection's whole 256-blocks per row).
+#ifndef NATIVE_EXPERT_PARITY_H
+#define NATIVE_EXPERT_PARITY_H 2560
+#endif
+#ifndef NATIVE_EXPERT_PARITY_FF
+#define NATIVE_EXPERT_PARITY_FF 640
+#endif
+constexpr int64_t H = NATIVE_EXPERT_PARITY_H, FF = NATIVE_EXPERT_PARITY_FF;
 
 // The three ways and the dequantizers for one expert blob; returns the number of failed checks.
 int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int seed, const std::string& label,
