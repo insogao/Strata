@@ -1,4 +1,8 @@
+DeepInfer CPU阶段收口：最终36项测试通过，portable真实C++ emitter5case通过，隔离诊断exe4f9311；无新速度。DI02实际1次旧ea06加载READY后commit保护中止、0协议，raw保留；当前提交余量12593MiB<保守15024MiB准入，WAITING_HOST_COMMIT。性能候选0/2，专项未完成；不重复静态/工具任务，原20min监督继续，资源足够后另登记GPU；本地实验checkpoint非产品发布通过。
+
 # PROJECT_STATUS — Strata Unified（持续自主开发 + 异步外部审查）
+
+2026-10-21 DeepInfer借鉴专项启动：分支 `codex/deepinfer-single-gpu-20261021`，base `0a9389d2`。DeepInfer pin `774ce244…`；先补真实Decode观测/诊断，再按实测选最多两个候选。第一批DI01为默认关诊断、CPU检查、独立build，0GPU；目前没有新性能结论。主管任务书和用户附件在研究仓 `docs/deepinfer/`，main/默认/冻结件不动。
 
 2026-10-21 方案记录提交：分支 `codex/research-scheme-records-20261021`，基于产品代码 `03528a3c`。完成[62条可读方案复盘](research/experiments_20261021/README.md)：做法/理由/条件/结果/取舍，含成功、负结果、未证实和未执行项；97份引用身份可核。**仅文档，不虚增阶段完成度、不新增功能/性能验证**。最近明显提升明确归于GPU功耗解禁/野兽模式后的运行条件变化；同GGUF/exe，8个固定热请求样本Prefill1761.32、128 Decode40.74 TPS，不是代码提速。下方旧分支/状态为原日期历史；本次不合并main、生产冻结件不变，Native兼容补丁继续独立保留。
 
