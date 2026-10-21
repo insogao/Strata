@@ -1,0 +1,1120 @@
+[
+  {
+    "id": "P01",
+    "title": "沿用llama主图，接入Strata专家桥",
+    "why": "保留Qwen注意力/GDN实现，复用Strata热专家GPU、冷专家CPU和批量专家计算能力。",
+    "change": "在路由MoE节点接外部专家服务，并补事件、借还、下一请求状态校验。",
+    "conditions": "2026-10-08～12；生产66a3；固定llama b11476、Strata v0.1.41来源；非官方q36 Native。",
+    "result": "后续形成0e00af8a/M0573冻结Prefill成果。局部逐位一致不等于全图或风险质量通过，risk2/label3问题未因跑通而关闭。",
+    "verdict": "有效-功能",
+    "lesson": "这是现有快速Backend的基础路径；不能把后面的官方Native速度当同一路径增量。",
+    "evidence": [
+      "docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md",
+      "FAILED_EXPERIMENTS.md"
+    ],
+    "evidence_ids": [
+      "E013",
+      "E010"
+    ]
+  },
+  {
+    "id": "P02",
+    "title": "增大Prefill微批：128→512→1024→2048",
+    "why": "减少同一专家被多个小微批重复读取/上传及重复调用。",
+    "change": "开放--qwen35-ubatch并记录实际值，逐步扩大，未重写模型。",
+    "conditions": "任务37/45/47；旧66a3；c4096/t8/3700槽；3869/3863输入、out1。",
+    "result": "风险输入单次290.05→516.80→614.16→689.66 tok/s；正常512/1024/2048为526.40/629.32/665.89。显存和借槽量随之增加。这是逐阶段单次链，不能当严格同批总加速。",
+    "verdict": "有效-性能",
+    "lesson": "大微批方向成立；需结合P04的同批确认，不能只扩到显存极限。",
+    "evidence": [
+      "results/opencode-execution/main-20261010-moderation-ubatch-37/final-report.md",
+      "results/opencode-execution/main-20261010-ubatch1024-candidate-45/final-report.md",
+      "results/opencode-execution/main-20261010-ubatch2048-candidate-47/final-report.md"
+    ],
+    "evidence_ids": [
+      "E050",
+      "E052",
+      "E053"
+    ]
+  },
+  {
+    "id": "P03",
+    "title": "只为一个输出行预留logits空间",
+    "why": "审核out1只需末行输出，完整输出reserve浪费显存。",
+    "change": "设置n_outputs_max=1，输入、专家计算和主图仍完整。",
+    "conditions": "任务42；exe25b953c4；66a3/c4096/t8/u512/3700槽/out1。",
+    "result": "CUDA compute reserve501.00→54.02 MiB；整卡峰8177→7768.5/7755.9 MiB。风险单次速度改善、正常几乎不变，未确认吞吐增益。",
+    "verdict": "有效-资源",
+    "lesson": "明确节省显存，为更大微批创造余量；不能将单次计时变化归为稳定提速。",
+    "evidence": [
+      "results/opencode-execution/main-20261010-output-reserve-42/final-report.md"
+    ],
+    "evidence_ids": [
+      "E051"
+    ]
+  },
+  {
+    "id": "P04",
+    "title": "Prefill微批2048→4096，尽量一次处理完整4K",
+    "why": "继续减少重复流送及专家分组调用，检验前次慢态是否掩盖真实收益。",
+    "change": "仅改CLI微批；A-B-A初筛后做风险/正常交错确认。",
+    "conditions": "任务111/112/114；strata-105；66a3；3869/3863输入、out1、3700槽；产品计时关闭诊断。",
+    "result": "111初筛相对对照中点+8.97%；112风险中位1123.33、正常1091.55 tok/s；114各4次中位1133.61/1139.07。流送减少44.28%。但显存余量最低11.8 MiB，112另一2048对照出现非法访存，原件保留。",
+    "verdict": "有效-性能",
+    "lesson": "保留u4096方向，同时采用更保守槽数。性能成立不等于所有稳定性问题已解决。",
+    "evidence": [
+      "results/20261010-qwen35-ubatch4096-111/final-report.md",
+      "results/20261010-qwen35-ubatch4096-confirm112/final-report.md",
+      "results/20261010-qwen35-deliver114/final-report.md"
+    ],
+    "evidence_ids": [
+      "E032",
+      "E033",
+      "E019"
+    ]
+  },
+  {
+    "id": "P05",
+    "title": "专家供料线程2→3→4→5",
+    "why": "实际供料拷贝等待较大，尝试增加并行producer隐藏冷专家准备。",
+    "change": "保持模型/计算量不变，只调stager线程数并做固定负载交错比较。",
+    "conditions": "任务82/83/86/87/89；同阶段旧GGUF；producer两样本确认；ring16。",
+    "result": "2→3：风险/正常中位约+7.93%/+7.47%；3→4确认约+6.38%/+3.59%，有runner未按fail-stop停手的偏差披露；4→5仅+0.81%，copy_host未下降。",
+    "verdict": "有效-性能",
+    "lesson": "本配置4附近饱和；保留4，别把更多线程当必然收益，也不能把各批增益简单相加。",
+    "evidence": [
+      "results/20261010-qwen35-producer-confirm83/final-report.md",
+      "results/20261010-qwen35-producer4-confirm87/final-report.md",
+      "results/20261010-qwen35-producer5-89/final-report.md"
+    ],
+    "evidence_ids": [
+      "E026",
+      "E027",
+      "E028"
+    ]
+  },
+  {
+    "id": "P06",
+    "title": "扩大stager环：16→32",
+    "why": "猜测供给前瞻深度不足，扩大环减少等待。",
+    "change": "仅扩大ring容量。",
+    "conditions": "任务84；同fast对，producer3；诊断臂。",
+    "result": "1017.83→987.281 tok/s，Prefill慢约3.1%；copy_host反增1.5%。",
+    "verdict": "无收益",
+    "lesson": "该负载的第二约束不是环深；不重复扩大ring网格。",
+    "evidence": [
+      "results/20261010-qwen35-ring-gate84/final-report.md"
+    ],
+    "evidence_ids": [
+      "E030"
+    ]
+  },
+  {
+    "id": "P07",
+    "title": "Write-combined pinned staging",
+    "why": "希望CPU写入/H2D更顺畅，减少缓存开销。",
+    "change": "payload用cudaHostAllocWriteCombined，metadata仍cacheable，发布前sfence；默认关。",
+    "conditions": "任务60和91；WC真实flags核验；91两轮三明治。",
+    "result": "60初筛控制撞慢态，不能算提速；91两组分别−6.78%和+4.55%，方向相反且一组对照漂移超门。",
+    "verdict": "未证实",
+    "lesson": "没有可靠净收益，保持OFF；不能把60中离群控制制造的倍数当成功。",
+    "evidence": [
+      "results/opencode-execution/main-20261010-writecombined-stager-candidate-60/final-report.md",
+      "results/20261010-qwen35-wc-retest91/final-report.md"
+    ],
+    "evidence_ids": [
+      "E054",
+      "E034"
+    ]
+  },
+  {
+    "id": "P08",
+    "title": "按有效行数降序排列专家分组",
+    "why": "把行数相近的专家放入同桶，减少按桶最大行数执行的浪费。",
+    "change": "count_desc重建offset/jobs，数学权重不变；检查映射与浮点差异。",
+    "conditions": "任务63/65/66及后续冻结配置；每16专家一组，sm89 MMQ。",
+    "result": "首次严格bitwise失败549265项；65量化relative L2=3.86e-6、maxabs9.91e-6，无非有限。后续冻结配置包含count_desc；现存汇总认可路线，但本次未找到独立可靠收益百分比，不能从组合成果倒推。",
+    "verdict": "有效-功能",
+    "lesson": "必须记录先失败再量化/评审的过程；排序可改浮点归约，不能称所有输入逐位一致。",
+    "evidence": [
+      "results/20261010-qwen35-count-sorted-layout63/final-report.md",
+      "results/20261010-qwen35-replay-error-quantification65/final-report.md",
+      "results/opencode-execution/parallel-20261010-mmq-reassociation-review-66/final-report.md",
+      "docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md"
+    ],
+    "evidence_ids": [
+      "E018",
+      "E029",
+      "E061",
+      "E013"
+    ]
+  },
+  {
+    "id": "P09",
+    "title": "Router权重留在GPU",
+    "why": "避免router权重D2H、CPU重排及H2D往返。",
+    "change": "combine按实际stride直接读设备权重，原ID同步仍保留。",
+    "conditions": "任务69；exe4cca3fd7；旧GGUF/u2048；同设备检查门与正式计时分开。",
+    "result": "8192/8192逐位相等，78次device calls；去掉约10.2 MiB往返。控制撞慢态，未确认独立速度收益。",
+    "verdict": "有效-功能",
+    "lesson": "保留结构去搬运成果；不要凭减少字节量宣称吞吐涨幅。",
+    "evidence": [
+      "results/20261010-qwen35-router-weights-device69/final-report.md"
+    ],
+    "evidence_ids": [
+      "E031"
+    ]
+  },
+  {
+    "id": "P10",
+    "title": "压紧Top8路由ID后再D2H",
+    "why": "旧strided读取搬运了大量无关字节。",
+    "change": "GPU pack实际T×K IDs到连续缓冲，再一次D2H；复用临时空间。",
+    "conditions": "任务72；exea356ee29；PACKED_IDS=1，正式计时关CHECK。",
+    "result": "30952/30952 int32完全一致；ID D2H147.3→4.6 MiB，减少32倍。单次计时受慢态影响，未独立确认TPS收益。",
+    "verdict": "有效-功能",
+    "lesson": "已进入后续冻结组合，记录为流量减少，不编造独立性能贡献。",
+    "evidence": [
+      "results/20261010-qwen35-packed-router-ids72/final-report.md"
+    ],
+    "evidence_ids": [
+      "E022"
+    ]
+  },
+  {
+    "id": "P11",
+    "title": "冷专家直接上传到group缓冲",
+    "why": "省去GPU中间ring→group的gather拷贝。",
+    "change": "双group ping-pong，双向事件保证生命周期，cold masked gather跳过。",
+    "conditions": "任务74/76；exef9ea6cfd；COLD_DIRECT_GROUP默认OFF。",
+    "result": "字节与功能通过，诊断gather192→65ms，H2D字节不变；74正式ON仅659/639 tok/s且对照慢态，76两臂又均慢态，未有可信净收益。",
+    "verdict": "未证实",
+    "lesson": "省一个局部拷贝不保证完整请求更快；保持OFF，不把诊断局部节省算产品收益。",
+    "evidence": [
+      "results/20261010-qwen35-direct-cold-group74/final-report.md",
+      "results/20261010-qwen35-direct-cold-diagnosis76/final-report.md"
+    ],
+    "evidence_ids": [
+      "E021",
+      "E020"
+    ]
+  },
+  {
+    "id": "P12",
+    "title": "用直接PREAD替代mmap首触读取",
+    "why": "怀疑页错误和mmap拷贝拖慢供料。",
+    "change": "Windows独占普通句柄池读取并做字节核验；修复早期共享OVERLAPPED句柄错误。",
+    "conditions": "任务97/98/129/130；COLD_PREAD=1；后期交付配置两样本各3对。",
+    "result": "98修复后字节一致但仅约+2.6%；129约2.9%灰带且区间含0；130风险慢25.3ms、正常快71.0ms，方向不一致，copy减少被DMA/上游等待吸收。",
+    "verdict": "未证实",
+    "lesson": "功能修复有效，提速未确认；封存此具体读盘路线，不拿CPU拷贝下降当wall收益。",
+    "evidence": [
+      "results/20261010-qwen35-pread-fix98/final-report.md",
+      "results/20261011-qwen35-pread129/final-report.md",
+      "results/20261011-qwen35-pread-confirm130/final-report.md"
+    ],
+    "evidence_ids": [
+      "E023",
+      "E037",
+      "E036"
+    ]
+  },
+  {
+    "id": "P13",
+    "title": "按前一微批路由预取下一批冷专家",
+    "why": "希望将可预测冷专家准备藏在GPU运行窗口。",
+    "change": "v1侧池预取后drain；v2/v3取消drain改双stager，保留字节检查。",
+    "conditions": "任务102/103/104；u2048、同fast A-B-A，默认OFF。",
+    "result": "v1等待下降但串行drain444.7ms和D2H竞争反超，TPS−8.91%；修正簿记并去drain的v3仍−7.45%。103无效计数产生的异常快值已废弃，不作为收益。",
+    "verdict": "无收益",
+    "lesson": "该实现方向封存；高命中/低浪费不等于净省时，不能再靠换预取时机无限迭代。",
+    "evidence": [
+      "results/20261010-qwen35-prefetch-v1_102/final-report.md",
+      "results/20261010-qwen35-prefetch-v3_104/final-report.md"
+    ],
+    "evidence_ids": [
+      "E024",
+      "E025"
+    ]
+  },
+  {
+    "id": "P14",
+    "title": "缓存3700→3400→3200，换显存安全余量",
+    "why": "u4096接近8GB极限，需要用少量性能换稳定空间。",
+    "change": "保持微批与模型不变，仅减少驻留槽。",
+    "conditions": "任务116；风险输入，66a3/u4096/t8/c4096/out1；同批两次/臂。",
+    "result": "3700/3400/3200平均1176.18/1159.60/1156.77 tok/s；3200比3700慢1.65%，显存余量28.9→614.9MiB。",
+    "verdict": "有效-资源",
+    "lesson": "3200是容量/速度折中，不是缓存减小让算法更快；后续生产默认保持3200。",
+    "evidence": [
+      "results/20261011-qwen35-slots-margin116/final-report.md"
+    ],
+    "evidence_ids": [
+      "E038"
+    ]
+  },
+  {
+    "id": "P15",
+    "title": "3200再扩到3400/3700的收益复检",
+    "why": "检验更多缓存能否显著改善真实中文字符主负载。",
+    "change": "固定输入与配置，比较冷流量、配对速度和余量。",
+    "conditions": "任务148；chars-risk/benign，每臂各10样本。",
+    "result": "相对3200的配对中位：3400约+0.25%/+0.82%，3700约+1.03%/+1.96%；流量单调下降，但3700余量只有约177～192MiB。",
+    "verdict": "无收益",
+    "lesson": "有小幅局部速度信号但没有值得替换默认的突破；绝对跨1000也含波次变化。",
+    "evidence": [
+      "results/20261011-qwen35-chars-cache3-148/final-report.md"
+    ],
+    "evidence_ids": [
+      "E035"
+    ]
+  },
+  {
+    "id": "P16",
+    "title": "长驻与预热，区分一次性成本",
+    "why": "怀疑冷进程首用图/页/初始化掩盖正常服务性能。",
+    "change": "同进程完整Prefill一轮后重新完整处理固定prompt，不用前缀命中冒充。",
+    "conditions": "任务135/144/149；旧66a3/u4096/3200；P out1，不含完整JSON Decode。",
+    "result": "144各30样本：冷进程中位1123.70、预热后1429.96 tok/s，配对比值中位1.2761；149常驻1420.65复现。固定同prompt是偏乐观上界，冷磁盘未受控。",
+    "verdict": "有效-性能",
+    "lesson": "这是服务运行形态/冷热差异，未新增计算优化；不能拿后续热数与历史冷数算代码收益。",
+    "evidence": [
+      "results/20261011-qwen35-warmstate135/final-report.md",
+      "results/20261011-qwen35-steady30-144/final-report.md",
+      "results/20261012-qwen35-gdn-baseline-149/final-report.md"
+    ],
+    "evidence_ids": [
+      "E040",
+      "E039",
+      "E041"
+    ]
+  },
+  {
+    "id": "P17",
+    "title": "残差ADD+RMS Norm融合及Graph开关",
+    "why": "尝试压缩GDN/投影之外的launch和读写。",
+    "change": "默认关融合算子，做局部数值和真实图命中；另观察Graph ON/OFF。",
+    "conditions": "任务151/152；独立诊断构建，未替换0e00冻结件。",
+    "result": "融合微基准逐位一致且局部−45.6%，但真实引擎命中0，因消费者/分图及既有融合阻挡；Graph开关wall差不可分辨。152 GDN专用算子研究未完成。",
+    "verdict": "无收益",
+    "lesson": "局部kernel快但真实图不命中不能算优化；不能据此说所有GDN或Graph路线无效。",
+    "evidence": [
+      "results/opencode-execution/main-20261012-gdn-first-cut-151/final-report.md",
+      "docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md"
+    ],
+    "evidence_ids": [
+      "E055",
+      "E013"
+    ]
+  },
+  {
+    "id": "D01",
+    "title": "减少满缓存时admit同步",
+    "why": "猜测解码期每层admit存在无效同步。",
+    "change": "检查实际满槽早退、整个请求admit开销，先算可回收上限。",
+    "conditions": "任务161；生产profile、3200满槽，短JSON10～30token。",
+    "result": "admit首行因满槽早退，整段约0.5～0.9ms；延迟晋升不淘汰在现状下是no-op。",
+    "verdict": "只读评估",
+    "lesson": "这个具体优化无有效回收空间；不应为消除一个无操作路径持续施工。",
+    "evidence": [
+      "results/phase2_decode/cache-roi-screening-161/final-report.md"
+    ],
+    "evidence_ids": [
+      "E075"
+    ]
+  },
+  {
+    "id": "D02",
+    "title": "Decode动态promotion/eviction缓存",
+    "why": "利用解码新热点替换静态profile中的冷专家，减少CPU miss。",
+    "change": "用真实留出路由离线模拟LRU/频次与迁移成本，未实装。",
+    "conditions": "任务161；短审核为90%主负载；长128输出另列条件假设。",
+    "result": "命中43.89%→72.08%，但要2308次晋升、2705MiB迁移；16token净收益/晋升比0.68低于回本门，短输出NO-GO。长输出回本56～75token依赖未实测成本。",
+    "verdict": "只读评估",
+    "lesson": "短审核方案否决；没有真实GPU A/B，不能说动态缓存整体已被实测证明无效。",
+    "evidence": [
+      "results/phase2_decode/cache-roi-screening-161/final-report.md"
+    ],
+    "evidence_ids": [
+      "E075"
+    ]
+  },
+  {
+    "id": "D03",
+    "title": "静态Decode profile重标定",
+    "why": "现有profile不匹配实际解码热点，希望不做在线迁移也提升命中。",
+    "change": "从冻结训练轨迹生成独立profile，留出验证，再GPU初筛及ABBA确认。",
+    "conditions": "任务163/167/169/171；同ex573038fe、66a3/3200/t8/c4096、实际16token EOS。",
+    "result": "正常miss3033→2309、风险3076→2213稳定复现；初筛18.79→30.72 TPS，但确认正常臂中位15.496 vs15.271，wall秒级波动压过差值。",
+    "verdict": "未证实",
+    "lesson": "机制有效但没有可靠速度收益；不要继续引用初筛涨幅或将确认判成已证实回退。",
+    "evidence": [
+      "results/phase2_decode/profile-screening-169/final-report.md",
+      "results/phase2_decode/profile-confirmation-171/final-report.md",
+      "docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md"
+    ],
+    "evidence_ids": [
+      "E082",
+      "E081",
+      "E013"
+    ]
+  },
+  {
+    "id": "D04",
+    "title": "合并连续miss结果的H2D上传",
+    "why": "每个CPU miss结果单独copy，调用开销可能过多。",
+    "change": "将连续输出行合并上传，字节量和数学不变，默认OFF。",
+    "conditions": "任务172准备、177实际构建运行；640层短JSON路径。",
+    "result": "实跑copies3033→1361（−55.1%），字节24846336不变、输出/借还一致；缺乏可比性能确认，历史9.22→25.66是冷热/诊断差异。",
+    "verdict": "有效-功能",
+    "lesson": "减少copy调用已证，业务提速未证；不是已完成的Decode突破。",
+    "evidence": [
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md",
+      "results/phase2_decode/pr2-correctness-177/final-report.md"
+    ],
+    "evidence_ids": [
+      "E012",
+      "E080"
+    ]
+  },
+  {
+    "id": "D05",
+    "title": "优化CPU activation量化",
+    "why": "猜测每层CPU量化是冷专家主要开销。",
+    "change": "先测量量化、GU、DOWN各窗。",
+    "conditions": "任务166/208；CPU冷路径诊断，不与GPU窗相加。",
+    "result": "166中CPU145.175ms只有量化0.618ms；208约0.0476ms/token，远小于冷专家执行。",
+    "verdict": "只读评估",
+    "lesson": "量化不是当前主要刀口，封存此具体方向；不等于GU/DOWN计算已解决。",
+    "evidence": [
+      "docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md",
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md"
+    ],
+    "evidence_ids": [
+      "E013",
+      "E012"
+    ]
+  },
+  {
+    "id": "D06",
+    "title": "消除CPU池park/publish/栅栏",
+    "why": "怀疑多worker派发唤醒和完成同步浪费。",
+    "change": "加互斥阶段观测，区分纯管理成本与尚未完成的worker工作。",
+    "conditions": "任务202～208，最终运行208；只读解释现有执行窗。",
+    "result": "park+publish约0.0203ms/token；wait_done约0.6595ms包含剩余计算，不能全算栅栏浪费。",
+    "verdict": "只读评估",
+    "lesson": "纯栅栏消除可回收很小；不要把包含式等待当可删除空闲。",
+    "evidence": [
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md",
+      "results/phase2_decode/p1-runtime208/final-report.md"
+    ],
+    "evidence_ids": [
+      "E012",
+      "E076"
+    ]
+  },
+  {
+    "id": "D07",
+    "title": "CPU DOWN复用专用IQ3_S SIMD",
+    "why": "怀疑slice接口绕过了更快的专用点积。",
+    "change": "先核实际ISA，再对DOWN21候选做冷热CPU配对微基准。",
+    "conditions": "任务209～211；本机AVX512已启用；37层DOWN21、3层23。",
+    "result": "原nt1路径已走AVX512，前提部分不成立；具体候选STREAM慢约12.55%～13.31%、HOT慢12.77%～15.76%，0/20配对胜；并有合同/额外执行偏差保留。",
+    "verdict": "无收益",
+    "lesson": "否决的是这个DOWN21复用，不是所有CPU SIMD优化；不能把局部CPU结果叫业务TPS。",
+    "evidence": [
+      "results/phase2_decode/p2-slice-simd209/final-report.md",
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md"
+    ],
+    "evidence_ids": [
+      "E078",
+      "E012"
+    ]
+  },
+  {
+    "id": "D08",
+    "title": "把Qwen主caller固定到预留core0",
+    "why": "希望减少迁核、抢占，稳定GPU提交。",
+    "change": "Windows CPU Set绑定同线程，结束恢复原设置；做OFF/ON/ON/OFF。",
+    "conditions": "任务213～216；ex7b2776ae、66a3/3200/t8/c4096/u4096；两请求真实EOS。",
+    "result": "第二请求28.858→23.271、29.922→23.262 TPS，下降19.36%/22.26%；JSON可见耗时增加约5.03%/4.07%。绑定和恢复均实际验证。",
+    "verdict": "无收益",
+    "lesson": "保留OFF，不换核/线程盲扫；变慢根因未定位。",
+    "evidence": [
+      "results/phase2_decode/p2-host-pin-runtime216/final-report.md",
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md"
+    ],
+    "evidence_ids": [
+      "E077",
+      "E012"
+    ]
+  },
+  {
+    "id": "D09",
+    "title": "输出词表Q6_K投影四行块",
+    "why": "Nsight显示大行数head投影，尝试用成熟小k多行形态减少开销。",
+    "change": "识别真实output.weight并准备四行模板选择补丁。",
+    "conditions": "任务218～223；Q6_K [2048,248320]、417177600B。",
+    "result": "定位完成；原补丁stride单位错误，真实调用不会命中，CPU镜像也沿用错值。尚未正确编译、GPU数值验证或测速。",
+    "verdict": "未完成",
+    "lesson": "不是已失败的性能路线；下一次应先修真实步长并证明命中，再测。",
+    "evidence": [
+      "results/phase2_decode/p2-typed-mmvq218/final-report.md",
+      "docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md"
+    ],
+    "evidence_ids": [
+      "E079",
+      "E012"
+    ]
+  },
+  {
+    "id": "D10",
+    "title": "冷专家独立重量化O5/O6副本",
+    "why": "压缩冷专家权重搬运量，换取更低Prefill开销。",
+    "change": "保留生产GGUF，生成独立imatrix和两个量化候选，核对新字节账。",
+    "conditions": "任务139/150；16 chunks校准；0 GPU性能实验，不覆盖模型。",
+    "result": "生成/格式/字节硬检查通过；传输理论节省不足以单独达当时1200目标。该批未验证吞吐或审核质量，重编码损失未知。",
+    "verdict": "未完成",
+    "lesson": "模型文件确实有独立重量化实验，但不能说生产被训练；不能用候选变小宣称已提速。",
+    "evidence": [
+      "results/opencode-execution/cold-quant-20261012-o5o6-150/final-report.md"
+    ],
+    "evidence_ids": [
+      "E048"
+    ]
+  },
+  {
+    "id": "M01",
+    "title": "当前生产GGUF直接启用MTP",
+    "why": "先确认是否能不换模型文件直接启用PR1402。",
+    "change": "盘点原文件张量及草稿层需求。",
+    "conditions": "任务226～230；生产66a3；无GPU性能测试。",
+    "result": "原文件只有blk.0～39，缺20项blk.40草稿权重，不能直接启用该MTP；这是文件能力不足，不是MTP路线失败。",
+    "verdict": "只读评估",
+    "lesson": "必须保留生产模型，再引入实验副本，不能伪造draft。",
+    "evidence": [
+      "results/opencode-execution/parallel-20261013-mtp-model-inventory228/final-report.md",
+      "results/opencode-execution/parallel-20261013-mtp-remote-header229/final-report.md"
+    ],
+    "evidence_ids": [
+      "E062",
+      "E063"
+    ]
+  },
+  {
+    "id": "M02",
+    "title": "同名同量化MTP副本的变量核查",
+    "why": "想用同家族、同标称量化降低实验变量。",
+    "change": "验证ab639a7f文件20项draft张量，与66a3主层逐项比type/shape/字节。",
+    "conditions": "任务229/245；ab639a7f为15,346,432,288B；旧66a3保留。",
+    "result": "733同名主张量shape无差异，但49项量化类型不同：37个DOWN IQ3_S→IQ4_XS，3个DOWN→Q6_K，7个末层dense Q6_K→Q8_0，2个末层GU/up IQ2_S→IQ3_S；另增20张量。",
+    "verdict": "有效-功能",
+    "lesson": "比较MTP必须以新文件自己的OFF为基线；不能把新旧性能差都归因MTP或槽数。",
+    "evidence": [
+      "results/opencode-execution/parallel-20261013-quant-cache-attribution245/final-report.md",
+      "results/phase2_mtp/attribution245/quant-diff.json"
+    ],
+    "evidence_ids": [
+      "E064",
+      "E084"
+    ]
+  },
+  {
+    "id": "M03",
+    "title": "补齐实验MTP文件的Q6_K GPU路径",
+    "why": "新模型的DOWN类型无法完整走既有专家GPU路径，曾回退CPU。",
+    "change": "补Q6_K格式实例和构建门，将定义传入kernels与MMQ；用真实2048/512几何核对。",
+    "conditions": "任务239/241/243；MMQ_KQUANTS=ON、Q6K_EXPERTS=ON；新ab模型、2700实验槽。",
+    "result": "239格式门通过但2700运行超180s、3200容量拒绝；241修构建门后GPU/MMQ真正激活，双请求16token EOS正常；243实际34/38/39层数值0 failures。不是直接取得MTP速度。",
+    "verdict": "有效-功能",
+    "lesson": "只加白名单不够，必须构建、实例、真实shape和GPU命中一起验证。",
+    "evidence": [
+      "results/phase2_mtp/prototype239/final-report.md",
+      "results/phase2_mtp/prototype241/final-report.md",
+      "results/phase2_mtp/prototype243/final-report.md"
+    ],
+    "evidence_ids": [
+      "E088",
+      "E089",
+      "E090"
+    ]
+  },
+  {
+    "id": "M04",
+    "title": "修正draft所用的目标hidden位置",
+    "why": "草稿预测异常，怀疑取了prompt首token的hidden而非尾token。",
+    "change": "改用get_embeddings_nextn_ith，读取h_index3895并在后续decode前深拷8192B。",
+    "conditions": "任务247/251；ab模型、3896token prompt；单注册样本。",
+    "result": "确认旧getter实际指row0；修正后真实draft与目标单样本匹配，null/越界拒绝。",
+    "verdict": "有效-功能",
+    "lesson": "这是正确draft的数据依赖修复，不是独立速度优化。",
+    "evidence": [
+      "results/opencode-execution/squadM-20261013-mtp-tail-hidden251/final-report.md"
+    ],
+    "evidence_ids": [
+      "E069"
+    ]
+  },
+  {
+    "id": "M05",
+    "title": "真实K1 MTP完整循环",
+    "why": "要把metadata/单轮草稿推进到可运行ON，而非一直测OFF。",
+    "change": "独立草稿context，pending+draft的T2目标验证，接受后更新/重放草稿KV，真实EOS与下一请求。",
+    "conditions": "任务257～261/264；新ab/c4096/t8/u4096/2700；K1、greedy-only。",
+    "result": "261两请求各16token JSON+EOS，真实全接受；早期约18.59/21.34 TPS。264补分请求完整时钟。初版caller aggregate和pre-flush时钟失真已留档，不用于产品速度。",
+    "verdict": "有效-功能",
+    "lesson": "真实ON跑通，但全接受不保证净加速，也不证明真实拒绝/更长输出都正确。",
+    "evidence": [
+      "results/phase2_mtp/prototype261/final-report.md",
+      "results/phase2_mtp/prototype264/final-report.md",
+      "docs/phase2_mtp/MTP_STAGE_REPORT_FOR_EXTERNAL_REVIEW_20261013.md"
+    ],
+    "evidence_ids": [
+      "E091",
+      "E092",
+      "E014"
+    ]
+  },
+  {
+    "id": "M06",
+    "title": "COMPACT按实际专家blob分配槽位",
+    "why": "新模型少数最大blob导致所有槽按最大值预留，浪费8GB显存。",
+    "change": "按profile中实际(layer,expert)建立变长槽，校验span、loan及恢复，模型/排名不变。",
+    "conditions": "任务245/250/255/262/264；ab模型2700槽；默认OFF；同exe两请求。",
+    "result": "arena4535.2→3199.2MiB，节省1335.93MiB；262整卡峰8187.5→7192.5MiB，输出一致。第二请求Prefill1298.2→1331.8只是单样本，首请求反向，不确认提速。",
+    "verdict": "有效-资源",
+    "lesson": "内存布局收益明确，空间节省不是算法速度；必须核实际compact而不是仅设置环境变量。",
+    "evidence": [
+      "results/opencode-execution/squadP-20261013-compact-frozen-ab262/final-report.md",
+      "results/phase2_mtp/prototype264/final-report.md"
+    ],
+    "evidence_ids": [
+      "E070",
+      "E092"
+    ]
+  },
+  {
+    "id": "M07",
+    "title": "串行两个T1替换一个T2 verifier",
+    "why": "怀疑T2进入慢的prompt/MMQ/GDN路径，成熟T1可能更快。",
+    "change": "先T1得t0，接受再T1得bonus，保留真实MTP草稿和事务。",
+    "conditions": "任务268；同exe2678417b、ab/2700compact；SERIAL_VERIFY0/1。",
+    "result": "第二请求T2 20.65、串行23.34 TPS；但跨批对267控制engine wall仅−1.6%，单对照且全接受，无法确认稳定收益。",
+    "verdict": "未证实",
+    "lesson": "结构切换真实发生；不能把单次13% Decode差当已验证产品提升。",
+    "evidence": [
+      "results/phase2_mtp/prototype268/final-report.md"
+    ],
+    "evidence_ids": [
+      "E093"
+    ]
+  },
+  {
+    "id": "M08",
+    "title": "T2～5的MoE逐行调用native T1服务",
+    "why": "保留目标batch/GDN，隔离慢的MoE服务路径。",
+    "change": "smallT在一batch内逐行native调用、真实stride寻址，每行fence确保复用安全。",
+    "conditions": "任务271准备、272实跑；e19f77da；新ab/2700compact、K1、16token EOS。",
+    "result": "同binary第二请求OFF27.57、普通T2 ON21.34、smallT ON24.075 TPS；5固定层局部数值门过，但rq1/rq2 A/B方向不一致。",
+    "verdict": "未证实",
+    "lesson": "局部恢复速度仍未超过配对OFF；271是逐行+fence，不是真正跨行重用。",
+    "evidence": [
+      "results/phase2_mtp/prototype272/final-report.md",
+      "results/opencode-execution/evidence-20261013-architecture60-wp0279/final-report.md"
+    ],
+    "evidence_ids": [
+      "E094",
+      "E049"
+    ]
+  },
+  {
+    "id": "M09",
+    "title": "真正multirow专家窗口复用",
+    "why": "希望合并两行CPU/GPU专家派发，省掉重复IDs/量化/调度。",
+    "change": "构建共享T×K窗口；修复native_k混入entry capacity的第二请求污染。",
+    "conditions": "任务284→286→288；新ab、2700compact，K1/T2，MULTI开关同exe比较。",
+    "result": "284首请求过、次请求越界；286把逻辑K与capacity分离后复现修复。288 ABBA中位34.07→37.81 TPS，但优势3.74小于候选波动6.74，且B2<A1。",
+    "verdict": "未证实",
+    "lesson": "功能修复成立，收益INCONCLUSIVE；不继续用初筛40.44vs35.36包装稳定增长。",
+    "evidence": [
+      "results/opencode-execution/main-20261013-native-multirow284/final-report.md",
+      "results/phase2_mtp/multirow286/REPORT286.md",
+      "results/phase2_mtp/repeat288/REPORT288.md"
+    ],
+    "evidence_ids": [
+      "E056",
+      "E087",
+      "E095"
+    ]
+  },
+  {
+    "id": "M10",
+    "title": "CPU GU跨token专用slice复用",
+    "why": "CPU miss占比高，希望多行共享权重读取和激活路径。",
+    "change": "新增pointer-aware iq256 slices；修nt1/nt2混用数学路径；局部参考数值验证。",
+    "conditions": "任务298/300/304/305→346；03bd7068；ab/2700compact/t8/u4096/K1；SLICE_GU_MULTI。",
+    "result": "304局部8/8通过；305初测35.41→41.34 TPS；346同exe ABBA中位31.13→31.12（−0.04%），组内漂移2.35～5.29TPS，初期收益未复现。",
+    "verdict": "无收益",
+    "lesson": "最终按346 NO-GO，不把早先40～42TPS继续当成功前提；不等于所有GU结构候选无潜力。",
+    "evidence": [
+      "results/opencode-execution/main-20261014-q8k-reference304/final-report.md",
+      "results/phase3_baselines/GU_RETEST.md"
+    ],
+    "evidence_ids": [
+      "E059",
+      "E097"
+    ]
+  },
+  {
+    "id": "M11",
+    "title": "接受/拒绝事务与draft状态oracle",
+    "why": "避免MTP看似快，却漏提交、错误回滚或污染下一请求。",
+    "change": "真实拒绝注入、同状态恢复/重放，PRE/ACT/REF逐项检查；后补draft保存容量守卫。",
+    "conditions": "任务275/277/292/294/317/318；诊断探针，非业务吞吐测量。",
+    "result": "275注入拒绝后greedy/EOS/下一请求过；277发现logits/hidden差且比较器有缺陷；匹配路径292、接受294、draft317/318在限定样本下字节/数值对照过。非全域证明。",
+    "verdict": "有效-功能",
+    "lesson": "保留失败原件；这些是事务诊断与正确性基础，不是产品要求独立长文本完全一致，更不是速度结果。",
+    "evidence": [
+      "results/phase2_mtp/state277/STATE_ORACLE_277_REPORT.md",
+      "results/phase2_mtp/matched292/REPORT292.md",
+      "results/phase2_mtp/accepted294/REPORT294.md",
+      "results/opencode-execution/main-20261014-draft-guard318/final-report.md"
+    ],
+    "evidence_ids": [
+      "E096",
+      "E086",
+      "E083",
+      "E057"
+    ]
+  },
+  {
+    "id": "M12",
+    "title": "T3验证以支持K2及更大草稿",
+    "why": "希望一次目标验证推进更多token，摊薄40层主模型成本。",
+    "change": "先做真实T3与3×T1的有限诊断，逐边界定位差异。",
+    "conditions": "任务320～336；K2业务未正式启用；相同状态输入、严格诊断门。",
+    "result": "322三行greedy相同且finite，但logits L1rel2.8%～7.1%、state不相等；325/327排除L0～2 MoE，336确认物理attention3的FA输入一致、首次输出差异落在FA算子，尚未硬件反事实证根因。",
+    "verdict": "未完成",
+    "lesson": "当时数值门未过，K2/60TPS没有成立；诊断不等于证明文本错误或模型家族不可用，不能以放宽自然文本恒等要求冒充此结构已验证。",
+    "evidence": [
+      "results/opencode-execution/main-20261014-t3-run322/final-report.md",
+      "results/opencode-execution/main-20261014-moe-prefix327/final-report.md",
+      "docs/phase3_60tps/T3_FA_AUDIT.md"
+    ],
+    "evidence_ids": [
+      "E060",
+      "E058",
+      "E017"
+    ]
+  },
+  {
+    "id": "M13",
+    "title": "测完整K1关键路径，决定下一刀口",
+    "why": "此前局部成本重叠/负残差，容易选错优化目标。",
+    "change": "用低扰动和互斥wall两视图核draft/verify/replay/state/emit，并测128/256长输出。",
+    "conditions": "任务347/348；ab/2700compact、真实4K输入；128/256均length结束，非EOS。",
+    "result": "128输出约26.57～31.41 TPS，256约22.35～28.65；348低扰动verify占82.6%～83.3%，draft约6%、emit约10%、replay0.14ms/token。插桩会影响速度。",
+    "verdict": "只读评估",
+    "lesson": "主机会在target验证而非只删replay；349后续同会话长输出OFF/ON因provider卡流未运行，不能假称补齐。",
+    "evidence": [
+      "docs/phase3_60tps/LOCAL_LONG_BASELINE_347.md",
+      "docs/phase3_60tps/K1_COST_SPLIT_348.md"
+    ],
+    "evidence_ids": [
+      "E016",
+      "E015"
+    ]
+  },
+  {
+    "id": "M14",
+    "title": "masked nextn及去掉无用replay head",
+    "why": "希望只导出所需hidden并避免草稿重放时计算无用logits。",
+    "change": "276准备masked单callsite补丁，分析末行映射/主图收窄；unused head与融合重放列候选。",
+    "conditions": "276仅隔离prepare；0 build/GPU。后续348成本显示replay整体占比很小。",
+    "result": "masked预计prompt hidden缓冲30.4MiB→8KiB，但可能改变blk39服务类别；本次资料未找到有效独立GPU A/B。去head/融合replay未形成已确认业务收益。",
+    "verdict": "未完成",
+    "lesson": "不能把建议、补丁或理论节省算做已用且失败/成功的方案；扩展前先核语义与实际命中。",
+    "evidence": [
+      "results/phase2_mtp/masked276/report.md",
+      "docs/phase2_mtp/MTP_STAGE_REPORT_FOR_EXTERNAL_REVIEW_20261013.md",
+      "docs/phase3_60tps/K1_COST_SPLIT_348.md"
+    ],
+    "evidence_ids": [
+      "E085",
+      "E014",
+      "E015"
+    ]
+  },
+  {
+    "id": "E01",
+    "title": "候选评分脱离Top-K覆盖",
+    "why": "风险候选0～3不应因为未进入Top-K就无法决策。",
+    "change": "原生增加候选全词表logprob，显式区分全词表概率、候选条件概率、label_mass。",
+    "conditions": "P2R-1/2；同状态类比较；本机单量化，不做概率业务校准。",
+    "result": "候选评分及近阈值/排序检查完成；label_mass不再只在闭覆盖时给出。跨状态类logprob带宽0.0327/0.0599/0.0713根因仍未定位。",
+    "verdict": "有效-功能",
+    "lesson": "SCORE能力可用不等于分类准确率通过；概率质量与业务置信度不能混称。",
+    "evidence": [
+      "docs/HANDOFF_STRATA_UNIFIED_20261015.md",
+      "D:/work/StrataUnified/strata/docs/backends/qwen35_llama_score_api_e2e.md"
+    ],
+    "evidence_ids": [
+      "E011",
+      "E008"
+    ]
+  },
+  {
+    "id": "E02",
+    "title": "SCORE保留前缀后Continue，避免再次完整Prefill",
+    "why": "评分之后只对需解释的请求续写，减少重复4K处理。",
+    "change": "引入keep/cont及后端统一状态边界，用真实prompt_read/游标验证。",
+    "conditions": "P2R-3；SCORE→Continue单引擎、单会话；LOAD后纯cont仍有限制。",
+    "result": "真实复用与独立参考检查完成；原stateless评分不复用问题修复。后续解释只返回EOS暴露的是对话边界问题，另见E11。",
+    "verdict": "有效-功能",
+    "lesson": "不能仅靠SAVE/LOAD可恢复就声称没有重做Prefill；用户应通过统一入口管理生命周期。",
+    "evidence": [
+      "docs/HANDOFF_STRATA_UNIFIED_20261015.md",
+      "D:/work/StrataUnified/strata/docs/backends/qwen35_llama_score_api_e2e.md"
+    ],
+    "evidence_ids": [
+      "E011",
+      "E008"
+    ]
+  },
+  {
+    "id": "E03",
+    "title": "状态容器、拒绝矩阵与错误链路隔离",
+    "why": "防止加载坏状态或协议残留串到下一请求。",
+    "change": "STRATAST v1身份/校验与原子校验顺序，错误响应隔离、quarantine、SAVE/LOAD往返。",
+    "conditions": "P2R-4；6类真机坏件/拒绝矩阵及magic往返，限定本机。",
+    "result": "容器/链路隔离验收；LOAD不恢复logits，首个纯cont必须拒绝而不是伪造状态。",
+    "verdict": "有效-功能",
+    "lesson": "保留明确能力边界；容器校验成功不能替代所有会话语义测试。",
+    "evidence": [
+      "docs/HANDOFF_STRATA_UNIFIED_20261015.md",
+      "D:/work/StrataUnified/strata/docs/backends/qwen35_llama_session_state.md"
+    ],
+    "evidence_ids": [
+      "E011",
+      "E009"
+    ]
+  },
+  {
+    "id": "E04",
+    "title": "修复连续生成边界重复token与会话串扰",
+    "why": "旧split生成边界漏提交最后token，长工作流可能重复或污染。",
+    "change": "armed GEN在DONE前提交全部实际输出含EOS；opaque session id/revision；校验DONE/概率/整数范围。",
+    "conditions": "PR5；新ea06引擎；真实128/256/512轨迹及取消恢复；后补117 CPU测试。",
+    "result": "旧控制single17/split18重复已复现；修复后17/17、游标3896+17=3913；SAVE/LOAD往返同SHA。外部Scoped PASS，不等于生产发布。",
+    "verdict": "有效-功能",
+    "lesson": "结构/游标/所有权/恢复为硬门；独立自然长文本逐token一致只作数值诊断，不再无限扩大。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/SESSION_CORRECTNESS_REVIEW_20261015.md",
+      "D:/work/StrataUnified/strata/docs/EXTERNAL_REVIEW_FOLLOWUP_20261015.md"
+    ],
+    "evidence_ids": [
+      "E004",
+      "E001"
+    ]
+  },
+  {
+    "id": "E05",
+    "title": "合并两套Autotuner为一套canonical",
+    "why": "PR4/PR6功能高度重叠，双实现会造成profile语义和维护冲突。",
+    "change": "以PR4较严格Profile生命周期为主，保留PR6的inspect/screen/plan，共用dispatcher。",
+    "conditions": "P3-5/PR7；基于PR5修复分支；0原生计算改动。",
+    "result": "形成唯一实现；research-only/measured/validated等状态及身份失效不混淆。",
+    "verdict": "有效-功能",
+    "lesson": "工具建设有效，但离线CLI完成不代表自动找到了更快配置。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/PHASE3_CANONICAL_SELECTION.md",
+      "D:/work/StrataUnified/strata/docs/UNIFIED_SINGLE_GPU_DELIVERY.md"
+    ],
+    "evidence_ids": [
+      "E003",
+      "E005"
+    ]
+  },
+  {
+    "id": "E06",
+    "title": "离线成本模型选2200槽，真实GPU反证",
+    "why": "模型猜2700缓存已饱和，2200可省显存且速度应不差。",
+    "change": "先离线筛选，再同冻结管线6个native交错比较S/L。",
+    "conditions": "P3-2/P3-3；ab639a7f/c3780a6a；2700compact基线 vs s2200-c-t8-u4096-x8192。",
+    "result": "模型hold-out平均误差9.70%、最大21.30%；GPU实测短−5.17%（漂移5.58%），长−17.52%（漂移4.31%）；hits下降、miss上升，VRAM省约600/520MiB。",
+    "verdict": "无收益",
+    "lesson": "2200不再无新假设重测；离线模型只能辅助排除，不能当实测最优。",
+    "evidence": [
+      "results/opencode-execution/strata-unified-p3-2-offline-screen/final-report.md",
+      "results/opencode-execution/strata-unified-p3-3-autotune-pilot/final-report.md"
+    ],
+    "evidence_ids": [
+      "E071",
+      "E072"
+    ]
+  },
+  {
+    "id": "E07",
+    "title": "真正自动跑GPU的小规模参数搜索",
+    "why": "验证寻优工具不只是离线理论排序。",
+    "change": "opt-in实际租约执行、超时/资源守卫、ABBA、保存证据和profile；不自动安装。",
+    "conditions": "P3-6/7；ea06/66a3、MTP OFF、3200uniform/t8/u4096/c4096；12native72请求。",
+    "result": "u2048相对u4096加权E2E−10.074%；t6相对t8+0.167%在1.45%漂移内；2700相对3200−2.540%、L E2E+9.10%。三项均NO-GO，selected_configuration=null。",
+    "verdict": "有效-功能",
+    "lesson": "执行器闭环成功，参数搜索未找到赢家；不能为了交付强选最优。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UNIFIED_SINGLE_GPU_DELIVERY.md"
+    ],
+    "evidence_ids": [
+      "E005"
+    ]
+  },
+  {
+    "id": "E08",
+    "title": "在统一服务里开启COMPACT复测",
+    "why": "已有MTP实验compact省显存，想在生产模型服务路径复用。",
+    "change": "用一变量COMPACT实验，事后核启动实际布局/绑定profile。",
+    "conditions": "P3-13/PR8；生产66a3、MTP OFF；profile未提供。",
+    "result": "原生实际仍uniform，原始数学gain约−0.51%不构成compact实验。最终INVALID_CONFIGURATION，补profile身份及实际布局/槽数启动核验。",
+    "verdict": "失败-配置",
+    "lesson": "这证明试验未生效，不证明COMPACT无效；以后开关存在不等于内核/布局命中。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/WORKFLOW_DECODE_DELIVERY_20261016.md"
+    ],
+    "evidence_ids": [
+      "E007"
+    ]
+  },
+  {
+    "id": "E09",
+    "title": "统一Chat/Score/Decisions/Session产品入口",
+    "why": "用户不应管理两套接口，也不能跨引擎虚称状态复用。",
+    "change": "单引擎HTTP路由和busy/ownership/revision；后续SSE、断连取消、deadline、丢响应owner清理。",
+    "conditions": "PR7→8；单卡单worker；不是原生多序列batching。",
+    "result": "191 CPU+31真机门，后续206 CPU和20服务门通过；阶段性可运行MVP。繁忙拒绝/工作流排队与GPU并行是不同能力，长期soak/正式部署仍开放。",
+    "verdict": "有效-功能",
+    "lesson": "产品接入与恢复能力增加；没有因此获得GPU并发吞吐收益，也未重写CUDA。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UNIFIED_SINGLE_GPU_DELIVERY.md",
+      "D:/work/StrataUnified/strata/docs/WORKFLOW_DECODE_DELIVERY_20261016.md"
+    ],
+    "evidence_ids": [
+      "E005",
+      "E007"
+    ]
+  },
+  {
+    "id": "E10",
+    "title": "600条生成JSON/数字生成/Logits三方比较",
+    "why": "检验Logits是否比生成更快，以及风险等级序数误差/偏置。",
+    "change": "每风险150固定抽样，A0 JSON、A1数字、B1同Prompt读0～3 logits；交错1800方法记录。",
+    "conditions": "PR9；synthetic_design_label；600质量、580匹配长驻速度；66a3/ea06/3200/t8/u4096/MTP OFF。",
+    "result": "Exact A0 51.83%、A1/B1 49.83%；±1 94.33%/92.83%；严重错5.67%/7.17%；risk3召回82.00%/82.67%。A1/B1预测600/600相同。E2E1574.50/1180.81/1011.37ms，B1比同Prompt A1快14.35%。",
+    "verdict": "有效-性能",
+    "lesson": "本集Logits相对同Prompt生成没有额外预测损失且更快；但等级1召回仅1.33%，不是已通过业务质量。与A0差含Prompt/输出格式变化。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/P4_BALANCED600_COMPARISON_20261016.md"
+    ],
+    "evidence_ids": [
+      "E002"
+    ]
+  },
+  {
+    "id": "E11",
+    "title": "修SCORE→Continue空EOS，再做条件解释和混合提交",
+    "why": "需要解释时不能只返回EOS；低风险可省长解释以提高完成吞吐。",
+    "change": "先真实生成等级+EOS，再按实际chat template追加新user轮次，沿同状态解释；M0全解释/M1条件串行/M2有界提交。",
+    "conditions": "PR9补充；固定8条不按预测选，24流程；单GPUworker，非原生batching。",
+    "result": "12解释均非空31～51token且EOS/游标过；M0/M1/M2=0.3602/0.4453/0.4471流程/s。M1相对M0约+23.6%但工作量减少；M2比M1仅约0.4%，客户端延迟反更高。",
+    "verdict": "有效-功能",
+    "lesson": "新轮次修复有效，少生成可省工作；额外排队调度无可靠加速，不能称GPU并发。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/P4_BALANCED600_COMPARISON_20261016.md"
+    ],
+    "evidence_ids": [
+      "E002"
+    ]
+  },
+  {
+    "id": "N01",
+    "title": "官方v0.1.44.1原生Qwen试跑",
+    "why": "希望直接用官方MTP/Native而非独立llama桥。",
+    "change": "隔离官方exe，先生产IQ3，再另用官方Q4 MTP文件做能力试跑。",
+    "conditions": "任务340～343；生产IQ3与官方Q4是不同模型量化，必须分列；单GPU。",
+    "result": "340生产文件missing nextn被拒；341/342官方Q4 MTP短21→128能跑且接受率86%～92%，单次Decode约30.4～48.2。343真实4K Prefill约596～731、128输出ON33.7/OFF28.2 TPS，RAM近耗尽且实际GPU只6槽/层。",
+    "verdict": "有效-功能",
+    "lesson": "仅证明另一个官方Q4配置能运行，不能称相同IQ3引擎提速，也没有达到60TPS目标。",
+    "evidence": [
+      "results/opencode-execution/phase3-60tps-p0a-smoke-340/final-report.md",
+      "results/opencode-execution/phase3-60tps-p0a-official-341/final-report.md",
+      "results/opencode-execution/phase3-60tps-p0a-sweep-342/final-report.md",
+      "results/opencode-execution/phase3-60tps-p0a-longprompt-343/final-report.md"
+    ],
+    "evidence_ids": [
+      "E067",
+      "E066",
+      "E068",
+      "E065"
+    ]
+  },
+  {
+    "id": "N02",
+    "title": "v0.1.42～45差异核查，先分清调用路径",
+    "why": "避免重复移植已存在功能或开了环境变量却不经过实现。",
+    "change": "固定477ac13c与本地源码/构建入口逐项对照，头部检查同生产GGUF。",
+    "conditions": "2026-10-19；当前后端ea06与根目录q36 Native是不同执行器。",
+    "result": "本地根src已有v0.1.42/43部分优化，但服务走backends/qwen35_llama；v0.1.45新q36内核尚未接入。报告阶段0 build/0 native，不产生TPS。",
+    "verdict": "只读评估",
+    "lesson": "先做同文件加载资格，不假设整组上游宣传收益都适配8GB IQ3。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md"
+    ],
+    "evidence_ids": [
+      "E006"
+    ]
+  },
+  {
+    "id": "N03",
+    "title": "跳过路由尾部专家TAIL_SKIP",
+    "why": "上游用少算小贡献专家换单请求Decode速度。",
+    "change": "检查原生Flash-Next尾跳过条件与本地top8桥接差异，未在本机实施。",
+    "conditions": "v0.1.42起；根目录已有，实际后端T1与新q36不调用该路径。",
+    "result": "输出数学会有意改变，不重归一化；上游别卡/别量化收益不能换算本机。本机0有效配对结果。",
+    "verdict": "只读评估",
+    "lesson": "属有损质量/速度取舍，低优先级且需单独标签集；不是可直接开启的免费无损加速。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md"
+    ],
+    "evidence_ids": [
+      "E006"
+    ]
+  },
+  {
+    "id": "N04",
+    "title": "自动PCIe/CPU share与新按层balance",
+    "why": "想把部分miss从CPU转给GPU，动态平衡两侧成本。",
+    "change": "区分旧PcieAuto和v0.1.45 STRATA_PCIE_BALANCE；核当前T1是否有GPU-miss通路。",
+    "conditions": "上游原生verifier；当前桥的miss在CPU，未接同一调度器；单GPU研究。",
+    "result": "旧实现含校准窗口/比例更新，新按层拟合有采样成本；本地没有真实A/B。上游不同卡也有负结果，不能按宣传先认定本机更快。",
+    "verdict": "只读评估",
+    "lesson": "需要真实调用链适配和配对验证，不是设置一个env就有效。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md"
+    ],
+    "evidence_ids": [
+      "E006"
+    ]
+  },
+  {
+    "id": "N05",
+    "title": "RAM专家常驻副本与借出槽副本",
+    "why": "减少重复冷读，并在Prefill借走GPU槽时保留对应host数据。",
+    "change": "检查上游resident complement及v0.1.45 budget_lent修复，核内存生命周期。",
+    "conditions": "Flash-Next旧原生机制与q36全专家host arena不是同一方案；当前桥未完整接入。",
+    "result": "需额外RAM/commit与初始化复制，当前桥没有新A/B；后续q36资格试验确实暴露host arena压力，但不能据此否决所有RAM副本策略。",
+    "verdict": "只读评估",
+    "lesson": "先计本机内存、首触与复用成本；不能只改参数就声称消除读盘。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md",
+      "results/native-p0-20261019/capacity-2560/REPORT.md"
+    ],
+    "evidence_ids": [
+      "E006",
+      "E043"
+    ]
+  },
+  {
+    "id": "N06",
+    "title": "v0.1.45新Decode融合内核",
+    "why": "希望减少launch与中间张量流量，直接继承官方Qwen性能。",
+    "change": "核norm/量化、router/group、MoE融合及Q8专用分支命中条件。",
+    "conditions": "固定477ac13c；同生产IQ3文件，Q8_0权重张量数0；8GB混合专家。",
+    "result": "Q8权重专用gate/up等分支不会命中此生产文件，其他融合可能命中；隔离资格尚未到生成阶段，无同GGUF Prefill/Decode/SCORE对照。",
+    "verdict": "未完成",
+    "lesson": "有潜力但未证实；上游全VRAM/Q4/Q6速度不能当本机IQ3结论。",
+    "evidence": [
+      "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md",
+      "results/native-p0-20261019/build-load/final-report.md"
+    ],
+    "evidence_ids": [
+      "E006",
+      "E042"
+    ]
+  },
+  {
+    "id": "N07",
+    "title": "原生loader接受无MTP的生产GGUF",
+    "why": "生产文件没有nextn键，但MTP OFF应能合法加载。",
+    "change": "干净upstream工作树做最小metadata缺省0与非法值检查，不替换后端。",
+    "conditions": "Native P0；stock477ac13c→补丁92c1d28c；生产66a3。",
+    "result": "stock真实加载在missingnextn拒绝；补丁CPU检查过，下一次运行推进到实际IQ3_S DOWN内核缺口。",
+    "verdict": "有效-功能",
+    "lesson": "只修metadata不等于模型能跑；以真实下一阻断为结果，不宣称兼容已全通过。",
+    "evidence": [
+      "results/native-p0-20261019/build-load/final-report.md",
+      "results/native-p0-20261019/compat-metadata/final-report.md"
+    ],
+    "evidence_ids": [
+      "E042",
+      "E045"
+    ]
+  },
+  {
+    "id": "N08",
+    "title": "Native补齐IQ3_S DOWN实例与真实几何测试",
+    "why": "原生白名单与实际编译实例不完整，生产专家类型跑不通。",
+    "change": "最小X(21) DOWN实例，加2048/512 parity目标和旧格式回归，未重写量化kernel。",
+    "conditions": "Native补丁33c4ff4d；exe01d7479d；原3%数值阈值不变，3个独占GPU数值job。",
+    "result": "合成IQ2_S/IQ3_S、IQ2_S/IQ4_XS，旧Q4_K/Q5_1与Q8，生产层0/5/39测试全部0 failures；随后真实整模型因容量守卫拒绝。",
+    "verdict": "有效-功能",
+    "lesson": "格式kernel支持获局部数值证据；仍未取得整模型输出、质量或速度，适合作为独立小补丁评估。",
+    "evidence": [
+      "results/native-p0-20261019/compat-iq3-down/REPORT.md"
+    ],
+    "evidence_ids": [
+      "E044"
+    ]
+  },
+  {
+    "id": "N09",
+    "title": "Native 3200容量→2560资格→关Q8 packed",
+    "why": "希望在不换GGUF的前提下让官方Native真正生成，并保留尽可能多缓存。",
+    "change": "同exe先3200，再独立2560容量试验；最后3200仅STRATA_Q8_PACKED=0。",
+    "conditions": "exe01d7479d、生产66a3、ctx4096/chunk512/t8/MTP0；每项独立租约，资源门不放宽。",
+    "result": "3200需要4179MiB、只剩3596MiB被引擎拒；2560到READY但可用RAM6.66MiB/commit265.8MiB被监控中止，0 GEN；关packed的3200实跑仍同一容量拒绝。准备报告停在PREPARED，以下raw证明后来确有1次启动。",
+    "verdict": "失败-资源",
+    "lesson": "不是GPU算力性能NO-GO，也没发生已证实OOM；当前内存方案下未取得同IQ3性能数据，不能选Native为胜者。",
+    "evidence": [
+      "results/native-p0-20261019/compat-iq3-down/REPORT.md",
+      "results/native-p0-20261019/capacity-2560/REPORT.md",
+      "results/native-p0-20261019/runtime-3200-no-packed/runs/qual-20261019-192632/raw/child_00.log",
+      "results/native-p0-20261019/runtime-3200-no-packed/runs/qual-20261019-192632/result.json"
+    ],
+    "evidence_ids": [
+      "E044",
+      "E043",
+      "E046",
+      "E047"
+    ]
+  },
+  {
+    "id": "H01",
+    "title": "解除GPU功耗限制，开启野兽性能模式",
+    "why": "之前实测有约40W限制/软件power-cap，先确认硬件运行条件是否限制性能。",
+    "change": "用户调整笔记本性能模式后，同模型同exe复测；新增6个进程，加此前2个。",
+    "conditions": "2026-10-19；66a3/ea06、3200uniform/t8/u4096/c4096/MTP OFF；固定P3896、L3817→128。",
+    "result": "8个对应热请求：Prefill均值1761.32、128 Decode40.74、16 Decode50.57 tok/s；新增6轮L完整原生协议均值5.168s。冷进程首次Prefill新增6轮均值1314.13，首次Decode19.78，不能混为热态。",
+    "verdict": "有效-运行条件",
+    "lesson": "最近明显提升应归于用户解除GPU功耗限制/野兽模式后的条件变化，绝非新代码/模型/MTP收益；未做锁定功率反转A/B，不编瓦数或贡献百分比。",
+    "evidence": [
+      "results/performance-mode-repeat-20261019/REPORT.md",
+      "results/performance-mode-repeat-20261019/analysis.json",
+      "D:/work/StrataUnified/strata/docs/WORKFLOW_DECODE_DELIVERY_20261016.md"
+    ],
+    "evidence_ids": [
+      "E073",
+      "E074",
+      "E007"
+    ]
+  }
+]
