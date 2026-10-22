@@ -15,3 +15,5 @@ Twelve natives completed228/228 operations with exit0, empty child subtrees and 
 Each formal comparison has only two samples per setting; no steady-state/p95 claim. Prefill/Score, first/subsequent requests and held/EOS are separate. Earlier major improvement was caused by the user enabling the GPU's higher-power mode, not these changes.
 
 Accounting correction: the OpenCode observer recorded134HTTP200 and1HTTP429, recovered on the same Go/model/max route. The original worker narrative claiming0new429 is superseded. CPU commands7>cap6 and harness compiles2>cap1 are preserved deviations, not retroactively declared compliant. GPU/build counts stayed within their registered caps. No automatic production/default/profile installation.
+
+Supervisor verification2026-10-22: **296CPU tests passed in76.174s**, no additional native runs. See `validation.json`. Windows/CUDA12.8.1 only; HIP/SYCL not validated.
