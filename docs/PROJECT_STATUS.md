@@ -5,7 +5,7 @@
 
 ## 2026-10-22 DeepInfer 单卡研究交付（独立评审分支）
 
-当前分支 `codex/deepinfer-review-20261022`，依赖 PR #9 `codex/p4-ordinal-mixed-evaluation`，仅发布本轮诊断、默认关闭的两个实验开关与实验记录，不合并 main、不改生产默认。原研究分支 `codex/deepinfer-single-gpu-20261021` 保留完整历史。
+当前分支 `codex/deepinfer-review-20261022`，草稿研究 [PR #10](https://github.com/insogao/Strata/pull/10)，依赖 PR #9 `codex/p4-ordinal-mixed-evaluation`，仅发布本轮诊断、默认关闭的两个实验开关与实验记录，不合并 main、不改生产默认。原研究分支 `codex/deepinfer-single-gpu-20261021` 保留完整历史。
 
 **结果：默认参数变更 NO-GO。** C1 ID/activation cofetch 的末臂触发主机 commit 守卫，对照不完整；C2 跳过重叠统计未见主要业务收益；C3 线程8→10的首次128-token完整耗时改善4.89%，256-token改善3.24%/3.68%，后续128-token仅0.47%，短请求/评分基本持平。未达到预登记≥5%完整业务收益门槛；每配置仅两次正式样本，不声称稳定提速。所有 MTP 均 OFF；诊断开关不代表 MTP 开关。此前明显提速来自用户解除显卡功耗限制/野兽模式。
 
