@@ -3912,6 +3912,46 @@ void expert_native_close(ExpertDispatch& d) {
     d.native_ff = 0;
 }
 
+namespace {
+// DI03 candidate 1 (default OFF, exact STRATA_QWEN35_ID_ACT_COFETCH=1): folds the cached-tier activation D2H
+// into the router-id copy event, so one wait covers both.  Read once per process; any other value keeps the
+// original path byte-for-byte.
+bool qwen35_id_act_cofetch_enabled() {
+    static const bool on = [] {
+        const char* v = std::getenv("STRATA_QWEN35_ID_ACT_COFETCH");
+        return v != nullptr && std::strcmp(v, "1") == 0;
+    }();
+    return on;
+}
+
+// One stderr marker per process, printed only the first time the gate actually replaces the second wait.
+void qwen35_id_act_cofetch_note_once() {
+    static bool noted = false;
+    if (noted) return;
+    noted = true;
+    std::fprintf(stderr, "strata qwen35: cached-tier router-id/activation cofetch enabled\n");
+}
+
+// DI04 candidate 2 (default OFF, exact STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE=1): elides the query-only
+// hit_done event Record/Query pair of the single-token callback.  The event is not a release fence and no
+// data dependency reads it: the three counters are evidence only, so with the gate on they are reported as
+// unavailable (negative sentinel) instead of a measured 0.  OFF keeps the original sequence unchanged.
+bool qwen35_skip_hit_overlap_probe_enabled() {
+    static const bool on = [] {
+        const char* v = std::getenv("STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE");
+        return v != nullptr && std::strcmp(v, "1") == 0;
+    }();
+    return on;
+}
+
+void qwen35_skip_hit_overlap_probe_note_once() {
+    static bool noted = false;
+    if (noted) return;
+    noted = true;
+    std::fprintf(stderr, "strata qwen35: hit-overlap probe counters disabled\n");
+}
+}   // namespace
+
 bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, const void* x_dev,
                                 const void* ids_dev, const void* weights_dev, void* out_dev,
                                 const NativeDecodeStage& st, std::string& err) {
@@ -3935,14 +3975,27 @@ bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, con
     const double t0 = tier_now_ms();
     // Router ids (32 B).  With the tier OFF every entry is a miss, so the activation image is needed anyway:
     // both transfers are enqueued together behind ONE sync (the pre event already ordered the stream).
+    // DI04 candidate 2: with the gate on these three counters are not observed at all, so mark them
+    // unavailable for every snapshot instead of leaving an indistinguishable measured 0.
+    const bool skip_hit_overlap = qwen35_skip_hit_overlap_probe_enabled();
+    if (skip_hit_overlap) {
+        d.native_stats.hit_overlap = -1;
+        d.native_stats.hit_late = -1;
+        d.native_stats.hit_inflight = -1;
+    }
+    // DI03 (default OFF): with the cached tier the same cofetch is opt-in; if this token then has CPU misses,
+    // the later activation copy/wait is skipped instead of being submitted a second time.  All-hit layers pay
+    // only this small activation D2H.  With the flag unset the sequence below is unchanged.
     const bool all_miss = d.cache == nullptr;
+    const bool id_act_cofetch = !all_miss && qwen35_id_act_cofetch_enabled();
+    if (id_act_cofetch) qwen35_id_act_cofetch_note_once();
     qwen35_t1h_stamp(QWEN35_T1H_IDS_SUBMIT);   // task 194 (inert unless the gate is on)
     if (cudaMemcpyAsync(st.host_ids, ids_dev, (size_t) K * sizeof(int32_t), cudaMemcpyDeviceToHost, copy) !=
         cudaSuccess) {
         err = "native tier: the router-id transfer failed";
         return false;
     }
-    if (all_miss &&
+    if ((all_miss || id_act_cofetch) &&
         cudaMemcpyAsync(st.host_act, x_dev, (size_t) d.n_embd * sizeof(float), cudaMemcpyDeviceToHost, copy) !=
             cudaSuccess) {
         err = "native tier: the activation transfer failed";
@@ -3961,8 +4014,10 @@ bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, con
     const int64_t hits_before = d.native_hits;
     if (!expert_native_launch(d, layer, work, (const float*) x_dev, st.host_ids, K, st.is_hit)) return false;
     const bool have_hits = d.native_hits > hits_before;
-    if (have_hits && cudaEventRecord((cudaEvent_t) d.native_ev_hit_done, work) != cudaSuccess) return false;
-    if (have_hits) {
+    if (skip_hit_overlap && have_hits) qwen35_skip_hit_overlap_probe_note_once();
+    if (have_hits && !skip_hit_overlap &&
+        cudaEventRecord((cudaEvent_t) d.native_ev_hit_done, work) != cudaSuccess) return false;
+    if (have_hits && !skip_hit_overlap) {
         // GPU hit work is really in flight while the CPU misses below run?  Query right after the launch.
         const cudaError_t just_launched = cudaEventQuery((cudaEvent_t) d.native_ev_hit_done);
         if (just_launched == cudaErrorNotReady) ++d.native_stats.hit_inflight;
@@ -3981,7 +4036,7 @@ bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, con
     if (nm == 0) {
         ++d.native_stats.all_hit;
     } else {
-        if (!all_miss) {
+        if (!all_miss && !id_act_cofetch) {
             qwen35_t1h_stamp(QWEN35_T1H_ACT_SUBMIT);
             if (cudaMemcpyAsync(st.host_act, x_dev, (size_t) d.n_embd * sizeof(float), cudaMemcpyDeviceToHost,
                                 copy) != cudaSuccess) {
@@ -3997,6 +4052,8 @@ bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, con
             qwen35_t1h_stamp(QWEN35_T1H_ACT_WAIT_E);
             qwen35_t1h_note(QWEN35_T1H_NOTE_ACT_STATE, 2);
         }
+        // (cofetch: the activation image already arrived with the router ids; no separate T1H activation phase
+        // exists in this configuration, so its ACT fields stay absent - the cost is inside the id wait.)
         d.qwen_local_ids.resize((size_t) nm);
         for (int i = 0; i < nm; ++i) d.qwen_local_ids[(size_t) i] = st.host_ids[miss_rank[i]];
         qwen35_t1h_stamp(QWEN35_T1H_COLD_B);
@@ -4024,7 +4081,7 @@ bool expert_native_decode_layer(ExpertDispatch& d, int64_t layer, int64_t k, con
         }
         qwen35_t1h_stamp(QWEN35_T1H_H2D_END);
         // Real overlap evidence: the CPU work just ended; SUCCESS here means the GPU hits finished during it.
-        if (have_hits) {
+        if (have_hits && !skip_hit_overlap) {
             const cudaError_t ready = cudaEventQuery((cudaEvent_t) d.native_ev_hit_done);
             if (ready == cudaSuccess) ++d.native_stats.hit_overlap;
             else if (ready == cudaErrorNotReady) ++d.native_stats.hit_late;

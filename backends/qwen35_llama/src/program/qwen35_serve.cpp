@@ -140,6 +140,198 @@ bool logits_have_nan(const float* logits, int64_t n) {
     return false;
 }
 
+/// ---- DI01: default-OFF request-level Decode diagnostics (exact STRATA_QWEN35_DECODE_DIAGNOSTICS=1) ----
+/// The gate is read once per process.  OFF: no clock, no bridge snapshot, no stderr line, no stdout change.
+/// ON: one schema-tagged JSON line per request on stderr.  The numbers are DELTAS of the existing cumulative
+/// Qwen35BridgeStats counters between serve request boundaries; they are split at the prefill/decode seam.
+/// `ms_*` are host-side phase accumulators from the native tier, not GPU busy time, and overlapping windows
+/// are never added into an E2E figure.  Counters the bridge does not expose stay JSON null, never a fake 0.
+bool decode_diag_enabled() {
+    static const bool on = []() {
+        const char* v = std::getenv("STRATA_QWEN35_DECODE_DIAGNOSTICS");
+        return v != nullptr && std::strcmp(v, "1") == 0;
+    }();
+    return on;
+}
+
+/// DI04: with the opt-in hit-overlap probe gate the native counters are never observed; the three keys
+/// must stay null (not a measured zero) even though the cumulative sentinel delta would compute as 0.
+bool skip_hit_overlap_probe_enabled() {
+    static const bool on = []() {
+        const char* v = std::getenv("STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE");
+        return v != nullptr && std::strcmp(v, "1") == 0;
+    }();
+    return on;
+}
+
+struct RequestDiag {
+    bool on = false, begun = false, emitted = false;
+    bool prefill_ran = false, decode_ran = false;
+    long long req = 0, serve_req = 0, prompt_tokens = 0, max_new = 0, base_pos = 0, produced = 0;
+    const char* kind = "gen";
+    const char* finish = "error";
+    bool cont = false, session = false, keep = false;
+    double prompt_ms = 0.0, decode_ms = 0.0;
+    core::Qwen35BridgeStats before{}, prefill{}, decode{};
+    bool have_before = false, have_prefill = false, have_decode = false;
+
+    void begin(long long req_no, long long serve_no, const char* k, bool c, bool s, bool kp,
+               long long prompt_n, long long max_n, long long base) {
+        on = decode_diag_enabled();
+        if (!on) return;
+        begun = true;
+        req = req_no;
+        serve_req = serve_no;
+        kind = k;
+        cont = c;
+        session = s;
+        keep = kp;
+        prompt_tokens = prompt_n;
+        max_new = max_n;
+        base_pos = base;
+        core::qwen35_bridge_stats(before);
+        have_before = true;
+    }
+
+    void after_prefill(double ms) {
+        prompt_ms = ms;
+        prefill_ran = true;
+        if (!on || !have_before) return;
+        core::qwen35_bridge_stats(prefill);
+        have_prefill = true;
+    }
+
+    void after_decode(double ms) {
+        decode_ms = ms;
+        decode_ran = true;
+        if (!on || !have_prefill) return;
+        core::qwen35_bridge_stats(decode);
+        have_decode = true;
+    }
+
+    static void u64_delta(const char* key, bool prior, uint64_t now, uint64_t base, bool& first) {
+        std::fprintf(stderr, "%s\"%s\":", first ? "" : ",", key);
+        first = false;
+        if (!prior || now < base) {
+            std::fputs("null", stderr);
+        } else {
+            std::fprintf(stderr, "%llu", (unsigned long long) (now - base));
+        }
+    }
+
+    static void i64_delta(const char* key, bool prior, int64_t now, int64_t base, bool& first) {
+        std::fprintf(stderr, "%s\"%s\":", first ? "" : ",", key);
+        first = false;
+        if (!prior || now < base) {
+            std::fputs("null", stderr);
+        } else {
+            std::fprintf(stderr, "%lld", (long long) (now - base));
+        }
+    }
+
+    static void ms_delta(const char* key, bool prior, double now, double base, bool& first) {
+        std::fprintf(stderr, "%s\"%s\":", first ? "" : ",", key);
+        first = false;
+        const double d = now - base;
+        if (!prior || !std::isfinite(d) || d < 0.0) {
+            std::fputs("null", stderr);
+        } else {
+            std::fprintf(stderr, "%.6f", d);
+        }
+    }
+
+    static void u64_abs(const char* key, bool prior, uint64_t value, bool& first) {
+        std::fprintf(stderr, "%s\"%s\":", first ? "" : ",", key);
+        first = false;
+        if (!prior) {
+            std::fputs("null", stderr);
+        } else {
+            std::fprintf(stderr, "%llu", (unsigned long long) value);
+        }
+    }
+
+    void emit_counters(const char* phase, const core::Qwen35BridgeStats& cur, const core::Qwen35BridgeStats& base,
+                       bool prior, bool ran, bool decode_phase) {
+        std::fprintf(stderr, "\"%s\":{\"ran\":%s", phase, ran ? "true" : "false");
+        if (!ran) {
+            std::fputs(",\"counters_available\":false}", stderr);
+            return;
+        }
+        const bool native = core::qwen35_native_enabled();
+        std::fputs(prior ? "" : ",\"counters_available\":false", stderr);
+        if (!prior) {
+            std::fputs("}", stderr);
+            return;
+        }
+        std::fputs(",\"counters_available\":true", stderr);
+        bool first = true;
+        std::fputs(",\"counter_delta\":{", stderr);
+        if (decode_phase) {
+            u64_delta("decode_layers", native, cur.decode_layers, base.decode_layers, first);
+            u64_delta("decode_hits", native, cur.decode_hits, base.decode_hits, first);
+            u64_delta("decode_misses", native, cur.decode_misses, base.decode_misses, first);
+            u64_delta("jobs", native, cur.jobs, base.jobs, first);
+        }
+        u64_delta("prefill_layers", true, cur.prefill_layers, base.prefill_layers, first);
+        u64_delta("prefill_entries", true, cur.prefill_entries, base.prefill_entries, first);
+        i64_delta("prefill_layers_gpu", native, cur.prefill_layers_gpu, base.prefill_layers_gpu, first);
+        i64_delta("prefill_resident", native, cur.prefill_resident, base.prefill_resident, first);
+        i64_delta("prefill_streamed", native, cur.prefill_streamed, base.prefill_streamed, first);
+        i64_delta("prefill_product_calls", native, cur.prefill_product_calls, base.prefill_product_calls, first);
+        u64_delta("prefill_stream_bytes", native, cur.prefill_stream_bytes, base.prefill_stream_bytes, first);
+        ms_delta("prefill_gpu_ms", native, cur.prefill_gpu_ms, base.prefill_gpu_ms, first);
+        const bool hit_probe = native && !skip_hit_overlap_probe_enabled();
+        i64_delta("hit_overlap", hit_probe, cur.hit_overlap, base.hit_overlap, first);
+        i64_delta("hit_late", hit_probe, cur.hit_late, base.hit_late, first);
+        i64_delta("hit_inflight", hit_probe, cur.hit_inflight, base.hit_inflight, first);
+        i64_delta("all_hit", native, cur.all_hit, base.all_hit, first);
+        ms_delta("ms_ids", native, cur.ms_ids, base.ms_ids, first);
+        ms_delta("ms_launch", native, cur.ms_launch, base.ms_launch, first);
+        ms_delta("ms_misses", native, cur.ms_misses, base.ms_misses, first);
+        ms_delta("ms_combine", native, cur.ms_combine, base.ms_combine, first);
+        ms_delta("ms_queue", native, cur.ms_queue, base.ms_queue, first);
+        if (decode_phase) ms_delta("expert_seconds", native, cur.expert_seconds, base.expert_seconds, first);
+        std::fputs("}}", stderr);
+    }
+
+    void emit() {
+        if (!on || !begun || emitted) return;
+        emitted = true;
+        const bool native = core::qwen35_native_enabled();
+        std::fprintf(stderr,
+                     "{\"schema\":\"strata-decode-diag-v1\",\"event\":\"request_end\",\"req\":%lld,"
+                     "\"serve_req\":%lld,\"kind\":\"%s\",\"cont\":%s,\"session\":%s,\"keep\":%s,"
+                     "\"prompt_tokens\":%lld,\"max_new\":%lld,\"base_pos\":%lld,\"produced\":%lld,"
+                     "\"finish\":\"%s\",\"prompt_ms\":%.6f,\"decode_ms\":%.6f,\"native_tier\":%s,"
+                     "\"counter_source\":\"Qwen35BridgeStats cumulative snapshot delta at serve request boundaries\","
+                     "\"scope\":\"prefill and decode are separate deltas; ms_* are host-side phase timers that may overlap; "
+                     "ms_ids includes upstream GPU dependency wait, not GPU busy; do not add phase timers into E2E\",",
+                     req, serve_req, kind, cont ? "true" : "false", session ? "true" : "false",
+                     keep ? "true" : "false", prompt_tokens, max_new, base_pos, produced,
+                     finish, prompt_ms, decode_ms, native ? "true" : "false");
+        emit_counters("prefill", prefill, before, have_prefill, prefill_ran, false);
+        std::fputs(",", stderr);
+        emit_counters("decode", decode, prefill, have_decode, decode_ran, true);
+        const bool have_tail = have_decode || have_prefill;
+        const core::Qwen35BridgeStats& tail = have_decode ? decode : prefill;
+        std::fputs(",\"cache\":{", stderr);
+        const bool cache = native && have_tail && tail.cache_slots > 0;
+        bool cfirst = true;
+        u64_abs("slots", cache, tail.cache_slots, cfirst);
+        u64_abs("resident", cache, tail.cache_resident, cfirst);
+        u64_abs("bytes", cache, tail.cache_bytes, cfirst);
+        u64_abs("payload_bytes", cache, tail.cache_payload_bytes, cfirst);
+        std::fputs("},\"h2d\":{\"decode_ops\":null,\"decode_bytes\":null,\"available\":false,"
+                   "\"reason\":\"no decode H2D counter is exposed by Qwen35BridgeStats; null means unavailable\"},"
+                   "\"legacy_done\":{\"hits\":null,\"lookups\":null,\"accepted\":null,\"offered\":null,"
+                   "\"reason\":\"DONE hits/lookups/tier fields are fixed protocol placeholders, not measurements\"}}\n",
+                   stderr);
+        std::fflush(stderr);
+    }
+
+    ~RequestDiag() { emit(); }
+};
+
 /// One prompt chunk / one decode step; output logits are requested for the last row only (the context runs
 /// with n_outputs_max = 1).  Same shape as the runner's own fill_batch.
 bool fill_batch(llama_batch_ext* batch, const llama_token* tokens, int count, int position) {
@@ -1111,6 +1303,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
     SessionBook session;              // P2-5: armed by SAVE/LOAD, cleared by any real reset (SCORE's (b))
     std::string line;
     long long serve_reqs = 0;
+    long long diag_reqs = 0;   // stable request key for the default-OFF stderr diagnostics
     for (;;) {
         {
             std::unique_lock<std::mutex> lk(stdin_shared->mu);
@@ -1424,6 +1617,9 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 std::fflush(stdout);
                 continue;
             }
+            RequestDiag diag;
+            diag.begin(++diag_reqs, serve_reqs + 1, "score", false, score_session, sreq.keep,
+                       (long long) sreq.ids.size(), 0, score_base_pos);
             stdin_shared->stop.store(false);   // a STOP between requests is stale (the GEN rule)
             if (!score_session) {
                 // No continuation: the same reset the default SCORE always did; an armed session ends here
@@ -1434,6 +1630,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             const int64_t total = (int64_t) sreq.ids.size();
             const PrefillRun pre =
                 run_prefill(ctx.get(), batch.get(), sreq.ids, chunk_max, stdin_shared, score_base_pos);
+            diag.after_prefill(pre.prompt_ms);
             if (pre.failed) {
                 std::printf("ERR prefill failed\n");
                 std::fflush(stdout);
@@ -1455,6 +1652,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 continue;
             }
             if (pre.cancelled) {
+                diag.finish = "cancel";
                 // A STOP ended the read part-way: there is no complete last-position row to score.  The
                 // carried positions (if any) are still reported honestly; the state is reset as always.
                 std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
@@ -1524,6 +1722,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 }
                 std::printf("\n");
             }
+            diag.finish = "score";
             std::printf("DONE %lld %lld %.1f %.1f %s %lld %lld %lld %lld %lld %lld %lld %.1f %lld %lld\n",
                         0LL, (long long) total, pre.prompt_ms, 0.0, "score", 0LL, 0LL,
                         (long long) score_base_pos /* reused */, 0LL, 0LL, 0LL, 0LL, 0.0,
@@ -1612,6 +1811,9 @@ int qwen35_serve(const Qwen35RunOptions& o) {
             std::fflush(stdout);
             continue;
         }
+        RequestDiag diag;
+        diag.begin(++diag_reqs, serve_reqs + 1, "gen", req.cont, session_gen, false,
+                   (long long) req.ids.size(), req.max_new, base_pos);
         // A STOP that arrived between requests is stale (the official engine's rule).
         stdin_shared->stop.store(false);
         // Fresh request state (KV cells + the recurrent GDN planes), the same reset SCORE and the two-request
@@ -1620,6 +1822,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         // Prefill, one ubatch-sized chunk at a time; PP after every chunk (the server's progress lines).
         const int64_t total = (int64_t) req.ids.size();
         const PrefillRun pre = run_prefill(ctx.get(), batch.get(), req.ids, chunk_max, stdin_shared, base_pos);
+        diag.after_prefill(pre.prompt_ms);
         if (pre.failed) {
             std::printf("ERR prefill failed\n");
             std::fflush(stdout);
@@ -1635,6 +1838,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
         const char* finish = "length";
         if (pre.cancelled) {
             finish = "cancel";
+            diag.finish = "cancel";
         } else {
             const auto decode_begin = Clock::now();
             for (int64_t i = 0; i < req.max_new; ++i) {
@@ -1673,7 +1877,10 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                 if (is_eog) { finish = "stop"; break; }
             }
             decode_ms = ms_since(decode_begin);
+            diag.after_decode(decode_ms);
         }
+        diag.produced = produced;
+        diag.finish = finish != nullptr ? finish : "error";
         if (finish != nullptr) {
             // Field order is the official engine's (serve/server.py's _parse_done).  `reused` reports the
             // positions carried into the request: 0 for an isolated request, the session cursor for a
