@@ -154,6 +154,16 @@ bool decode_diag_enabled() {
     return on;
 }
 
+/// DI04: with the opt-in hit-overlap probe gate the native counters are never observed; the three keys
+/// must stay null (not a measured zero) even though the cumulative sentinel delta would compute as 0.
+bool skip_hit_overlap_probe_enabled() {
+    static const bool on = []() {
+        const char* v = std::getenv("STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE");
+        return v != nullptr && std::strcmp(v, "1") == 0;
+    }();
+    return on;
+}
+
 struct RequestDiag {
     bool on = false, begun = false, emitted = false;
     bool prefill_ran = false, decode_ran = false;
@@ -270,9 +280,10 @@ struct RequestDiag {
         i64_delta("prefill_product_calls", native, cur.prefill_product_calls, base.prefill_product_calls, first);
         u64_delta("prefill_stream_bytes", native, cur.prefill_stream_bytes, base.prefill_stream_bytes, first);
         ms_delta("prefill_gpu_ms", native, cur.prefill_gpu_ms, base.prefill_gpu_ms, first);
-        i64_delta("hit_overlap", native, cur.hit_overlap, base.hit_overlap, first);
-        i64_delta("hit_late", native, cur.hit_late, base.hit_late, first);
-        i64_delta("hit_inflight", native, cur.hit_inflight, base.hit_inflight, first);
+        const bool hit_probe = native && !skip_hit_overlap_probe_enabled();
+        i64_delta("hit_overlap", hit_probe, cur.hit_overlap, base.hit_overlap, first);
+        i64_delta("hit_late", hit_probe, cur.hit_late, base.hit_late, first);
+        i64_delta("hit_inflight", hit_probe, cur.hit_inflight, base.hit_inflight, first);
         i64_delta("all_hit", native, cur.all_hit, base.all_hit, first);
         ms_delta("ms_ids", native, cur.ms_ids, base.ms_ids, first);
         ms_delta("ms_launch", native, cur.ms_launch, base.ms_launch, first);

@@ -1,3 +1,9 @@
+# 主管复核：2026-10-22
+
+C2/C3已从逐请求时间戳、实际argv及12份lease原件独立复核：12native/228协议完成，exit0、子树清、fence无残留。C2主业务收益不足5%；C3首128 E2E+4.89%、256+3.24%/+3.68%，仍不足5%，只记小样本方向线索，不默认t10。单卡研究结果NO-GO for adoption；不要求长文本逐Token恒等。
+
+更正：Go observer实际134HTTP200、1HTTP429（累计17），不是worker报告的0新增/unknown；CPU7/6与harness2/1超限保留，不追认预算合规。发布可读方案表及独立重算证据见[评审包](research/deepinfer_20261021/README.md)。原始报告以下按历史保留；当前无新GPU/源码修改、main和生产默认不变。
+
 # DeepInfer → Strata 单卡8GiB映射（DI01初稿）
 
 来源：`references/deepinfer-20261021`，pin `774ce244b87cc0eb8d4b94ab9f5de2ab22049f01`。本文只把DeepInfer当数据，不执行其脚本/模型；当前生产GGUF无置信头，禁止把其MTP接受率调度直接套到Strata。
@@ -50,3 +56,9 @@
 - 验证：最终36项CPU（21 probe+15 diagnostics）一次通过；历史DI02 raw现为`protocol_sent=null`、known lower bound 0、unknown 1、`lease_attempts=1`、`binary_launches=1`、`model_ready=1`。
 - 资源：本run走`--serve`的`FileExpertSource`，GGUF只读file mapping（非private commit）；3.66GiB专家tier是device分配。历史47样本commit 9686.1→510.7→9157.7MiB为加载期瞬态，physical available最低7906.95MiB、RSS峰值2770.28MiB；9.17GiB commit下降的driver/pinned/其他进程分项仍未闭合。
 - 准入：`estimated_host_mib 14000`是既有登记的历史保守host/RSS估计，admission将其作为commit headroom（+1024）而非物理RAM最低需求。当前快照commit 10603.6MiB<15024MiB，保持0 GPU/0模型/0build，不降门、不重试；无性能结论。
+
+## DI04 宿主查询消除与线程配置研究记录（2026-10-21）
+- C2：精确STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE=1仅移除单token回调中用于hit_overlap/hit_late/hit_inflight的native_ev_hit_done record+两次query；非fence、无数据依赖，默认OFF保持原序列，ON时三计数为null而非0。方法：实际C++控制块提取+mock CUDA harness（off/on/skip）→63项单测→单次隔离build→2诊断ON smoke+4诊断OFF ABBA，同binary/模型/3200/t8/u4096/c4096/MTP OFF。
+- C2结果：主P/S/L/L256/SCORE增益-0.35%~+2.29%，均在1.60%~4.13%同块漂移内；仅短EOS续写+6.01%（n=1）超5% → NO-GO业务结论，token hash相等仅诊断。
+- C3：同binary、仅每臂config threads 8 vs 10（无cofetch/skip-probe），另6 native/114协议。L0 E2E +4.89%（drift1.27%，decode TPS+8.2%）、L2561 +3.68%（decode+5.0%）、L2560 +3.24%，P/S/SCORE约0；无主工作负载达到预登记≥5% E2E门槛，故不默认t10。L1 token hash在t8/t10间不同且t10的B1/B2彼此不同（结构门仍过），作为确定性与质量风险记录，等未来重复长输出研究。
+- 原件：results/deepinfer-20261021/di04-autonomous-long/{c2-skipprobe,c3-threads10,checkpoint.json,final-report.md}。

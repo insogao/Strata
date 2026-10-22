@@ -123,6 +123,14 @@ class SchemaTests(unittest.TestCase):
         rec["h2d"]["decode_ops"] = 0
         self.assertTrue(validate_decode_diag_record(rec))
 
+    def test_null_hit_probe_counters_are_unavailable_not_zero(self):
+        rec = valid_record()
+        for key in ("hit_overlap", "hit_late", "hit_inflight"):
+            rec["decode"]["counter_delta"][key] = None
+        self.assertEqual(validate_decode_diag_record(rec), [])
+        rec["decode"]["counter_delta"]["hit_overlap"] = -1
+        self.assertTrue(validate_decode_diag_record(rec))
+
     def test_unavailable_phase_must_not_carry_counters(self):
         rec = valid_record()
         rec["decode"] = {"ran": False, "counters_available": False}

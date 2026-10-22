@@ -26,6 +26,19 @@ from strata_workloads import probabilities
 
 DIAG_MARKER = "strata-decode-diag-v1"
 DIAG_REQUEST_PREFIXES = ("GEN ", "SCORE ")
+DIAG_ENV = "STRATA_QWEN35_DECODE_DIAGNOSTICS"
+COFETCH_ENV = "STRATA_QWEN35_ID_ACT_COFETCH"
+COFETCH_MARKER = "strata qwen35: cached-tier router-id/activation cofetch enabled"
+REGISTERED_BASE_ENV = {
+    "STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1",
+    "STRATA_QWEN35_PACKED_IDS": "1",
+    "STRATA_QWEN35_EXPERT_ORDER": "count_desc",
+}
+DI02_KIND = "di02-diagnostic-paired"
+COFETCH_KIND = "id-act-cofetch"
+SKIP_PROBE_ENV = "STRATA_QWEN35_SKIP_HIT_OVERLAP_PROBE"
+SKIP_PROBE_MARKER = "strata qwen35: hit-overlap probe counters disabled"
+SKIP_PROBE_KIND = "skip-hit-overlap-probe"
 
 ARM_ORDER = [
     {"id": "legacy-ea06-OFF", "engine": "legacy", "diag": False},
@@ -34,9 +47,84 @@ ARM_ORDER = [
     {"id": "new-ON-B2", "engine": "new", "diag": True},
     {"id": "new-OFF-A2", "engine": "new", "diag": False},
 ]
+REMAINING_ARM_IDS = ("new-OFF-A1", "new-ON-B1", "new-ON-B2", "new-OFF-A2")
+REMAINING3_ARM_IDS = ("new-ON-B1", "new-ON-B2", "new-OFF-A2")
+COFETCH_ARM_ORDER = [
+    {"id": "cofetch-OFF-smoke", "engine": "new", "diag": True, "cofetch": False, "phase": "smoke"},
+    {"id": "cofetch-ON-smoke", "engine": "new", "diag": True, "cofetch": True, "phase": "smoke"},
+    {"id": "cofetch-OFF-A1", "engine": "new", "diag": False, "cofetch": False, "phase": "formal"},
+    {"id": "cofetch-ON-B1", "engine": "new", "diag": False, "cofetch": True, "phase": "formal"},
+    {"id": "cofetch-ON-B2", "engine": "new", "diag": False, "cofetch": True, "phase": "formal"},
+    {"id": "cofetch-OFF-A2", "engine": "new", "diag": False, "cofetch": False, "phase": "formal"},
+]
+COFETCH_IDS = tuple(arm["id"] for arm in COFETCH_ARM_ORDER)
+COFETCH_SMOKE_IDS = COFETCH_IDS[:2]
+COFETCH_FORMAL_IDS = COFETCH_IDS[2:]
+SKIP_PROBE_ARM_ORDER = [
+    {"id": "skipprobe-OFF-smoke", "engine": "new", "diag": True, "skip_probe": False, "phase": "smoke"},
+    {"id": "skipprobe-ON-smoke", "engine": "new", "diag": True, "skip_probe": True, "phase": "smoke"},
+    {"id": "skipprobe-OFF-A1", "engine": "new", "diag": False, "skip_probe": False, "phase": "formal"},
+    {"id": "skipprobe-ON-B1", "engine": "new", "diag": False, "skip_probe": True, "phase": "formal"},
+    {"id": "skipprobe-ON-B2", "engine": "new", "diag": False, "skip_probe": True, "phase": "formal"},
+    {"id": "skipprobe-OFF-A2", "engine": "new", "diag": False, "skip_probe": False, "phase": "formal"},
+]
+SKIP_PROBE_IDS = tuple(arm["id"] for arm in SKIP_PROBE_ARM_ORDER)
+SKIP_PROBE_SMOKE_IDS = SKIP_PROBE_IDS[:2]
+SKIP_PROBE_FORMAL_IDS = SKIP_PROBE_IDS[2:]
+THREADS_KIND = "cpu-threads-config"
+THREADS_ARM_ORDER = [
+    {"id": "threads8-OFF-smoke", "engine": "new", "diag": True, "threads": 8, "phase": "smoke"},
+    {"id": "threads10-ON-smoke", "engine": "new", "diag": True, "threads": 10, "phase": "smoke"},
+    {"id": "threads8-OFF-A1", "engine": "new", "diag": False, "threads": 8, "phase": "formal"},
+    {"id": "threads10-ON-B1", "engine": "new", "diag": False, "threads": 10, "phase": "formal"},
+    {"id": "threads10-ON-B2", "engine": "new", "diag": False, "threads": 10, "phase": "formal"},
+    {"id": "threads8-OFF-A2", "engine": "new", "diag": False, "threads": 8, "phase": "formal"},
+]
+THREADS_IDS = tuple(arm["id"] for arm in THREADS_ARM_ORDER)
+THREADS_SMOKE_IDS = THREADS_IDS[:2]
+THREADS_FORMAL_IDS = THREADS_IDS[2:]
+FEATURE_PROFILES = {
+    COFETCH_KIND: {
+        "kind": COFETCH_KIND, "feature": True,
+        "key": "cofetch", "env": COFETCH_ENV, "marker": COFETCH_MARKER,
+        "marker_count_key": "cofetch_marker_count", "gate_prefix": "cofetch",
+        "arms": COFETCH_ARM_ORDER, "ids": COFETCH_IDS,
+        "smoke_ids": COFETCH_SMOKE_IDS, "formal_ids": COFETCH_FORMAL_IDS,
+    },
+    SKIP_PROBE_KIND: {
+        "kind": SKIP_PROBE_KIND, "feature": True,
+        "key": "skip_probe", "env": SKIP_PROBE_ENV, "marker": SKIP_PROBE_MARKER,
+        "marker_count_key": "skip_probe_marker_count", "gate_prefix": "skipprobe",
+        "arms": SKIP_PROBE_ARM_ORDER, "ids": SKIP_PROBE_IDS,
+        "smoke_ids": SKIP_PROBE_SMOKE_IDS, "formal_ids": SKIP_PROBE_FORMAL_IDS,
+    },
+    THREADS_KIND: {
+        "kind": THREADS_KIND, "feature": False,
+        "key": "threads", "env": None, "marker": None,
+        "marker_count_key": None, "gate_prefix": "threads",
+        "arms": THREADS_ARM_ORDER, "ids": THREADS_IDS,
+        "smoke_ids": THREADS_SMOKE_IDS, "formal_ids": THREADS_FORMAL_IDS,
+    },
+}
+FEATURE_KEYS = tuple(profile["key"] for profile in FEATURE_PROFILES.values()
+                     if profile.get("feature"))
+COFETCH_COMPARE_NAMES = ("P0", "P1", "S0", "S1", "L0", "L1", "L2560", "L2561",
+                         "SCORE0", "SCORE1", "gen-held", "eos")
+COFETCH_GAIN_THRESHOLD = 0.05
+COFETCH_REGRESSION_LIMIT = 0.15
 LEDGER_SCHEMA = "strata-di02-native-ledger/1"
 REGISTERED_HOST_MIB = 14000
 COMMIT_FLOOR_MIB = 1024
+PLANNED_PROMPTS = (("P0", "P"), ("P1", "P"), ("S0", "S"), ("S1", "S"),
+                   ("L0", "L"), ("L1", "L"), ("L2560", "L256"), ("L2561", "L256"),
+                   ("resetA", "P"), ("SCORE0", "P"), ("resetB", "P"), ("SCORE1", "P"),
+                   ("score-held", "L"), ("gen-held", "L"), ("reset-eos", "P"),
+                   ("score-eos", "P"), ("eos", "P"))
+COFETCH_REQUIRED_NAMES = (
+    "P0", "P1", "S0", "S1", "L0", "L1", "L2560", "L2561",
+    "resetA", "SCORE0", "resetB", "SCORE1", "score-held", "gen-held", "state-held",
+    "reset-eos", "score-eos", "eos", "state-eos",
+)
 
 
 class ResourceRefused(ValueError):
@@ -264,25 +352,100 @@ def validate_generation_counts(answer, max_new):
     return n
 
 
+def experiment_kind(manifest):
+    kind = manifest.get("experiment_kind", DI02_KIND)
+    if kind not in (DI02_KIND,) + tuple(FEATURE_PROFILES):
+        raise ValueError("unknown experiment_kind %r" % (kind,))
+    return kind
+
+
+def feature_profile(arm):
+    """The exact registered feature profile of one arm, or None for DI02/legacy arms."""
+    keys = [key for key in FEATURE_KEYS if key in arm]
+    if len(keys) > 1:
+        raise ValueError("arm %r mixes registered feature flags" % (arm.get("id"),))
+    if not keys:
+        return None
+    for profile in FEATURE_PROFILES.values():
+        if profile["key"] == keys[0]:
+            return profile
+    raise ValueError("unknown feature key %r" % (keys[0],))
+
+
+def manifest_profile(manifest):
+    return FEATURE_PROFILES.get(experiment_kind(manifest))
+
+
+def validate_arm_definition(arm):
+    allowed = {"id", "engine", "diag"}
+    profile = feature_profile(arm)
+    if profile is not None:
+        allowed |= {profile["key"], "phase"}
+        if type(arm["diag"]) is not bool or type(arm[profile["key"]]) is not bool:
+            raise ValueError("feature arm diagnostic/feature flags must be booleans")
+        if arm["engine"] != "new":
+            raise ValueError("feature arms must use the registered new binary")
+        if arm.get("phase") not in ("smoke", "formal"):
+            raise ValueError("feature arm phase must be smoke or formal")
+    if "threads" in arm:
+        if profile is not None:
+            raise ValueError("config arm must not mix a feature gate")
+        allowed |= {"threads", "phase"}
+        if type(arm["threads"]) is not int or arm["threads"] not in (8, 10):
+            raise ValueError("threads arm must be exactly 8 or 10")
+        if type(arm["diag"]) is not bool:
+            raise ValueError("threads arm diagnostic flag must be boolean")
+        if arm["engine"] != "new":
+            raise ValueError("threads arms must use the registered new binary")
+        if arm.get("phase") not in ("smoke", "formal"):
+            raise ValueError("threads arm phase must be smoke or formal")
+    unknown = set(arm) - allowed
+    if unknown:
+        raise ValueError("unknown arm feature flags: " + ", ".join(sorted(unknown)))
+    return arm
+
+
+def select_arm_order(manifest):
+    profile = manifest_profile(manifest)
+    if profile is not None:
+        by_id = {arm["id"]: arm for arm in profile["arms"]}
+        order = manifest.get("arm_order")
+        registered = (list(profile["ids"]), list(profile["smoke_ids"]),
+                      list(profile["formal_ids"]))
+        if order is None:
+            order = list(profile["ids"])
+        if order not in registered:
+            raise ValueError("manifest arm_order is neither the full six, exact smoke-two "
+                             "nor exact formal-four registered feature order")
+        return [copy.deepcopy(by_id[arm_id]) for arm_id in order]
+    by_id = {arm["id"]: arm for arm in ARM_ORDER}
+    order = manifest.get("arm_order")
+    if order is None:
+        return list(ARM_ORDER)
+    registered = ([a["id"] for a in ARM_ORDER], list(REMAINING_ARM_IDS),
+                  list(REMAINING3_ARM_IDS))
+    if order not in registered:
+        raise ValueError("manifest arm_order is neither the full, remaining-four nor remaining-three "
+                         "registered order")
+    return [by_id[arm_id] for arm_id in order]
+
+
 def validate_arm_options(manifest, max_arms):
     budgets = manifest.get("budgets") or {}
     registered = budgets.get("gpu_native_launches")
     if not isinstance(registered, int) or registered < 1:
         raise ValueError("manifest has no positive registered native budget")
+    order = select_arm_order(manifest)
     if not isinstance(max_arms, int) or max_arms < 1:
         raise ValueError("--max-arms must be positive")
     if max_arms > registered:
         raise ValueError("--max-arms %d exceeds registered native budget %d" % (max_arms, registered))
-    if max_arms > len(ARM_ORDER):
-        raise ValueError("--max-arms %d exceeds implemented arm order" % max_arms)
-    order = manifest.get("arm_order")
-    expected = [a["id"] for a in ARM_ORDER]
-    if order is not None and order != expected:
-        raise ValueError("manifest arm_order differs from the implemented registered order")
+    if max_arms != len(order):
+        raise ValueError("--max-arms %d differs from selected arm order count %d" % (max_arms, len(order)))
     for key in ("max_internal_protocol_requests_per_native", "max_internal_protocol_requests_total"):
         if not isinstance(budgets.get(key), int) or budgets[key] < 1:
             raise ValueError("manifest budget %s must be positive" % key)
-    return registered, budgets
+    return order, budgets
 
 
 def preflight_resource_guard(spec, manifest, fingerprint_fn=None, admission_fn=None,
@@ -512,20 +675,259 @@ def build_prompts(spec):
         if len(ids) != shape["prompt_tokens"]:
             raise ValueError("fixture count mismatch " + shape["id"])
         prompts[shape["id"]] = {"ids": ids, "csv": ",".join(map(str, ids))}
+    if "L" not in prompts:
+        raise ValueError("prompt plan missing L fixture")
+    prompts["L256"] = prompts["L"]
     return prompts
 
 
+def validate_prompt_plan(prompts):
+    for name, shape in PLANNED_PROMPTS:
+        if shape not in prompts:
+            raise ValueError("prompt plan missing shape %s for %s" % (shape, name))
+        if not prompts[shape]["ids"] or not prompts[shape]["csv"]:
+            raise ValueError("prompt plan empty shape %s for %s" % (shape, name))
+
+
 def make_arm_spec(base, arm, manifest):
+    validate_arm_definition(arm)
+    profile = feature_profile(arm)
     spec = copy.deepcopy(base)
     if arm["engine"] == "legacy":
         spec["engine"] = {"path": manifest["legacy_exe"], "sha256": manifest["legacy_exe_sha256"]}
         spec["runtime"]["id"] = "legacy-ea06-compat"
         if sha_file(spec["engine"]["path"]) != spec["engine"]["sha256"]:
             raise ValueError("legacy engine SHA mismatch")
-    if arm["diag"]:
+    if profile is not None:
+        if spec["runtime"]["env"] != REGISTERED_BASE_ENV:
+            raise ValueError("feature base runtime env must be exactly the registered3 flags")
+        env = dict(REGISTERED_BASE_ENV)
+        if arm["diag"]:
+            env[DIAG_ENV] = "1"
+        if arm[profile["key"]]:
+            env[profile["env"]] = "1"
+        spec["runtime"]["env"] = env
+    elif "threads" in arm:
+        if spec["runtime"]["env"] != REGISTERED_BASE_ENV:
+            raise ValueError("threads base runtime env must be exactly the registered3 flags")
+        env = dict(REGISTERED_BASE_ENV)
+        if arm["diag"]:
+            env[DIAG_ENV] = "1"
+        spec["runtime"]["env"] = env
+        spec["baseline"]["config"]["threads"] = arm["threads"]
+    elif arm["diag"]:
         spec["runtime"]["env"] = dict(spec["runtime"]["env"],
                                       STRATA_QWEN35_DECODE_DIAGNOSTICS="1")
     return spec
+
+
+def validate_feature_marker(arm, raw_text):
+    """Persisted feature identity: ON once, OFF never; any other count is unsafe."""
+    profile = feature_profile(arm)
+    if profile is None:
+        return None
+    count = raw_text.count(profile["marker"])
+    if arm[profile["key"]]:
+        if count != 1:
+            raise ValueError("%s ON marker count %d != 1" % (profile["key"], count))
+    elif count != 0:
+        raise ValueError("%s OFF emitted %d marker(s)" % (profile["key"], count))
+    return count
+
+
+validate_cofetch_marker = validate_feature_marker
+
+
+def close_artifacts(out, native_dir, telemetry_path=None):
+    telemetry_path = Path(out) / "telemetry.json" if telemetry_path is None else Path(telemetry_path)
+    telemetry = json.loads(telemetry_path.read_text(encoding="utf-8"))
+    resources = json.loads((Path(native_dir) / "resources.json").read_text(encoding="utf-8"))
+    return telemetry, resources
+
+
+OPTIONAL_DIAG_FIELDS = ("diag", "diag_index", "send_to_diag_ms", "diag_observed_s",
+                        "diag_after_done_ms")
+REQUIRED_ROW_FIELDS = ("name", "command", "kind", "n", "started_s", "finished_s",
+                       "token_ids", "token_ids_sha256", "token_observation_s")
+
+
+def validate_recorded_rows(requests):
+    """Null optional diagnostics; missing required timing/token fields still fail."""
+    for row in requests:
+        for key in OPTIONAL_DIAG_FIELDS:
+            row.setdefault(key, None)
+        missing = [key for key in REQUIRED_ROW_FIELDS if key not in row]
+        if missing:
+            raise ValueError("request %r is missing required field(s) %s"
+                             % (row.get("name"), ", ".join(missing)))
+        if row["kind"] in ("gen", "score"):
+            for key in ("finish", "prompt_tokens", "prompt_read", "reused",
+                        "done_prompt_ms", "done_decode_ms"):
+                if key not in row:
+                    raise ValueError("request %r is missing required field %s"
+                                     % (row["name"], key))
+        if len(row["token_ids"]) != row["n"]:
+            raise ValueError("request %r token count differs from n" % row["name"])
+        if len(row["token_observation_s"]) != row["n"]:
+            raise ValueError("request %r observation count differs from n" % row["name"])
+        digest = hashlib.sha256(json.dumps(row["token_ids"]).encode()).hexdigest()
+        if digest != row["token_ids_sha256"]:
+            raise ValueError("request %r token SHA mismatch" % row["name"])
+    return requests
+
+
+def finalize_arm(arm, out, spec, requests, responses, *, native_dir=None, telemetry_path=None,
+                 raw_text=None, load_ready_s=None, native_started=None, native_exit=None,
+                 live_diag_rows=None, provenance=None):
+    """Shared live/offline finalization: raw replay, artifacts, honest summary rows."""
+    out = Path(out)
+    native_dir = out / "native" if native_dir is None else Path(native_dir)
+    if raw_text is None:
+        raw_text = (native_dir / "raw/child_00.log").read_text(encoding="utf-8",
+                                                               errors="replace")
+    cofetch_marker_count = validate_feature_marker(arm, raw_text)
+    validate_recorded_rows(requests)
+    if not requests:
+        raise ValueError("no recorded requests to finalize")
+    if not isinstance(native_exit, int):
+        raise ValueError("native exit code unavailable")
+    lines = raw_text.splitlines()
+    records, malformed = parse_diag_lines(lines)
+    validation = validate_records(records)
+    if arm["diag"]:
+        if malformed:
+            raise ValueError("malformed diagnostic JSON in raw child log")
+        expected = len(live_diag_rows) if live_diag_rows is not None else \
+            sum(1 for row in requests if row.get("diag") is not None)
+        if len(records) != expected:
+            raise ValueError("raw diagnostic row count %d != expected %d"
+                             % (len(records), expected))
+        if live_diag_rows is not None:
+            for live, final in zip(live_diag_rows, [item["record"] for item in records]):
+                if live != final:
+                    raise ValueError("live diagnostic record differs from raw replay")
+        if validation:
+            raise ValueError("raw diagnostic validation: " + "; ".join(validation))
+    else:
+        if records or malformed:
+            raise ValueError("OFF arm emitted diagnostic JSON")
+    errs = [line for line in lines if line.startswith("ERR ")]
+    if errs:
+        raise ValueError("engine ERR line in child log: " + errs[0])
+    telemetry, resources = close_artifacts(out, native_dir, telemetry_path)
+    if "violation" not in resources:
+        raise ValueError("resources.json lacks the required violation field")
+    if resources.get("violation"):
+        raise ValueError(resources["violation"])
+    sends = [r["started_s"] for r in requests]
+    dones = [r["finished_s"] for r in requests]
+    diag_times = [r["diag_observed_s"] for r in requests if r["diag_observed_s"] is not None]
+    summary = {
+        "arm": arm, "engine_sha256": spec["engine"]["sha256"],
+        "runtime_env": spec["runtime"]["env"], "config": spec["baseline"]["config"],
+        "load_ready_s": load_ready_s,
+        "load_to_first_done_s": dones[0] - native_started if native_started is not None else None,
+        "batch_first_send_to_last_done_ms": (dones[-1] - sends[0]) * 1000.0,
+        "batch_first_send_to_last_diag_ms": (diag_times[-1] - sends[0]) * 1000.0 if diag_times else None,
+        "batch_wall_including_tailflush_ms": ((max(dones[-1], diag_times[-1] if diag_times else dones[-1]))
+                                              - sends[0]) * 1000.0,
+        "request_count": len(requests), "diag_count": len(records),
+        "diag_overhead_after_done_ms": _summary([r.get("diag_after_done_ms") for r in requests
+                                                 if r.get("diag_after_done_ms") is not None]),
+        "resources": resources, "telemetry": telemetry_summary(telemetry),
+        "graph": graph_evidence(raw_text),
+        "native_exit": native_exit,
+        "raw_childlog_sha256": hashlib.sha256(raw_text.encode("utf-8")).hexdigest(),
+    }
+    profile = feature_profile(arm)
+    if profile is not None:
+        summary["arm_features"] = {"diag": arm["diag"], profile["key"]: arm[profile["key"]],
+                                   "phase": arm["phase"]}
+        summary[profile["marker_count_key"]] = cofetch_marker_count
+    if provenance is not None:
+        summary["offline_finalization"] = provenance
+    save_json(out / "diag-records.json", {"records": [item["record"] for item in records],
+                                          "malformed": malformed, "validation_errors": validation})
+    save_json(out / "measurements.json", {"summary": summary, "requests": requests})
+    save_json(out / "arm-summary.json", summary)
+    return {"summary": summary, "requests": requests, "out": str(out), "responses": responses}
+
+
+def recorded_responses(native_dir, requests, raw_text):
+    """Recover responses from transcript.json, or ordered CANDLOGPROBS rows in raw."""
+    transcript = Path(native_dir) / "transcript.json"
+    if transcript.is_file():
+        payload = json.loads(transcript.read_text(encoding="utf-8"))
+        responses = payload.get("responses")
+        if not isinstance(responses, dict):
+            raise ValueError("transcript.json has no responses map")
+        return responses, "native/transcript.json#responses"
+    names = [row["name"] for row in requests if "cand=" in row["command"]]
+    cand_lines = [line for line in raw_text.splitlines() if line.startswith("CANDLOGPROBS ")]
+    if len(cand_lines) != len(names):
+        raise ValueError("cannot recover %d candidate rows from raw log (found %d)"
+                         % (len(names), len(cand_lines)))
+    return ({name: {"lines": [line], "tokens": [], "token_observation_s": [],
+                    "done": {"produced": 0, "finish": "score"}}
+             for name, line in zip(names, cand_lines)},
+            "raw child_00.log CANDLOGPROBS lines in request order")
+
+
+def _recorded_file(path):
+    path = Path(path)
+    if not path.is_file():
+        return None
+    return {"sha256": sha_file(path), "bytes": path.stat().st_size}
+
+
+def finalize_recorded_arm(dataset_dir, arm_id, out_dir):
+    """Offline full finalization of one already-recorded arm; no lease/GPU/model payload."""
+    dataset = Path(dataset_dir)
+    native_dir = dataset / "native"
+    arm = next((item for item in ARM_ORDER if item["id"] == arm_id), None)
+    if arm is None:
+        raise ValueError("unknown recorded arm id " + arm_id)
+    requests = json.loads((dataset / "requests.json").read_text(encoding="utf-8"))
+    if not isinstance(requests, list):
+        raise ValueError("requests.json is not a request list")
+    raw_text = (native_dir / "raw/child_00.log").read_text(encoding="utf-8", errors="replace")
+    responses, responses_source = recorded_responses(native_dir, requests, raw_text)
+    result = json.loads((native_dir / "result.json").read_text(encoding="utf-8"))
+    job = json.loads((native_dir / "job.json").read_text(encoding="utf-8"))
+    config_path = native_dir / "actual-configuration.json"
+    config = json.loads(config_path.read_text(encoding="utf-8")) if config_path.is_file() else {}
+    if not job.get("binary_sha256"):
+        raise ValueError("job.json lacks the engine SHA")
+    recorded = {name: _recorded_file(dataset / name) for name in
+                ("requests.json", "telemetry.json", "native/resources.json",
+                 "native/result.json", "native/job.json", "native/actual-configuration.json",
+                 "native/transcript.json", "native/raw/child_00.log")}
+    provenance = {
+        "label": "derived-recovery",
+        "source_dataset": str(dataset),
+        "arm_id": arm_id,
+        "recorded_files": recorded,
+        "responses_source": responses_source,
+        "recorded_exit_code": result.get("exit_code"),
+        "load_ready_s": None,
+        "load_ready_reason": "native monotonic load timing was not persisted",
+        "native_started": None,
+        "native_started_reason": "native monotonic start was not persisted; batch metrics use row times",
+        "runtime_env": None,
+        "runtime_env_reason": "runtime env was not persisted; recording job command line only",
+        "original_postprocess_failure": "KeyError diag_after_done_ms after 19 completed ops; "
+                                        "original requests/raw are untouched",
+    }
+    spec = {"engine": {"path": job.get("binary"), "sha256": job["binary_sha256"]},
+            "runtime": {"env": None},
+            "baseline": {"config": config.get("requested") or {}}}
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    return finalize_arm(arm, out, spec, requests, responses, native_dir=native_dir,
+                        telemetry_path=dataset / "telemetry.json", raw_text=raw_text,
+                        load_ready_s=None, native_started=None,
+                        native_exit=result.get("exit_code"), live_diag_rows=None,
+                        provenance=provenance)
 
 
 def run_arm(out_root, index, arm, base_spec, manifest, started, prompts,
@@ -593,6 +995,7 @@ def run_arm(out_root, index, arm, base_spec, manifest, started, prompts,
                 "token_ids_sha256": hashlib.sha256(json.dumps(answer["tokens"]).encode()).hexdigest(),
                 "token_observation_s": answer["token_observation_s"],
                 "diag": None, "send_to_diag_ms": None, "diag_observed_s": None,
+                "diag_index": None, "diag_after_done_ms": None,
             }
             row.update(timing_metrics(row))
             if last_done is not None:
@@ -678,7 +1081,8 @@ def run_arm(out_root, index, arm, base_spec, manifest, started, prompts,
                    "send_to_done_ms": (answer["finished_s"] - answer["started_s"]) * 1000.0,
                    "token_ids": [], "token_ids_sha256": hashlib.sha256(b"[]").hexdigest(),
                    "token_observation_s": [], "diag": None, "send_to_diag_ms": None,
-                   "diag_observed_s": None, "state": payload,
+                   "diag_observed_s": None, "diag_index": None,
+                   "diag_after_done_ms": None, "state": payload,
                    "gap_from_previous_done_ms": (answer["started_s"] - last_done) * 1000.0
                    if last_done is not None else None}
             row.update(timing_metrics(row))
@@ -732,57 +1136,14 @@ def run_arm(out_root, index, arm, base_spec, manifest, started, prompts,
         sampler.finish(out / "telemetry.json")
         native.close(abort=failed)
     receipt = native.receipt()
-    raw_text = (native_dir / "raw/child_00.log").read_text(encoding="utf-8", errors="replace")
-    lines = raw_text.splitlines()
-    records, malformed = parse_diag_lines(lines)
-    validation = validate_records(records)
-    if arm["diag"]:
-        if malformed:
-            raise ValueError("malformed diagnostic JSON in raw child log")
-        if len(records) != len(diag_rows):
-            raise ValueError("raw diagnostic row count %d != live %d" % (len(records), len(diag_rows)))
-        for live, final in zip(diag_rows, [item["record"] for item in records]):
-            if live != final:
-                raise ValueError("live diagnostic record differs from raw replay")
-        if validation:
-            raise ValueError("raw diagnostic validation: " + "; ".join(validation))
-    else:
-        if records or malformed:
-            raise ValueError("OFF arm emitted diagnostic JSON")
-    errs = [line for line in lines if line.startswith("ERR ")]
-    if errs:
-        raise ValueError("engine ERR line in child log: " + errs[0])
-    telemetry = json.loads((out / "telemetry.json").read_text(encoding="utf-8"))
-    resources = json.loads((out / "resources.json").read_text(encoding="utf-8"))
-    if resources.get("violation"):
-        raise ValueError(resources["violation"])
-    sends = [r["started_s"] for r in requests]
-    dones = [r["finished_s"] for r in requests]
-    diag_times = [r["diag_observed_s"] for r in requests if r["diag_observed_s"] is not None]
-    summary = {
-        "arm": arm, "engine_sha256": spec["engine"]["sha256"],
-        "runtime_env": spec["runtime"]["env"], "config": spec["baseline"]["config"],
-        "load_ready_s": native.load_ready_s,
-        "load_to_first_done_s": dones[0] - native.started,
-        "batch_first_send_to_last_done_ms": (dones[-1] - sends[0]) * 1000.0,
-        "batch_first_send_to_last_diag_ms": (diag_times[-1] - sends[0]) * 1000.0 if diag_times else None,
-        "batch_wall_including_tailflush_ms": ((max(dones[-1], diag_times[-1] if diag_times else dones[-1]))
-                                              - sends[0]) * 1000.0,
-        "request_count": len(requests), "diag_count": len(diag_rows),
-        "diag_overhead_after_done_ms": _summary([r["diag_after_done_ms"] for r in requests
-                                                 if r["diag_after_done_ms"] is not None]),
-        "resources": resources, "telemetry": telemetry_summary(telemetry),
-        "graph": graph_evidence(raw_text),
-        "native_exit": receipt["commands"][0]["exit_code"],
-        "raw_childlog_sha256": hashlib.sha256(raw_text.encode("utf-8")).hexdigest(),
-    }
-    save_json(out / "diag-records.json", {"records": [item["record"] for item in records],
-                                          "malformed": malformed, "validation_errors": validation})
-    save_json(out / "measurements.json", {"summary": summary, "requests": requests})
-    save_json(out / "arm-summary.json", summary)
+    result = finalize_arm(arm, out, spec, requests, native.responses,
+                          native_dir=native_dir, load_ready_s=native.load_ready_s,
+                          native_started=native.started,
+                          native_exit=receipt["commands"][0]["exit_code"],
+                          live_diag_rows=diag_rows)
     if ledger is not None:
         ledger.arm_complete(record)
-    return {"summary": summary, "requests": requests, "out": str(out), "responses": native.responses}
+    return result
 
 
 def score_facts(requests, responses):
@@ -820,7 +1181,9 @@ def postprocess(results, model_path):
     import strata_tokenizer
     tokenizer = strata_tokenizer.Tokenizer.from_gguf(str(model_path))
     for result in results:
-        responses = result.pop("responses")
+        responses = result.pop("responses", None)
+        if responses is None:
+            continue
         result["score_facts"] = score_facts(result["requests"], responses)
         for row in result["requests"]:
             if row["shape"] == "S":
@@ -884,6 +1247,362 @@ def compare(results):
     }
 
 
+def _finite_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _mean(values):
+    values = [value for value in values if _finite_number(value)]
+    return sum(values) / len(values) if values else None
+
+
+def _score_fact_rank(fact, name):
+    pairs = (fact or {}).get("candidate_logprobs") or []
+    if [pair.get("id") for pair in pairs] != [15, 16, 17, 18]:
+        raise ValueError("%s candidate order/count mismatch" % name)
+    if any(not _finite_number(pair.get("logprob")) for pair in pairs):
+        raise ValueError("%s nonfinite candidate logprob" % name)
+    mass = fact.get("label_mass")
+    if not _finite_number(mass) or not 0 <= mass <= 1.0001:
+        raise ValueError("%s invalid candidate probability mass" % name)
+    ranking = [pair["id"] for pair in sorted(pairs, key=lambda pair: pair["logprob"],
+                                             reverse=True)]
+    if fact.get("choice") != ranking[0]:
+        raise ValueError("%s candidate choice is not the ranking maximum" % name)
+    return {"choice": fact["choice"], "ranking": ranking, "label_mass": mass}
+
+
+def _cofetch_arm_check(result, require_json=True, profile=None):
+    summary = result.get("summary") or {}
+    arm = summary.get("arm") or {}
+    arm_profile = feature_profile(arm)
+    if profile is None:
+        profile = arm_profile
+    if profile is None:
+        raise ValueError("exact gate received an unregistered arm")
+    validate_arm_definition(arm)
+    expected_env = dict(REGISTERED_BASE_ENV)
+    if arm["diag"]:
+        expected_env[DIAG_ENV] = "1"
+    if profile.get("feature"):
+        if arm_profile is None or arm_profile["key"] != profile["key"]:
+            raise ValueError("%s arm does not match the registered feature" % arm.get("id"))
+        if arm[profile["key"]]:
+            expected_env[profile["env"]] = "1"
+    elif "threads" not in arm:
+        raise ValueError("%s config arm has no registered threads value" % arm.get("id"))
+    if summary.get("runtime_env") != expected_env:
+        raise ValueError("%s runtime env differs from the exact per-arm gate set" % arm["id"])
+    if profile.get("feature"):
+        features = summary.get("arm_features") or {}
+        if features != {"diag": arm["diag"], profile["key"]: arm[profile["key"]],
+                        "phase": arm["phase"]}:
+            raise ValueError("%s persisted arm feature identity mismatch" % arm["id"])
+        marker = summary.get(profile["marker_count_key"])
+        if type(marker) is not int:
+            raise ValueError("%s feature marker count is not persisted" % arm["id"])
+        if arm[profile["key"]] and marker != 1:
+            raise ValueError("%s feature ON marker count %d != 1" % (arm["id"], marker))
+        if not arm[profile["key"]] and marker != 0:
+            raise ValueError("%s feature OFF emitted %d marker(s)" % (arm["id"], marker))
+    else:
+        actual_threads = (summary.get("config") or {}).get("threads")
+        if type(actual_threads) is not int or actual_threads != arm["threads"]:
+            raise ValueError("%s persisted config threads %r != registered %r"
+                             % (arm["id"], actual_threads, arm["threads"]))
+    rows = result.get("requests") or []
+    names = [row.get("name") for row in rows]
+    if names != list(COFETCH_REQUIRED_NAMES):
+        raise ValueError("%s operation count/order mismatch: %r" % (arm["id"], names))
+    by_name = {row["name"]: row for row in rows}
+    gen_max = {"P0": 1, "P1": 1, "S0": 16, "S1": 16, "L0": 128, "L1": 128,
+               "L2560": 256, "L2561": 256, "gen-held": 128, "eos": 32}
+    for name, expected_max in gen_max.items():
+        row = by_name[name]
+        if row.get("kind") != "gen":
+            raise ValueError("%s %s is not a GEN row" % (arm["id"], name))
+        if row.get("requested_max_new") != expected_max:
+            raise ValueError("%s %s requested max_new mismatch" % (arm["id"], name))
+        n = row.get("n")
+        tokens = row.get("token_ids") or []
+        if type(n) is not int or not 0 <= n <= expected_max or len(tokens) != n:
+            raise ValueError("%s %s token count is illegal" % (arm["id"], name))
+        finish = row.get("finish")
+        if finish not in ("length", "stop"):
+            raise ValueError("%s %s finish %r is illegal" % (arm["id"], name, finish))
+        if finish == "length" and n != expected_max:
+            raise ValueError("%s %s length finish without max_new" % (arm["id"], name))
+        if finish == "stop" and (not tokens or tokens[-1] != 248046):
+            raise ValueError("%s %s stop finish lacks a real EOS token" % (arm["id"], name))
+    if by_name["eos"]["finish"] != "stop":
+        raise ValueError("%s eos fixture did not finish at a real EOS" % arm["id"])
+    for name in ("resetA", "SCORE0", "resetB", "SCORE1", "score-held",
+                 "reset-eos", "score-eos"):
+        row = by_name[name]
+        if row.get("kind") != "score" or row.get("n") != 0 or row.get("finish") != "score":
+            raise ValueError("%s %s is not a completed zero-token SCORE" % (arm["id"], name))
+    if by_name["score-held"]["prompt_read"] != by_name["L0"]["prompt_read"]:
+        raise ValueError("%s score-held prompt_read differs from the L fixture" % arm["id"])
+    if by_name["gen-held"]["prompt_read"] != 0 or \
+            by_name["gen-held"]["reused"] != by_name["score-held"]["prompt_read"]:
+        raise ValueError("%s gen-held continuation is not prompt_read=0 at the held cursor"
+                         % arm["id"])
+    if by_name["score-eos"]["prompt_read"] != by_name["P0"]["prompt_read"]:
+        raise ValueError("%s score-eos prompt_read differs from the P fixture" % arm["id"])
+    if by_name["eos"]["prompt_read"] != 0 or \
+            by_name["eos"]["reused"] != by_name["score-eos"]["prompt_read"]:
+        raise ValueError("%s eos continuation is not prompt_read=0 at the held cursor"
+                         % arm["id"])
+    state_held = (by_name["state-held"].get("state") or {}).get("pos")
+    if state_held != by_name["score-held"]["prompt_read"] + by_name["gen-held"]["n"]:
+        raise ValueError("%s held STATE cursor discontinuity" % arm["id"])
+    state_eos = (by_name["state-eos"].get("state") or {}).get("pos")
+    if state_eos != by_name["score-eos"]["prompt_read"] + by_name["eos"]["n"]:
+        raise ValueError("%s EOS STATE cursor discontinuity" % arm["id"])
+    if require_json:
+        for name in ("S0", "S1"):
+            visible = by_name[name].get("json")
+            if not isinstance(visible, dict) or not visible.get("json_complete"):
+                raise ValueError("%s %s is not a complete parseable JSON fixture" % (arm["id"], name))
+    facts = result.get("score_facts") or {}
+    ranks = {}
+    for name in ("SCORE0", "SCORE1"):
+        if name not in facts:
+            raise ValueError("%s missing %s candidate facts" % (arm["id"], name))
+        ranks[name] = _score_fact_rank(facts[name], name)
+    return {"arm": arm, "rows": len(rows), "score": ranks, "by_name": by_name}
+
+
+def _cofetch_token_hash_diagnostic(arms, names):
+    hashes = {}
+    for name in names:
+        values = {arm["arm"]["id"]: arm["by_name"][name].get("token_ids_sha256") for arm in arms}
+        hashes[name] = {"hashes": values, "equal": len(set(values.values())) == 1}
+    return hashes
+
+
+def validate_cofetch_smoke(results, profile=None):
+    profile = FEATURE_PROFILES[COFETCH_KIND] if profile is None else profile
+    ids = tuple(profile["smoke_ids"])
+    by_id = {result["summary"]["arm"]["id"]: result for result in results}
+    if len(results) != len(ids) or set(by_id) != set(ids):
+        raise ValueError("smoke gate requires exactly the registered smoke arms")
+    checks = {arm_id: _cofetch_arm_check(by_id[arm_id], require_json=True, profile=profile)
+              for arm_id in ids}
+    for arm_id, check in checks.items():
+        if not check["arm"]["diag"]:
+            raise ValueError("%s smoke arm must run diagnostic ON" % arm_id)
+    rank = {}
+    for name in ("SCORE0", "SCORE1"):
+        off = checks[ids[0]]["score"][name]
+        on = checks[ids[1]]["score"][name]
+        if off["ranking"] != on["ranking"]:
+            raise ValueError("%s candidate ranking differs between smoke OFF/ON" % name)
+        rank[name] = {"off": off, "on": on, "consistent": True}
+    return {
+        "passed": True,
+        "arms": list(ids),
+        "score_rank": rank,
+        "token_hash_diagnostic": _cofetch_token_hash_diagnostic(
+            [checks[arm_id] for arm_id in ids],
+            ("L0", "L1", "L2560", "L2561", "gen-held", "eos")),
+        "quality_scope": "structural smoke only; not broad quality or production approval",
+    }
+
+
+def validate_cofetch_formal(results, profile=None):
+    profile = FEATURE_PROFILES[COFETCH_KIND] if profile is None else profile
+    ids = tuple(profile["formal_ids"])
+    by_id = {result["summary"]["arm"]["id"]: result for result in results}
+    if len(results) != len(ids) or set(by_id) != set(ids):
+        raise ValueError("formal gate requires exactly the registered formal arms")
+    checks = {arm_id: _cofetch_arm_check(by_id[arm_id], require_json=True, profile=profile)
+              for arm_id in ids}
+    for arm_id, check in checks.items():
+        if check["arm"]["diag"] or check["arm"]["phase"] != "formal":
+            raise ValueError("%s formal arm must run diagnostic OFF" % arm_id)
+    rank = {}
+    for name in ("SCORE0", "SCORE1"):
+        values = {arm_id: checks[arm_id]["score"][name]["ranking"]
+                  for arm_id in ids}
+        if len(set(tuple(value) for value in values.values())) != 1:
+            raise ValueError("%s candidate ranking differs between formal arms" % name)
+        rank[name] = {"rankings": values, "consistent": True}
+    return {
+        "passed": True,
+        "arms": list(ids),
+        "score_rank": rank,
+        "token_hash_diagnostic": _cofetch_token_hash_diagnostic(
+            [checks[arm_id] for arm_id in ids],
+            ("L0", "L1", "L2560", "L2561", "gen-held", "eos")),
+        "instrumentation": {"formal_diag": False,
+                            "diag_after_done_available": False,
+                            "reason": "formal arms use diagnostic OFF"},
+        "quality_scope": "structural formal only; no unconditional PASS",
+    }
+
+
+def _resource_facts(summary):
+    resources = summary.get("resources") or {}
+    samples = resources.get("samples") or []
+    commits = [sample.get("commit_available_mib") for sample in samples
+               if _finite_number(sample.get("commit_available_mib"))]
+    return {
+        "gpu_peak_mib": resources.get("gpu_peak_mib"),
+        "host_rss_peak_mib": resources.get("host_rss_peak_mib"),
+        "available_ram_min_mib": resources.get("available_ram_min_mib"),
+        "commit_available_min_mib": min(commits) if commits else None,
+    }
+
+
+def _metric_pair(row):
+    if not row:
+        return None
+    return {
+        "kind": row.get("kind"), "n": row.get("n"), "finish": row.get("finish"),
+        "e2e_ms": row.get("e2e_observed_ms"), "ttft_ms": row.get("ttft_observed_ms"),
+        "prefill_tps": row.get("prefill_tps_from_done"),
+        "decode_tps": row.get("decode_tps_observed"),
+        "tpot_ms": row.get("tpot_observed_ms"),
+        "send_to_done_ms": row.get("send_to_done_ms"),
+        "eos": row.get("finish") == "stop" and bool(row.get("token_ids") or [])
+        and row["token_ids"][-1] == 248046,
+    }
+
+
+def _gain_fraction(off_values, on_values, higher_is_better=False):
+    off_mean, on_mean = _mean(off_values), _mean(on_values)
+    if off_mean is None or on_mean is None or off_mean == 0:
+        return None
+    return (on_mean - off_mean) / off_mean if higher_is_better else (off_mean - on_mean) / off_mean
+
+
+def compare_cofetch(results, profile=None):
+    profile = FEATURE_PROFILES[COFETCH_KIND] if profile is None else profile
+    ids = tuple(profile["formal_ids"])
+    off_ids, on_ids = (ids[0], ids[3]), (ids[1], ids[2])
+    by_id = {result["summary"]["arm"]["id"]: result for result in results}
+    formal = [by_id[arm_id] for arm_id in ids if arm_id in by_id]
+    if len(formal) != len(ids):
+        return {
+            "experiment_kind": profile["kind"],
+            "formal_complete": False,
+            "arms": sorted(by_id),
+            "named_only": True,
+            "note": "formal four arms not complete; no end-to-end feature comparison",
+            "no_unconditional_pass": True,
+        }
+    by_arm = {}
+    for result in formal:
+        arm_id = result["summary"]["arm"]["id"]
+        by_arm[arm_id] = {row["name"]: row for row in result["requests"]}
+    named = {}
+    for name in COFETCH_COMPARE_NAMES:
+        metrics = {arm_id: _metric_pair(by_arm[arm_id].get(name))
+                   for arm_id in ids}
+        off_e2e = [metrics[arm_id]["e2e_ms"] for arm_id in off_ids]
+        on_e2e = [metrics[arm_id]["e2e_ms"] for arm_id in on_ids]
+        off_mean, on_mean = _mean(off_e2e), _mean(on_e2e)
+        drift_abs = abs(off_e2e[1] - off_e2e[0]) if all(_finite_number(v) for v in off_e2e) else None
+        drift_mean = _mean(off_e2e)
+        drift_fraction = drift_abs / drift_mean if drift_abs is not None and drift_mean else None
+        gain = _gain_fraction(off_e2e, on_e2e)
+        named[name] = {
+            "off_A1_metrics": metrics[off_ids[0]],
+            "off_A2_metrics": metrics[off_ids[1]],
+            "on_B1_metrics": metrics[on_ids[0]],
+            "on_B2_metrics": metrics[on_ids[1]],
+            "e2e_off_mean_ms": off_mean,
+            "e2e_on_mean_ms": on_mean,
+            "e2e_gain_fraction": gain,
+            "off_endpoint_drift": {"abs_ms": drift_abs, "mean_ms": drift_mean,
+                                   "fraction": drift_fraction},
+            "gain_ge_5pct": gain is not None and gain >= COFETCH_GAIN_THRESHOLD,
+            "beyond_off_drift": gain is not None and drift_fraction is not None
+            and gain > drift_fraction,
+            "delta": {
+                "ttft_gain_fraction": _gain_fraction(
+                    [metrics[arm_id]["ttft_ms"] for arm_id in off_ids],
+                    [metrics[arm_id]["ttft_ms"] for arm_id in on_ids]),
+                "prefill_tps_gain_fraction": _gain_fraction(
+                    [metrics[arm_id]["prefill_tps"] for arm_id in off_ids],
+                    [metrics[arm_id]["prefill_tps"] for arm_id in on_ids],
+                    higher_is_better=True),
+                "decode_tps_gain_fraction": _gain_fraction(
+                    [metrics[arm_id]["decode_tps"] for arm_id in off_ids],
+                    [metrics[arm_id]["decode_tps"] for arm_id in on_ids],
+                    higher_is_better=True),
+                "tpot_gain_fraction": _gain_fraction(
+                    [metrics[arm_id]["tpot_ms"] for arm_id in off_ids],
+                    [metrics[arm_id]["tpot_ms"] for arm_id in on_ids]),
+                "output_counts": {arm_id: metrics[arm_id]["n"] for arm_id in ids},
+                "eos": {arm_id: metrics[arm_id]["eos"] for arm_id in ids},
+            },
+        }
+    workloads = [name for name, value in named.items()
+                 if value["gain_ge_5pct"] and value["beyond_off_drift"]]
+    resources = {result["summary"]["arm"]["id"]: _resource_facts(result["summary"])
+                 for result in formal}
+
+    resource_delta = {}
+    for key in ("gpu_peak_mib", "host_rss_peak_mib", "available_ram_min_mib",
+                "commit_available_min_mib"):
+        off_mean = _mean([resources[arm_id][key] for arm_id in off_ids])
+        on_mean = _mean([resources[arm_id][key] for arm_id in on_ids])
+        delta = (on_mean - off_mean) / off_mean if off_mean and on_mean is not None else None
+        resource_delta[key] = {"off_mean": off_mean, "on_mean": on_mean,
+                               "on_vs_off_fraction": delta}
+    regressions = []
+    for name, value in named.items():
+        gain = value["e2e_gain_fraction"]
+        if gain is not None and gain < -COFETCH_REGRESSION_LIMIT:
+            regressions.append("e2e_regression:" + name)
+    for key in ("gpu_peak_mib", "host_rss_peak_mib"):
+        delta = resource_delta[key]["on_vs_off_fraction"]
+        if delta is not None and delta > COFETCH_REGRESSION_LIMIT:
+            regressions.append("resource_regression:" + key)
+    for name in ("SCORE0", "SCORE1"):
+        rankings = []
+        for result in formal:
+            fact = (result.get("score_facts") or {}).get(name)
+            try:
+                rankings.append(tuple(_score_fact_rank(fact, name)["ranking"]))
+            except ValueError as exc:
+                regressions.append("quality_failure:%s:%s" % (name, exc))
+        if rankings and len(set(rankings)) != 1:
+            regressions.append("quality_regression:" + name)
+    for result in formal:
+        for row in result["requests"]:
+            if row["name"] in ("S0", "S1") and not (row.get("json") or {}).get("json_complete"):
+                regressions.append("json_incomplete:%s:%s"
+                                   % (result["summary"]["arm"]["id"], row["name"]))
+    if regressions:
+        decision = "NO_GO_REGRESSION"
+    elif not workloads:
+        decision = "NO_GO_NO_GAIN_BEYOND_DRIFT"
+    else:
+        decision = "REVIEW_ONLY_GAIN_OBSERVED"
+    return {
+        "experiment_kind": profile["kind"],
+        "formal_complete": True,
+        "arms": list(ids),
+        "named_only": True,
+        "named": named,
+        "workloads_with_gain_ge_5pct_and_beyond_off_drift": workloads,
+        "resources": resources,
+        "resource_delta": resource_delta,
+        "unacceptable_regressions": regressions,
+        "decision": decision,
+        "instrumentation": {"formal_diag": False,
+                            "diag_after_done_available": False,
+                            "reason": "formal arms use diagnostic OFF, so diagnostic-tail "
+                                      "overhead cannot support the business timing argument"},
+        "held_eos_not_mixed_into_shape_medians": True,
+        "sample_scope": "single host, small n, descriptive paired rows; not reliable p95",
+        "no_unconditional_pass": True,
+    }
+
+
 def preflight(manifest_path, task_dir, base_spec, fingerprint_fn=None,
               admission_fn=None, monitor_factory=None):
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -933,7 +1652,7 @@ def preflight(manifest_path, task_dir, base_spec, fingerprint_fn=None,
                    "model_sha_trust": "registered; header only; not rehashed",
                    "pack": str(pack), "cuda_bin": str(cuda),
                    "budgets": manifest["budgets"], "config": base_spec["baseline"]["config"],
-                   "arm_order": [a["id"] for a in ARM_ORDER]})
+                   "arm_order": [a["id"] for a in select_arm_order(manifest)]})
     try:
         guard = preflight_resource_guard(base_spec, manifest, fingerprint_fn,
                                          admission_fn, monitor_factory)
@@ -956,7 +1675,8 @@ def _checkpoint(out_root, ledger, status, error, arms_done, manifest, checks, st
         "model_ready": 0, "successful_arms": 0, "protocol_attempts": 0,
         "protocol_completed": 0}
     value = {
-        "task": "di02-diagnostic-paired", "status": status, "error": error,
+        "task": (manifest or {}).get("task_id", "di02-diagnostic-paired"),
+        "status": status, "error": error,
         "utc": utc_now(), "started_at": started_at or (manifest or {}).get("started_at"),
         "arms_done": arms_done,
         "native_launches": totals["binary_launches"],
@@ -1004,8 +1724,12 @@ def main():
     ledger = NativeLedger(out_root / "native-ledger.json", manifest["budgets"],
                           manifest["started_at"])
     status, error, checks, results = "FAILED", None, None, []
+    kind, smoke_gate, formal_gate = DI02_KIND, None, None
+    profile = None
     try:
-        validate_arm_options(manifest, args.max_arms)
+        kind = experiment_kind(manifest)
+        profile = FEATURE_PROFILES.get(kind)
+        arm_order, _ = validate_arm_options(manifest, args.max_arms)
         save_json(out_root / "clock-before-preflight.json", {
             "utc": utc_now(), "monotonic": time.monotonic(),
             "remaining_window_s": base_spec["budget"]["window_s"] - (time.time() - started)})
@@ -1017,8 +1741,10 @@ def main():
             error = None
         else:
             prompts = build_prompts(base_spec)
+            validate_prompt_plan(prompts)
+            model_path = Path(base_spec["cwd"]) / base_spec["model"]["path"]
             status, error = "COMPLETE", None
-            for index, arm in enumerate(ARM_ORDER[:args.max_arms], 1):
+            for index, arm in enumerate(arm_order, 1):
                 clock = {"utc": utc_now(), "monotonic": time.monotonic(),
                          "remaining_window_s": base_spec["budget"]["window_s"] - (time.time() - started)}
                 save_json(out_root / ("clock-before-arm-%02d.json" % index), clock)
@@ -1038,19 +1764,57 @@ def main():
                     break
                 save_json(out_root / "progress.json", {"arms_done": [r["summary"]["arm"]["id"] for r in results],
                                                        "utc": utc_now()})
+                if profile is not None and arm["id"] == profile["smoke_ids"][-1]:
+                    smoke = [item for item in results
+                             if item["summary"]["arm"].get("phase") == "smoke"]
+                    gate_name = profile["gate_prefix"] + "-smoke-gate.json"
+                    try:
+                        postprocess(smoke, model_path)
+                        smoke_gate = validate_cofetch_smoke(smoke, profile)
+                        smoke_gate["utc"] = utc_now()
+                        save_json(out_root / gate_name, smoke_gate)
+                    except BaseException as exc:
+                        status = "SMOKE_REJECTED"
+                        error = profile["gate_prefix"] + " smoke gate: " + repr(exc)
+                        save_json(out_root / gate_name,
+                                  {"passed": False, "error": error, "utc": utc_now(),
+                                   "retry": False})
+                        break
             try:
                 if results:
-                    results = postprocess(results, Path(base_spec["cwd"]) / base_spec["model"]["path"])
+                    results = postprocess(results, model_path)
             except BaseException as exc:
                 status = "FAILED" if status == "COMPLETE" else status
                 error = (error + "; " if error else "") + "postprocess: " + repr(exc)
-            comparison = compare(results) if results else None
-            if comparison and not all(v["consistent"] for v in comparison["independent_score_rank"].values()):
+            if profile is not None and status == "COMPLETE":
+                formal = [item for item in results
+                          if item["summary"]["arm"].get("phase") == "formal"]
+                gate_name = profile["gate_prefix"] + "-formal-gate.json"
+                if formal:
+                    try:
+                        formal_gate = validate_cofetch_formal(formal, profile)
+                        formal_gate["utc"] = utc_now()
+                        save_json(out_root / gate_name, formal_gate)
+                    except BaseException as exc:
+                        status = "PARTIAL"
+                        error = profile["gate_prefix"] + " formal gate: " + repr(exc)
+                        save_json(out_root / gate_name,
+                                  {"passed": False, "error": error, "utc": utc_now(),
+                                   "retry": False})
+                elif [item["summary"]["arm"]["id"] for item in results] == list(profile["smoke_ids"]):
+                    status = "SMOKE_PASSED"
+            if results and profile is not None:
+                comparison = compare_cofetch(results, profile)
+            elif results:
+                comparison = compare(results)
+            if comparison and profile is None and \
+                    not all(v["consistent"] for v in comparison["independent_score_rank"].values()):
                 if status == "COMPLETE":
                     status = "PARTIAL"
                     error = (error + "; " if error else "") + "independent SCORE ranking differs between same-state arms"
         report = {
-            "task": "di02-diagnostic-paired",
+            "task": manifest.get("task_id", DI02_KIND),
+            "experiment_kind": kind,
             "status": status,
             "error": error,
             "started_at": manifest["started_at"],
@@ -1058,6 +1822,8 @@ def main():
             "arms_done": [r["summary"]["arm"]["id"] for r in results],
             "preflight": checks,
             "comparison": comparison,
+            "smoke_gate": smoke_gate,
+            "formal_gate": formal_gate,
             "ledger": ledger.totals,
             "results": [{"arm": r["summary"], "requests": r["requests"], "score_facts": r["score_facts"]}
                         for r in results],
@@ -1082,7 +1848,7 @@ def main():
                              manifest, checks, manifest.get("started_at"))
     print(json.dumps({"status": status, "error": error, "arms": checkpoint["arms_done"],
                       "ledger": ledger.totals}, ensure_ascii=False), flush=True)
-    if status in {"FAILED", "PREFLIGHT_FAILED", "RESOURCE_REFUSED"}:
+    if status in {"FAILED", "PREFLIGHT_FAILED", "RESOURCE_REFUSED", "SMOKE_REJECTED"}:
         raise SystemExit(1)
 
 

@@ -1,3 +1,9 @@
+# 主管复核：2026-10-22
+
+C2/C3已从逐请求时间戳、实际argv及12份lease原件独立复核：12native/228协议完成，exit0、子树清、fence无残留。C2主业务收益不足5%；C3首128 E2E+4.89%、256+3.24%/+3.68%，仍不足5%，只记小样本方向线索，不默认t10。单卡研究结果NO-GO for adoption；不要求长文本逐Token恒等。
+
+更正：Go observer实际134HTTP200、1HTTP429（累计17），不是worker报告的0新增/unknown；CPU7/6与harness2/1超限保留，不追认预算合规。发布可读方案表及独立重算证据见[评审包](research/deepinfer_20261021/README.md)。原始报告以下按历史保留；当前无新GPU/源码修改、main和生产默认不变。
+
 # 单卡8GiB Decode瓶颈观测边界（DI01）
 
 当前事实：生产8热样本Prefill1761.32、128 Decode40.74 token/s的近期提升归因GPU功耗解禁/野兽模式，不是新代码；本批0 GPU，无新性能结论。
@@ -38,3 +44,9 @@
 - 源事实：3200槽×1,228,800B=3.66GiB是`ExpertCache`的device分配（`expert_cache.cpp:561-582`），不是host commit；bridge默认每层pinned块约74KiB（K=8/H=2048/rows=1，40层约2.9MiB，`qwen35_bridge.cpp:793-799`）；cold stager为有界ring，按blob大小计（约百MiB级，Prefill才用，本run无Prefill）。
 - 未知：9.17GiB系统级commit下降无法由上述已登记私有分配完全解释；commit是system-wide采样，可能含其他进程、CUDA/WDDM pinned/driver与文件缓存口径，当前证据未分项。RSS峰值仅2.77GiB，不能据此把RSS当commit或反推private bytes。
 - `estimated_host_mib=14000`来自既有登记experiment/evidence spec，是历史host/RSS保守估计；admission把它当commit headroom要求（`strata_experiment.py:226`；probe再取`max(14000,spec)+1024=15024MiB`，`deepinfer_diagnostic_probe.py:299-305`）。它是保守commit估计，不是物理RAM最低需求；本审计未找到14000的逐项来源推导。
+
+## DI04 观测更新（2026-10-21）
+- C2实测：每有hit的decode层原有1次hit_done record+2次query（L128约5080层），移除后主工作负载E2E变化-0.35%~+2.29%，与1.60%~4.13%的OFF端点漂移同量级 → 这些宿主驱动入口不是当前E2E的可见绑定成本。
+- C3实测（同binary，仅threads 8 vs 10）：长输出decode TPS提升L0 +8.2%、L256约+4.4~5.0%，TPOT下降约4.8~7.6%，但E2E仅L0 +4.89%、L256 +3.24~3.68%，P/S/SCORE持平 → CPU池并行度是长输出decode的真实贡献项，但尚不足以跨过5% E2E门槛，也未在短请求上体现。
+- 资源：两轮GPU peak均7750.11MiB；C3 host RSS peak +0.064%、min commit available -2.6%，在15%限内。t10出现L1 token hash差异且B1/B2彼此不同（t8的A1==A2），宿主配置本身引入非确定性，不能当免费提速。
+- 结论：继续猜测“宿主入口是瓶颈”不成立；t10是长输出decode的候选方向，但需重复样本与确定性检查，当前不默认。
