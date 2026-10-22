@@ -1,0 +1,19 @@
+DONE 1 3896 2922.1 1.1 length 0 0 0 0 0 0 0 0.0 3896 0
+DONE 1 3896 2141.1 1.1 length 0 0 0 0 0 0 0 0.0 3896 0
+DONE 16 3896 2137.9 723.3 length 0 0 0 0 0 0 0 0.0 3896 0
+DONE 16 3896 1991.0 300.7 length 0 0 0 0 0 0 0 0.0 3896 0
+DONE 128 3817 1931.1 3419.3 length 0 0 0 0 0 0 0 0.0 3817 0
+DONE 128 3817 1990.6 3086.4 length 0 0 0 0 0 0 0 0.0 3817 0
+DONE 256 3817 1964.9 6131.9 length 0 0 0 0 0 0 0 0.0 3817 0
+DONE 256 3817 1964.2 6206.1 length 0 0 0 0 0 0 0 0.0 3817 0
+DONE 0 1 36.3 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+DONE 0 3896 2019.3 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+DONE 0 1 38.2 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+DONE 0 3896 2019.1 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+DONE 0 3817 1966.3 0.0 score 0 0 0 0 0 0 0 0.0 3817 0
+DONE 128 0 0.0 3047.8 length 0 0 3817 0 0 0 0 0.0 0 0
+STATE {"loaded":false,"pos":3945,"bytes":146752972,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4096,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}
+DONE 0 1 35.4 0.0 score 0 0 0 0 0 0 0 0.0 1 0
+DONE 0 3896 2020.2 0.0 score 0 0 0 0 0 0 0 0.0 3896 0
+DONE 17 0 0.0 365.4 stop 0 0 3896 0 0 0 0 0.0 0 0
+STATE {"loaded":false,"pos":3913,"bytes":146096844,"path":null,"covers":["attn_kv","gdn_state","conv","pos"],"session":true,"origin":"score-keep","file_bytes":null,"payload_bytes":null,"max_context":4096,"container_version":1,"model_fp_prefix":"0d4160ef57f03a80","not_covered":["logits","sampler_rng_state","expert_cache","pack","bridge_counters","rollback_history"]}

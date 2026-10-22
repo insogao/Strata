@@ -1,0 +1,14 @@
+{
+  "suite": "python -m unittest discover -s backends/qwen35_llama/tools -p test_*.py -v",
+  "result": "PASS",
+  "tests": 296,
+  "elapsed_s": 76.174,
+  "scope": "CPU only; no new GPU/native/build",
+  "native_tests_prior": {
+    "launches": 12,
+    "protocol_completed": 228,
+    "exit0": 12
+  },
+  "verified_at": "2026-10-22T00:47:41.899696+00:00",
+  "platform": "Windows/CUDA12.8.1 only; HIP/SYCL not validated"
+}

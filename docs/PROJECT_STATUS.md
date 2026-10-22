@@ -3,6 +3,16 @@
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 
+## 2026-10-22 DeepInfer 单卡研究交付（独立评审分支）
+
+当前分支 `codex/deepinfer-review-20261022`，依赖 PR #9 `codex/p4-ordinal-mixed-evaluation`，仅发布本轮诊断、默认关闭的两个实验开关与实验记录，不合并 main、不改生产默认。原研究分支 `codex/deepinfer-single-gpu-20261021` 保留完整历史。
+
+**结果：默认参数变更 NO-GO。** C1 ID/activation cofetch 的末臂触发主机 commit 守卫，对照不完整；C2 跳过重叠统计未见主要业务收益；C3 线程8→10的首次128-token完整耗时改善4.89%，256-token改善3.24%/3.68%，后续128-token仅0.47%，短请求/评分基本持平。未达到预登记≥5%完整业务收益门槛；每配置仅两次正式样本，不声称稳定提速。所有 MTP 均 OFF；诊断开关不代表 MTP 开关。此前明显提速来自用户解除显卡功耗限制/野兽模式。
+
+独立复核：296 CPU tests 通过（76.174s）；本次验收无新增 GPU/build。C2/C3 合计12 native、228/228协议完成、exit0、子树清理及无残留 fence。研究全过程25 native、427完成/428尝试协议（包括既有失败），原始失败保留。CPU命令7>6、harness编译2>1的原任务偏差及实际1次新429已纠正披露。仅 Windows/CUDA12.8.1 验证；HIP/SYCL 未验证，故作为 draft research review，不声称跨后端发布就绪。
+
+可阅读对照、脱敏逐臂证据及验证：[研究证据包](research/deepinfer_20261021/README.md)；[完整结果](DEEPINFER_SINGLE_GPU_RESULTS.md)。完整 raw 仍在本地研究仓。没有新增业务准确率、生产稳定性或生产批准结论；旧 P4 状态以下保留。
+
 更新时间：2026-10-16。当前研发分支 `codex/p4-ordinal-mixed-evaluation`，基于 PR #8 `18e1f88e`；P4 交付见下。上一轮分支 `codex/workload-decode-diagnostics`，对应 [PR #8](https://github.com/insogao/Strata/pull/8)，基于 PR #7；以下上一轮分支 `codex/single-gpu-autotune`，对应 [PR #7](https://github.com/insogao/Strata/pull/7)，基于已获 Scoped PASS 的 PR #5 `47c4b262`；Codex 直接实现。只做单显卡笔记本/PC，不做双卡施工。
 
 ## 0. 一句话状态
