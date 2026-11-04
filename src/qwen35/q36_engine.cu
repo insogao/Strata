@@ -925,6 +925,29 @@ bool load(const std::string& path, Model& m, std::string& err, bool want_mtp) {
     // either way, so the hybrid mode's slot tables - and with them the greedy text - do not depend on --mtp
     (void) want_mtp;
     m.has_mtp = g.n_mtp_layers > 0;
+    // The MTP block is read by the same layer code as the trunk, so a file whose MTP block carries a routed-expert
+    // format no expert kernel has (models/experimental/mtp-qwen36-5bc3e238: blk.40 gate/up Q2_K, type 10, down
+    // Q4_K) aborted the whole load with "experts are Q2_K/Q4_K" although all 40 trunk layers are supported.  The
+    // MTP block is a draft head of one layer, not a trunk layer: its unsupported formats drop the head
+    // (has_mtp = false, said on stderr) instead of refusing the file.  STRATA_Q36_REQUIRE_MTP=1 keeps the refusal.
+    if (m.has_mtp) {
+        size_t sg = 0, sd = 0;
+        const strata::TensorInfo* tg = gm.find(L(g.n_layers, "ffn_gate_exps.weight"), &sg);
+        const strata::TensorInfo* td = gm.find(L(g.n_layers, "ffn_down_exps.weight"), &sd);
+        if (!tg || !td || !K::native_expert_supported((int) tg->type, (int) td->type, g.n_embd, g.n_ff)) {
+            if (std::getenv("STRATA_Q36_REQUIRE_MTP") != nullptr) {
+                err = L(g.n_layers, "ffn_gate_exps.weight") + " / ffn_down_exps.weight are " +
+                      std::string(tg ? tg->type_name() : "absent") + "/" +
+                      std::string(td ? td->type_name() : "absent") +
+                      ", which the native expert kernels do not take (STRATA_Q36_REQUIRE_MTP is set)";
+                return false;
+            }
+            std::fprintf(stderr, "strata-q36: the MTP block's experts are %s/%s, which the native expert kernels "
+                         "do not take: MTP off, the trunk loads\n",
+                         tg ? tg->type_name() : "absent", td ? td->type_name() : "absent");
+            m.has_mtp = false;
+        }
+    }
     for (int64_t l = 0; l < g.n_layers + (m.has_mtp ? 1 : 0); ++l) {
         const bool is_mtp = l == g.n_layers;
         Layer& y = is_mtp ? m.mtp : m.layers[(size_t) l];
