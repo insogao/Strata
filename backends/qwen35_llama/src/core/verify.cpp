@@ -524,7 +524,11 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         lo_ = b.take<float>(T * (uint64_t) g.hc_lr); rs_ = b.take<float>(T * HC); xn_ = b.take<float>(T * HC * N);
         xq_ = b.take<uint8_t>(strata::kernels::native_q8_1_bytes(max_in, (int) T));
         sh_xq_ = b.take<uint8_t>(strata::kernels::native_q8_1_bytes(max_in, (int) T));
-        xil_ = b.take<uint8_t>(strata::kernels::native_q8_1_il_bytes(max_in, 4));
+        // X4: the interleaved copy is sized for the widest window this verifier can ever run (T = max_t <= kVerifyMaxT), not
+        // for 4 columns: native_q8_1_il_cp jumps 4 -> 8 at 5 columns, so a 5..8 column interleave writes twice the bytes a
+        // 4-column buffer holds - an out-of-bounds write, not a slow path.  max_in covers every n_in of the call sites (the
+        // layer projections, and the head's N since max_in >= N); T is the column count of both call sites' widest call.
+        xil_ = b.take<uint8_t>(strata::kernels::native_q8_1_il_bytes(max_in, (int) T));
         qkv_L_ = b.take<float>(nG * T * C); h_L_ = b.take<float>(nG * T * C);
         gate_L_ = b.take<float>(nG * T * HV); beta_L_ = b.take<float>(nG * T * HV);
         z_ = b.take<float>(T * ZV); y_ = b.take<float>(T * ZV); y_dummy_ = b.take<float>(T * ZV);
