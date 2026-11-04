@@ -134,18 +134,23 @@ void native_mmvq(int ggml_type, const void* weights, const void* x_q8_1, float* 
 bool native_mmvq_pair(int ggml_type, const void* w1, const void* w2, const void* x_q8_1, float* y1, float* y2,
                       int n_in, int n_out, int ncols, void* stream);
 
-// Fork F4 (Eddoursul): 2..4 columns also INTERLEAVED, so one 16-byte load reads a position of every column: CP = 2 (2
-// columns) or 4 (3-4), zero-padded; nb = n_in / 32 blocks; int32 bm[nb][8][CP] (block-major), int32 pm[8][nb][CP]
-// (position-major), float d[nb][CP] (each block's scale as the dots read it, __low2float of ds).
+// Fork F4 (Eddoursul): 2..8 columns also INTERLEAVED, so one 16-byte load reads a position of every column: CP = 2 (2
+// columns), 4 (3-4) or 8 (5-8, two 16-byte reads a position), zero-padded; nb = n_in / 32 blocks;
+// int32 bm[nb][8][CP] (block-major), int32 pm[8][nb][CP] (position-major), float d[nb][CP] (each block's scale as the
+// dots read it, __low2float of ds).  X4: the 5..8 column copy has always been laid out here; what was missing is above it
+// (the column gates and the 5..8 row tables).
 constexpr int native_q8_1_il_cp(int ncols) { return ncols <= 2 ? 2 : ncols <= 4 ? 4 : 8; }
 std::size_t native_q8_1_il_bytes(int n_in, int ncols);
-// Writes the interleaved copy of 2..4 columns of plain q8_1 blocks (native_quantize_q8_1's, or a fused producer's)
+// Writes the interleaved copy of 2..8 columns of plain q8_1 blocks (native_quantize_q8_1's, or a fused producer's)
 // to x_il (native_q8_1_il_bytes): the same values in the same bytes.
 void native_q8_1_interleave(const void* x_q8_1, void* x_il, int n_in, int ncols, void* stream);
-// True when native_mmvq_il runs its own kernel for this call (IQ4_XS, Q4_K, Q5_K, Q6_K, 2-4 columns, the exact layout).
+// True when native_mmvq_il runs its own kernel for this call (IQ4_XS, Q4_K, Q5_K, Q6_K, 2-8 columns, the exact layout).
+// 5..8 columns need a row table measured on this card (STRATA_MMVQ_IL_WIDE=1 and a kIlRows58 entry; none is measured here
+// yet), 1 column is not in this path at all.
 bool native_mmvq_il_supported(int ggml_type, int ncols, int n_out);
-// native_mmvq for 2..4 columns whose copy native_q8_1_interleave wrote, bitwise native_mmvq's output: kernels in which a
-// warp takes 1, 2 or 4 rows and reads the columns from the interleaved copy; native_mmvq (x_q8_1) when not supported.
+// native_mmvq for 2..8 columns whose copy native_q8_1_interleave wrote, bitwise native_mmvq's output: kernels in which a
+// warp takes 1, 2 or 4 rows (1 or 2 at 5..8 columns) and reads the columns from the interleaved copy; native_mmvq
+// (x_q8_1) when not supported.
 void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, const void* x_il, float* y, int n_in,
                     int n_out, int ncols, void* stream);
 // The table's rows a warp (0, 1, 2, 4; 0 = native_mmvq's kernels) for a card of compute capability `cc` (major * 10 + minor).
@@ -153,5 +158,8 @@ void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, cons
 int native_mmvq_il_rows_for(int cc, int ggml_type, int ncols, int n_out);
 // Tests and benchmarks: every native_mmvq_il call takes `rows` a warp (0: the table).
 void native_mmvq_il_tune(int rows);
+// Tests and benchmarks: every call takes `variant`'s Q6_K kernel (0: none, the plain kernel; 2..6: the hoisted-load
+// variant, which STRATA_MMVQ_IL_PF also selects on sm_89; -1: back to the environment).  Bitwise either way.
+void native_mmvq_il_pf(int variant);
 
 } // namespace strata::kernels

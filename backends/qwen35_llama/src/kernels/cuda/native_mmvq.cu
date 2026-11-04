@@ -43,6 +43,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <cstdio>
 #include <vector>
@@ -647,6 +648,33 @@ __device__ __forceinline__ float q6_q8_dot_impl(int vl, int vh, const int* __res
     }
     return d * sumf;
 }
+
+#if !defined(__HIPCC__)   // CUDA only: native_mmvq_il_pf_kernel (X4) is its only user
+// X4 / P1: q6_q8_dot_impl with the two 16-element scales already in registers (the hoisted group loads of
+// native_mmvq_il_pf_kernel); the same expression, the same order, the same dp4a - only the load moved earlier.
+__device__ __forceinline__ float q6_q8_dot_sc(int vl, int vh, const int* __restrict__ u, int sc0, int sc1, float d,
+                                              const float* __restrict__ d8) {
+    float sumf = 0.0f;
+    const int scs[2] = {sc0, sc1};
+#pragma unroll
+    for (int i = 0; i < 2; ++i) {
+        const int sc = scs[i];
+        const int vil = (vl >> (4 * i)) & 0x0f0f0f0f;
+        const int vih = ((vh >> (4 * i)) << 4) & 0x30303030;
+        const int vi = __vsubss4(vil | vih, 0x20202020);
+        sumf += d8[i] * (STRATA_DP4A(vi, u[i], 0) * sc);
+    }
+    return d * sumf;
+}
+// X4 / P1: loads the compiler may not sink into a later branch (it moved the Q6_K scale and d loads of the hoisted
+// group into the dot sections, where each is a dependent L1 round trip); the same ld.global.nc the __restrict__ loads use
+__device__ __forceinline__ int ldg_nc_u16(const void* p) { unsigned v; asm volatile("ld.global.nc.u16 %0, [%1];" : "=r"(v) : "l"(p)); return int(v); }
+__device__ __forceinline__ int ldg_nc_s8(const void* p) { int v; asm volatile("ld.global.nc.s8 %0, [%1];" : "=r"(v) : "l"(p)); return v; }
+__device__ __forceinline__ int ldg_nc_b2(const void* p, int i32) {   // load_int_b2 pinned: two u16, little-endian
+    const auto* x = static_cast<const uint16_t*>(p) + 2 * i32;
+    return ldg_nc_u16(x) | (ldg_nc_u16(x + 1) << 16);
+}
+#endif  // !__HIPCC__
 
 __device__ __forceinline__ float q6_q8_dot(const Q6KBlock* __restrict__ w,
                                           const Q81Block* __restrict__ x, int iqs) {
@@ -1318,6 +1346,7 @@ void launch_multi(const void* weights, const void* x_q8_1, float* y, int n_in, i
 struct IlIQ4XS {
     using F = IQ4XSTraits;
     static constexpr bool PM = true;
+    static constexpr bool HAS_PF = false;   // X4: only IlQ6K has the hoisted-load kernel (native_mmvq_il_pf_kernel)
     template <int NC, class X>
     __device__ static void apply(const F::W& r, const X& x, int kby, int iqs, float (&out)[NC]) {
         const int b = kby + iqs / 4;
@@ -1346,6 +1375,7 @@ struct IlIQ4XS {
 struct IlQ4K {
     using F = Q4KTraits;
     static constexpr bool PM = false;
+    static constexpr bool HAS_PF = false;
     template <int NC, class X>
     __device__ static void apply(const F::W& r, const X& x, int kby, int iqs, float (&out)[NC]) {
         int u[4][NC];
@@ -1369,6 +1399,7 @@ struct IlQ4K {
 struct IlQ5K {
     using F = Q5KTraits;
     static constexpr bool PM = false;
+    static constexpr bool HAS_PF = false;
     template <int NC, class X>
     __device__ static void apply(const F::W& r, const X& x, int kby, int iqs, float (&out)[NC]) {
         int u[4][NC];
@@ -1408,9 +1439,61 @@ struct IlQ6K {
             out[c] = q6_q8_dot_impl(r.vl, r.vh, uc, r.scales, r.d, dc);
         }
     }
+    // X4 / P1 (STRATA_MMVQ_IL_PF, opt-in): the four scale bytes and d come from the block with the other loads (F::W
+    // keeps a pointer into the block, which puts their loads in the compute phase); q6_q8_dot_sc is q6_q8_dot_impl's
+    // expression.  Every value the dots read is the same one apply above reads - only the load's position changes.
+    static constexpr bool HAS_PF = true;
+    // a row's four lane-adjusted byte pointers (ql, qh, scales, d): a block's loads are one IMAD.WIDE each from kbx
+    struct RP { const uint8_t *ql, *qh, *sc, *d; };
+    __device__ static RP rowptrs(const F::Block* __restrict__ row, int iqs) {
+        const auto* b = reinterpret_cast<const uint8_t*>(row);
+        const int scale_offset = 8 * (iqs / 16) + (iqs % 16) / 4;
+        return {b + 4 * iqs, b + 128 + 4 * (8 * (iqs / 16) + iqs % 8), b + 192 + scale_offset, b + 208};
+    }
+    struct WR { int vl, vh, sc0, sc1, d; };
+    __device__ static RP at(const RP& rp, int kbx) {
+        constexpr int S = int(sizeof(F::Block));
+        return {rp.ql + kbx * S, rp.qh + kbx * S, rp.sc + kbx * S, rp.d + kbx * S};
+    }
+    __device__ static WR loadr(const RP& rp, int dv) {   // block dv past rp's
+        constexpr int S = int(sizeof(F::Block));
+        WR r;
+        r.vl = ldg_nc_b2(rp.ql + dv * S, 0);
+        r.vh = ldg_nc_b2(rp.qh + dv * S, 0);
+        r.sc0 = ldg_nc_s8(rp.sc + dv * S);
+        r.sc1 = ldg_nc_s8(rp.sc + dv * S + 4);
+        r.d = ldg_nc_u16(rp.d + dv * S);
+        return r;
+    }
+    // the dot of one loaded block, with the per-iqs offsets apply computes (bq8 is the same expression as apply's)
+    template <int NC, class X>
+    __device__ static void applyr(const WR& r, const X& x, int kby, int iqs, float (&out)[NC]) {
+        const int vh = r.vh >> (2 * ((iqs % 16) / 8));
+        const int b = kby + bq8(iqs);
+        int u[2][NC];
+        float d8[2][NC];
+#pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            x.u(b + 2 * i, iqs % 8, u[i]);
+            x.scales(b + 2 * i, d8[i]);
+        }
+        const float d = __half2float(__ushort_as_half((unsigned short) r.d));
+#pragma unroll
+        for (int c = 0; c < NC; ++c) {
+            const int uc[2] = {u[0][c], u[1][c]};
+            const float dc[2] = {d8[0][c], d8[1][c]};
+            out[c] = q6_q8_dot_sc(r.vl, vh, uc, r.sc0, r.sc1, d, dc);
+        }
+    }
+    __device__ static int bq8(int iqs) { return 4 * (iqs / 16) + (iqs % 16) / 8; }
 };
 
-template <typename I, int NC, int R>
+// X4 / 147-verify: NOUT < NC (STRATA_IL_PAD) computes a column that is not wanted and stores only the first NOUT.  Each
+// column's value is its own sum (apply<NC> and this reduction are per column, nothing crosses columns), so the stored
+// ones are bitwise those of the NOUT-column kernel; the extra column exists only in registers, y keeps its n_out stride.
+// The one shipped use: IQ4_XS's 5 columns run as 6 (measured on other cards as 15-40% faster; the 5-column instance is
+// the slow one).  The buffer that grows is the activation side (xil_, cp 4 -> 8), not y - see verify.cpp's carve.
+template <typename I, int NC, int R, int NOUT = NC>
 __launch_bounds__(4 * WARP)
 __global__ void native_mmvq_il_kernel(const typename I::F::Block* __restrict__ w, const int* __restrict__ xq,
                                       const float* __restrict__ xd, float* __restrict__ y, int n_in, int n_out) {
@@ -1458,32 +1541,165 @@ __global__ void native_mmvq_il_kernel(const typename I::F::Block* __restrict__ w
                 s += acc[2][i][c];
                 s += acc[3][i][c];
                 s = warp_sum(s);
+                if (c < NOUT && lane == 0 && row0 + i < n_out) y[std::size_t(c) * n_out + row0 + i] = s;
+            }
+    }
+}
+
+// X4 / P1 (native_mmvq_il_pf, opt-in, Q6_K only): native_mmvq_il_kernel with every weight load of a group (the 4 virtual
+// warps x R rows) issued before any of the group's dots - the kernel above sits each group behind its own `kbx < bpr`
+// branch, so a warp has one R-row x 1-block group in flight.  The addresses of a clamped (tail) group are clamped to the
+// row's last block (it is re-read; its dot is skipped), so every value that enters an accumulator is the one the kernel
+// above's block loop would have read, in the same order: acc[v] += block(4m + v) in ascending m, ((acc0 + acc1) + acc2)
+// + acc3, warp_sum.  Bitwise the kernel above; only the memory pipeline differs.  DB / MINB / FAST and the ring of the
+// upstream variants are NOT ported here (this is the one-register-set form); a measured --pf table is not shipped, so only
+// an explicit variant number turns this on.
+template <typename I, int NC, int R>
+__launch_bounds__(4 * WARP)
+__global__ void native_mmvq_il_pf_kernel(const typename I::F::Block* __restrict__ w, const int* __restrict__ xq,
+                                         const float* __restrict__ xd, float* __restrict__ y, int n_in, int n_out) {
+    using F = typename I::F;
+    using WR = typename I::WR;
+    constexpr int SUB = WARP / F::T;   // weight blocks a chunk covers
+    const int lane = int(threadIdx.x) & (WARP - 1);
+    const auto x = q8_1_cols<NC, I::PM>(xq, xd, n_in / Q8K);
+    const int bpr = n_in / F::DIV;
+    const int kqs = F::kqs(lane);
+    const int sub = lane / F::T;
+    const int nm = (bpr + SUB - 1) / SUB;
+    const int m_full = bpr / SUB;
+    for (int grp = int(blockIdx.x) * 4 + (int(threadIdx.x) >> 5); grp * R < n_out; grp += int(gridDim.x) * 4) {
+        const int row0 = grp * R;
+        typename I::RP wr[R];
+#pragma unroll
+        for (int i = 0; i < R; ++i) {
+            wr[i] = I::rowptrs(w + std::size_t(min(row0 + i, n_out - 1)) * bpr, kqs);   // a partial last group recomputes its last row
+        }
+        float acc[4][R][NC];
+#pragma unroll
+        for (int v = 0; v < 4; ++v)
+#pragma unroll
+            for (int i = 0; i < R; ++i)
+#pragma unroll
+                for (int c = 0; c < NC; ++c) acc[v][i][c] = 0.0f;
+        // a full group's 4 x R blocks: one pointer set per row at the group's first block, the other three at immediates
+        // (v * SUB blocks on); a clamped (tail) group addresses each block on its own
+        auto load_group = [&](int m0, bool clamp, WR (&wv)[4][R]) {
+            if (!clamp) {
+#pragma unroll
+                for (int i = 0; i < R; ++i) {
+                    const typename I::RP p0 = I::at(wr[i], SUB * m0 + sub);
+#pragma unroll
+                    for (int v = 0; v < 4; ++v) wv[v][i] = I::loadr(p0, v * SUB);
+                }
+            } else {
+#pragma unroll
+                for (int v = 0; v < 4; ++v) {
+                    const int kbx = min(SUB * (m0 + v) + sub, bpr - 1);
+#pragma unroll
+                    for (int i = 0; i < R; ++i) wv[v][i] = I::loadr(I::at(wr[i], kbx), 0);
+                }
+            }
+        };
+        auto dot_group = [&](int m0, bool pred, const WR (&wv)[4][R]) {
+#pragma unroll
+            for (int v = 0; v < 4; ++v) {
+                const int kbx = SUB * (m0 + v) + sub;
+                if (!pred || kbx < bpr) {
+#pragma unroll
+                    for (int i = 0; i < R; ++i) {
+                        float o[NC];
+                        I::template applyr<NC>(wv[v][i], x, kbx * F::KBY, kqs, o);
+#pragma unroll
+                        for (int c = 0; c < NC; ++c) acc[v][i][c] += o[c];
+                    }
+                }
+            }
+        };
+        int m0 = 0;
+        for (; m0 + 4 <= m_full; m0 += 4) {   // a full group: no branch at all
+            WR wv[4][R];
+            load_group(m0, false, wv);
+            dot_group(m0, false, wv);
+        }
+        if (m0 < nm) {   // the tail group: clamped loads, predicated dots
+            WR wv[4][R];
+            load_group(m0, true, wv);
+            dot_group(m0, true, wv);
+        }
+#pragma unroll
+        for (int i = 0; i < R; ++i)
+#pragma unroll
+            for (int c = 0; c < NC; ++c) {
+                float s = acc[0][i][c];
+                s += acc[1][i][c];
+                s += acc[2][i][c];
+                s += acc[3][i][c];
+                s = warp_sum(s);
                 if (lane == 0 && row0 + i < n_out) y[std::size_t(c) * n_out + row0 + i] = s;
             }
     }
 }
 
+// STRATA_IL_PAD (bit 0: IQ4_XS's 5 columns as 6; default on, 0 off): bitwise, see native_mmvq_il_kernel's NOUT
+int il_pad() {
+    static const int v = [] { const char* e = std::getenv("STRATA_IL_PAD"); return e != nullptr ? std::atoi(e) : 1; }();
+    return v;
+}
+
+// one (type, columns, rows) launch: the plain kernel (NOUT < NC: the padded form), or the hoisted-load variant when `pf`
+// names it and the traits have one at all (only Q6_K; a padded launch never takes it - its store has no c < NOUT test)
+template <typename I, int NC, int R, int NOUT = NC>
+void launch_il_one(unsigned blocks, const typename I::F::Block* w, const int* xq, const float* xd, float* y, int n_in,
+                   int n_out, cudaStream_t s, int pf) {
+    if constexpr (I::HAS_PF && NOUT == NC) {
+        if (pf >= 2 && pf <= 6) {   // X4: the one ported variant (upstream's 2..6 differ in DB/MINB/FAST only)
+            native_mmvq_il_pf_kernel<I, NC, R><<<blocks, 4 * WARP, 0, s>>>(w, xq, xd, y, n_in, n_out);
+            return;
+        }
+    }
+    native_mmvq_il_kernel<I, NC, R, NOUT><<<blocks, 4 * WARP, 0, s>>>(w, xq, xd, y, n_in, n_out);
+}
+
 template <typename I, int R>
-void launch_il(const void* weights, const void* x_il, float* y, int n_in, int n_out, int ncols, cudaStream_t s) {
+void launch_il(const void* weights, const void* x_il, float* y, int n_in, int n_out, int ncols, cudaStream_t s, int pf) {
     const auto* w = static_cast<const typename I::F::Block*>(weights);
     const unsigned blocks = unsigned(((n_out + R - 1) / R + 3) / 4);
+    // 5..8 columns take 1 or 2 rows a warp (launch_il_rows maps 4 to 2 there): R = 4 has no kernel at those widths
+    if constexpr (R > 4) {
+        if (ncols > 4) throw std::invalid_argument("native_mmvq_il: 5..8 columns take 1 or 2 rows a warp");
+    }
     const Q81IlParts parts = q8_1_il_parts(x_il, n_in, ncols);
     const int* xq = I::PM ? parts.pm : parts.bm;
     const float* xd = parts.d;
     switch (ncols) {
-#define STRATA_IL_CASE(N) case N: native_mmvq_il_kernel<I, N, R><<<blocks, 4 * WARP, 0, s>>>(w, xq, xd, y, n_in, n_out); break;
+#define STRATA_IL_CASE(N) case N: launch_il_one<I, N, R>(blocks, w, xq, xd, y, n_in, n_out, s, pf); break;
         STRATA_IL_CASE(2) STRATA_IL_CASE(3) STRATA_IL_CASE(4)
 #undef STRATA_IL_CASE
-        default: throw std::invalid_argument("native_mmvq_il requires 2 <= ncols <= 4");
+        // 147-verify / X4: 5..8 columns (the cp = 8 copy) at 1 or 2 rows a warp; launch_il_rows maps 4 rows to 2 there
+#define STRATA_IL_CASE(N) case N: if constexpr (R <= 2) launch_il_one<I, N, R>(blocks, w, xq, xd, y, n_in, n_out, s, pf); break;
+        STRATA_IL_CASE(6) STRATA_IL_CASE(7) STRATA_IL_CASE(8)
+#undef STRATA_IL_CASE
+    case 5:
+        if constexpr (R <= 2) {
+            if constexpr (std::is_same_v<I, IlIQ4XS>) {
+                if ((il_pad() & 1) != 0) { launch_il_one<I, 6, R, 5>(blocks, w, xq, xd, y, n_in, n_out, s, 0); break; }
+            }
+            launch_il_one<I, 5, R>(blocks, w, xq, xd, y, n_in, n_out, s, pf);
+        }
+        break;
+        default: throw std::invalid_argument("native_mmvq_il requires 2 <= ncols <= 8");
     }
 }
 
 template <typename I>
-void launch_il_rows(int r, const void* weights, const void* x_il, float* y, int n_in, int n_out, int ncols, cudaStream_t s) {
+void launch_il_rows(int r, int pf, const void* weights, const void* x_il, float* y, int n_in, int n_out, int ncols,
+                    cudaStream_t s) {
+    if (ncols > 4 && r == 4) r = 2;   // 5..8 columns: 1 or 2 rows a warp
     switch (r) {
-    case 1: launch_il<I, 1>(weights, x_il, y, n_in, n_out, ncols, s); break;
-    case 4: launch_il<I, 4>(weights, x_il, y, n_in, n_out, ncols, s); break;
-    default: launch_il<I, 2>(weights, x_il, y, n_in, n_out, ncols, s); break;
+    case 1: launch_il<I, 1>(weights, x_il, y, n_in, n_out, ncols, s, pf); break;
+    case 4: launch_il<I, 4>(weights, x_il, y, n_in, n_out, ncols, s, pf); break;
+    default: launch_il<I, 2>(weights, x_il, y, n_in, n_out, ncols, s, pf); break;
     }
 }
 
@@ -2479,7 +2695,8 @@ std::size_t native_q8_1_il_bytes(int n_in, int ncols) {
 
 void native_q8_1_interleave(const void* x_q8_1, void* x_il, int n_in, int ncols, void* stream) {
     validate_shape(n_in, ncols);
-    if (ncols < 2 || ncols > 4) throw std::invalid_argument("native_q8_1_interleave requires 2 <= ncols <= 4");
+    // X4: 5..8 columns too (the cp = 8 copy; Q81Il's u/scales already read it, and native_q8_1_il_cp sizes it)
+    if (ncols < 2 || ncols > 8) throw std::invalid_argument("native_q8_1_interleave requires 2 <= ncols <= 8");
     validate_pointer(x_q8_1);
     validate_pointer(x_il);
     validate_stream(stream);
@@ -2499,6 +2716,10 @@ namespace {
 // mmvq_il_parity --bench on an RTX 3060 (sm_86) and an RTX 5070 (sm_120) together: per cell the rows count (1/2/4) whose
 // worse card still takes at least 3% off native_mmvq's time, else 0; classes without a measured shape take their
 // neighbour's value. Every choice is bitwise the same output, so the table is only speed.
+// X4 scope: 5..8 columns have their own table (IlRows58, filled at 5 and 6 here) and 1 column stays out of the interleaved
+// path on purpose - it would read the plain q8_1 blocks instead (Q81One), change what `x_il` means at the call site and
+// needs native_q8_1_interleave's 2-8 column contract re-thought.  For the record, upstream's one-column table is
+// kIl1Rows_89 = {{11, {0, 0, 1, 1, 1}}} (Q3_K only, the five n_out classes in order) - it is NOT added here.
 struct IlRows { int type; uint8_t r[3][5]; };
 constexpr IlRows kIlRowsShared[] = {   // sm_86 + sm_120, and the fallback for every other sm_80+ card
     {23, {{0, 0, 0, 0, 0}, {0, 0, 2, 4, 4}, {0, 1, 1, 1, 1}}},   // IQ4_XS
@@ -2507,11 +2728,10 @@ constexpr IlRows kIlRowsShared[] = {   // sm_86 + sm_120, and the fallback for e
     {14, {{0, 0, 1, 1, 0}, {0, 0, 1, 1, 2}, {0, 0, 1, 1, 1}}},   // Q6_K
 };
 // Per-architecture tables (P10).  A card whose compute capability (major * 10 + minor) is listed here uses its own table;
-// every other sm_80+ card uses kIlRowsShared.  sm_89 (Ada) has none yet: nobody measured it (we have no such card), so
-// it takes the shared table, which sits between the measured sm_86 and sm_120.  To add one, run
-// `mmvq_il_parity --bench --emit-table` on the card (docs/MMVQ_IL_TABLE.md), paste the printed block as a
-// `constexpr IlRows kIlRows_89[]` and add {89, kIlRows_89, sizeof(kIlRows_89) / sizeof(IlRows)} below.  Each choice
-// is bitwise the same output, so a table is only speed.  Without a rebuild: STRATA_MMVQ_IL_ROWS (see il_env_rows).
+// every other sm_80+ card uses kIlRowsShared.  To add one, run `mmvq_il_parity --bench --emit-table` on the card
+// (docs/MMVQ_IL_TABLE.md), paste the printed block as a `constexpr IlRows kIlRows_89[]` and add
+// {89, kIlRows_89, sizeof(kIlRows_89) / sizeof(IlRows)} below.  Each choice is bitwise the same output, so a table is
+// only speed.  Without a rebuild: STRATA_MMVQ_IL_ROWS (see il_env_rows).
 // Volta (sm_70): read off mmvq_il_parity --bench on a V100-SXM2-32GB (two runs, mean), the same rule - per cell the
 // rows count whose every measured shape takes at least 3% off native_mmvq's time (e.g. the Q5_K head at 3 columns
 // 1094 -> 821 us, Q6_K 12288 rows 68.9 -> 47.9 us), else 0; unmeasured classes take a neighbour's value (PR 1401)
@@ -2521,12 +2741,65 @@ constexpr IlRows kIlRows_70[] = {
     {13, {{0, 2, 2, 2, 2}, {0, 2, 2, 2, 2}, {0, 1, 2, 2, 2}}},   // Q5_K
     {14, {{0, 1, 1, 1, 1}, {0, 2, 2, 2, 2}, {0, 2, 2, 4, 2}}},   // Q6_K
 };
+// ---- X4: Ada (sm_89).  ***PLACEHOLDER - NOT MEASURED ON THIS CARD***
+// The block below is upstream's `kIlRows_89` verbatim (upstream/main @ ffa80d73, lines 3700-3706 minus the Q3_K row this
+// branch's type whitelist does not carry), which upstream read off an RTX 4070 (46 SMs, #3453) and an RTX 4080 (48 SMs),
+// keeping a cell only where both runs agreed.  This machine is an RTX 4060 Laptop (sm_89, 24 SMs, a different SM count
+// and bandwidth than either), and this project's rule is that another GPU's table is not converted to ours.  So:
+//   1. `mmvq_il_parity --bench --emit-table` must be run here (4060 Laptop) and its printed block pasted over the values
+//      below - the struct shape and the lookup do not change, only the numbers, and zero-build A/B is available first via
+//      STRATA_MMVQ_IL_ROWS="14:2:0,0,0,0,0;...".
+//   2. Until then this table is never used: il_89_opt_in() is OFF by default (STRATA_MMVQ_IL_89=1 turns it on), so sm_89
+//      keeps answering exactly what it answered before this patch (kIlRowsShared).
+// A cell kept only because "two other cards agree" is not evidence about this one - a cell this card has not measured must
+// end up 0 (native_mmvq's kernels) unless a local run with >=3% wins says otherwise.
+constexpr IlRows kIlRows_89[] = {
+    {23, {{0, 0, 0, 1, 1}, {0, 1, 1, 2, 2}, {4, 1, 1, 2, 2}}},   // IQ4_XS
+    {12, {{0, 0, 0, 1, 1}, {0, 0, 0, 1, 1}, {0, 1, 1, 1, 1}}},   // Q4_K
+    {13, {{0, 0, 1, 1, 1}, {0, 0, 1, 1, 1}, {0, 0, 2, 2, 2}}},   // Q5_K
+    {14, {{0, 0, 0, 0, 0}, {1, 0, 0, 2, 1}, {2, 1, 1, 1, 1}}},   // Q6_K
+};
+// ---- X4: 5..8 columns (a verify window of 5+ rows), by n_out class, per architecture ([ncols - 5]); 0 = native_mmvq's
+// kernels.  Rows 4 run as 2 at these widths (launch_il_rows), so a 4 in a source run's output is written 2.  The lookup
+// does NOT fall back to kIlRowsShared here: an unmeasured card must keep native_mmvq's kernels at 5+ columns, not inherit a
+// split nobody took.  STRATA_MMVQ_IL_WIDE=0 (the default) turns the whole width off.
+struct IlRows58 { int type; uint8_t r[4][5]; };
+// ***PLACEHOLDER - NOT MEASURED ON THIS CARD, AND DELIBERATELY UNREACHABLE BY DEFAULT***
+// These are upstream's `kIlRows58_120` (an RTX PRO 5000 Blackwell, sm_120) and they are here for one reason only: the 5..8
+// column lookup and launch path need a non-zero cell to be checked against by mmvq_il_parity's check_tables.  They are
+// behind STRATA_MMVQ_IL_WIDE (default 0) AND il_89_opt_in() (default 0), so no shipped configuration reads them.  Local
+// 4060 numbers must replace them entry by entry from `--bench --emit-table` before STRATA_MMVQ_IL_WIDE=1 is used for
+// anything; 7 and 8 columns are in scope of the mechanism but have no measured shape here yet.
+constexpr IlRows58 kIlRows58_89[] = {   // MEASURED on this card (RTX 4060 Laptop, sm_89) 2026-11-04
+    {23, {{2, 2, 2, 2, 2}, {2, 2, 2, 2, 2}, {2, 2, 2, 2, 2}, {1, 1, 1, 1, 1}}},   // IQ4_XS
+    {12, {{0, 2, 2, 2, 2}, {0, 0, 0, 2, 2}, {0, 0, 0, 2, 2}, {0, 0, 0, 2, 2}}},   // Q4_K
+    {13, {{0, 2, 2, 2, 2}, {0, 2, 2, 2, 0}, {0, 2, 2, 2, 0}, {0, 2, 2, 2, 0}}},   // Q5_K
+    {14, {{2, 0, 0, 2, 2}, {2, 2, 2, 2, 2}, {2, 2, 2, 2, 2}, {2, 0, 0, 2, 2}}},   // Q6_K
+};
+struct Il58Arch { int cc; const IlRows58* t; size_t n; };
+constexpr Il58Arch kIl58Arch[] = {
+    {89, kIlRows58_89, sizeof(kIlRows58_89) / sizeof(IlRows58)},   // Ada: PLACEHOLDER, opt-in twice (il_89_opt_in + WIDE)
+};
+bool il_env_on(const char* name) {   // unset or not starting with '0': on
+    const char* v = std::getenv(name);
+    return v == nullptr || v[0] != '0';
+}
+// X4: sm_89's own tables are OFF by default here.  Upstream turns them on for Ada only (no Ada card had run the tool);
+// this branch has the card, so the order is reversed - measure on the 4060 first, then flip the default with the numbers
+// in hand.  STRATA_MMVQ_IL_89=1 opts in (it also arms kIlRows58_89, together with STRATA_MMVQ_IL_WIDE=1).
+bool il_89_opt_in() {
+    static const bool on = [] { const char* v = std::getenv("STRATA_MMVQ_IL_89"); return v != nullptr && std::atoi(v) != 0; }();
+    return on;
+}
 struct IlArch { int cc; const IlRows* t; size_t n; };
 constexpr IlArch kIlArch[] = {
     {70, kIlRows_70, sizeof(kIlRows_70) / sizeof(IlRows)},   // Volta: PR 1401, measured on a V100-SXM2
+    {89, kIlRows_89, sizeof(kIlRows_89) / sizeof(IlRows)},   // Ada: PLACEHOLDER (upstream 4070/4080), opt-in, see above
 };
 // STRATA_MMVQ_IL_ROWS="type:ncols:r0,r1,r2,r3,r4;..." overrides single rows of the table for every card (type = ggml
-// type 23/12/13/14, ncols 2-4, r* = rows a warp 0/1/2/4 for the five n_out classes).  Parsed once.
+// type 23/12/13/14, ncols 2-8, r* = rows a warp 0/1/2/4 for the five n_out classes).  Parsed once.  X4: ncols 5-8 are
+// accepted too and answer before STRATA_MMVQ_IL_WIDE and the arch tables are consulted - that is the zero-build A/B channel
+// for a width no local table has measured yet (keep the cell 0 until this card's --emit-table run fills it in).
 struct IlEnvRow { int type, ncols; uint8_t r[5]; };
 const std::vector<IlEnvRow>& il_env_rows() {
     static const std::vector<IlEnvRow> v = [] {
@@ -2540,7 +2813,7 @@ const std::vector<IlEnvRow>& il_env_rows() {
             if (end == std::string::npos) end = str.size();
             int t = 0, n = 0, r[5] = {0, 0, 0, 0, 0}, used = 0;
             if (std::sscanf(str.substr(pos, end - pos).c_str(), "%d:%d:%d,%d,%d,%d,%d%n", &t, &n, &r[0], &r[1], &r[2], &r[3],
-                            &r[4], &used) >= 7 && n >= 2 && n <= 4) {
+                            &r[4], &used) >= 7 && n >= 2 && n <= 8) {
                 IlEnvRow x{t, n, {}};
                 bool ok = true;
                 for (int i = 0; i < 5; ++i) { ok = ok && (r[i] == 0 || r[i] == 1 || r[i] == 2 || r[i] == 4); x.r[i] = (uint8_t) r[i]; }
@@ -2558,16 +2831,26 @@ const std::vector<IlEnvRow>& il_env_rows() {
 }
 }  // namespace
 // The rows a warp for a card of compute capability `cc` (major * 10 + minor); 0: native_mmvq's kernels.  Pure, so a test
-// can check every architecture's table without that card.
+// can check every architecture's table without that card.  X4: 1 column is not in the interleaved path (see IlRows) and
+// 5..8 columns answer only from a measured per-card table (kIl58Arch), never from kIlRowsShared.
 int native_mmvq_il_rows_for(int cc, int type, int ncols, int n_out) {
-    if (ncols < 2 || ncols > 4) return 0;
+    if (ncols < 2 || ncols > 8) return 0;
     const int cls = n_out < 2048 ? 0 : n_out < 4096 ? 1 : n_out < 8192 ? 2 : n_out < 12288 ? 3 : 4;
-    for (const IlEnvRow& e : il_env_rows())
+    for (const IlEnvRow& e : il_env_rows())   // the zero-build channel, 2..8 columns (see il_env_rows)
         if (e.type == type && e.ncols == ncols) return e.r[cls];
+    if (ncols > 4) {   // X4: 5..8 columns, only where this card has a table and the width is opted in
+        static const bool wide = il_env_on("STRATA_MMVQ_IL_WIDE");
+        if (!wide) return 0;
+        for (const Il58Arch& a : kIl58Arch)
+            if (a.cc == cc && (cc != 89 || il_89_opt_in()))
+                for (size_t i = 0; i < a.n; ++i)
+                    if (a.t[i].type == type) return a.t[i].r[ncols - 5][cls];
+        return 0;   // no table for this card: native_mmvq's kernels, NOT the shared one
+    }
     const IlRows* t = kIlRowsShared;
     size_t n = sizeof(kIlRowsShared) / sizeof(IlRows);
     for (const IlArch& a : kIlArch)
-        if (a.cc == cc && a.t != nullptr) { t = a.t; n = a.n; }
+        if (a.cc == cc && a.t != nullptr && (cc != 89 || il_89_opt_in())) { t = a.t; n = a.n; }
     for (size_t i = 0; i < n; ++i)
         if (t[i].type == type) return t[i].r[ncols - 2][cls];
     return 0;
@@ -2587,8 +2870,10 @@ int il_cc() {
 }
 int il_rows(int type, int ncols, int n_out) { return native_mmvq_il_rows_for(il_cc(), type, ncols, n_out); }
 int g_tune_rows = 0;   // native_mmvq_il_tune (tests, benchmarks): rows a warp for every shape (0: the table)
+int g_il_pf = -1;      // native_mmvq_il_pf (tests, benchmarks): the kernel variant for every launch; -1: STRATA_MMVQ_IL_PF
 }  // namespace
 void native_mmvq_il_tune(int rows) { g_tune_rows = rows; }
+void native_mmvq_il_pf(int variant) { g_il_pf = variant; }
 
 namespace {
 // sm_80 and newer (measured on sm_86 and sm_120) and Volta (sm_70, its own table above); Pascal/Turing keep
@@ -2608,10 +2893,29 @@ bool il_arch_ok() {
     }
     return ok[dev] > 0;
 }
+// X4: the hoisted-load Q6_K kernel is opt-in and Ada-only.  Unset/0: the kernel every call takes today.  1: "the measured
+// table", which this branch does not ship (no local --pf run yet), so 1 answers 0 rather than guessing - measure first, then
+// add the IlPf table keyed like kIlRows.  2..6: name the ported variant directly (upstream's 2..6 differ in DB/MINB/FAST;
+// this port implements one of them), allowed only on sm_89 - the one card the numbers would be read on, and the one card
+// this line ships to.  g_il_pf (native_mmvq_il_pf) wins over both and skips the card test, so the parity tool can bit-check
+// the kernel on any card.
+int il_pf_env() {
+    static const int env = [] { const char* v = std::getenv("STRATA_MMVQ_IL_PF"); return v != nullptr ? std::atoi(v) : 0; }();
+    return env;
+}
+int il_pf_for(int cc, int type, int ncols, int n_out) {
+    (void) type;
+    (void) ncols;
+    (void) n_out;   // an IlPf table (per type, per n_out class) is what a measured run would add; nothing is measured locally
+    if (g_il_pf >= 0) return g_il_pf;
+    const int env = il_pf_env();
+    if (env <= 0 || env > 6) return 0;
+    return cc == 89 ? env : 0;
+}
 }  // namespace
 
 bool native_mmvq_il_supported(int ggml_type, int ncols, int n_out) {
-    if (ncols < 2 || ncols > 4 || !g_multi_exact || !il_arch_ok()) return false;
+    if (ncols < 2 || ncols > 8 || !g_multi_exact || !il_arch_ok()) return false;
     return (g_tune_rows ? g_tune_rows : il_rows(ggml_type, ncols, n_out)) != 0 &&
            (ggml_type == 23 || ggml_type == 12 || ggml_type == 13 || ggml_type == 14);
 }
@@ -2623,6 +2927,7 @@ void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, cons
         return;
     }
     const int r = g_tune_rows ? g_tune_rows : il_rows(ggml_type, ncols, n_out);
+    const int pf = il_pf_for(il_cc(), ggml_type, ncols, n_out);
     validate_shape(n_in, ncols, QK);
     validate_pointer(weights);
     validate_pointer(x_il);
@@ -2630,10 +2935,10 @@ void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, cons
     validate_stream(stream);
     const auto s = static_cast<cudaStream_t>(stream);
     switch (ggml_type) {
-    case 23: launch_il_rows<IlIQ4XS>(r, weights, x_il, y, n_in, n_out, ncols, s); break;
-    case 12: launch_il_rows<IlQ4K>(r, weights, x_il, y, n_in, n_out, ncols, s); break;
-    case 13: launch_il_rows<IlQ5K>(r, weights, x_il, y, n_in, n_out, ncols, s); break;
-    case 14: launch_il_rows<IlQ6K>(r, weights, x_il, y, n_in, n_out, ncols, s); break;
+    case 23: launch_il_rows<IlIQ4XS>(r, pf, weights, x_il, y, n_in, n_out, ncols, s); break;
+    case 12: launch_il_rows<IlQ4K>(r, pf, weights, x_il, y, n_in, n_out, ncols, s); break;
+    case 13: launch_il_rows<IlQ5K>(r, pf, weights, x_il, y, n_in, n_out, ncols, s); break;
+    case 14: launch_il_rows<IlQ6K>(r, pf, weights, x_il, y, n_in, n_out, ncols, s); break;
     }
     launch_check();
 }
@@ -2650,6 +2955,7 @@ void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, cons
     native_mmvq(ggml_type, weights, x_q8_1, y, n_in, n_out, ncols, stream);
 }
 void native_mmvq_il_tune(int) {}
+void native_mmvq_il_pf(int) {}
 #endif  // !__HIPCC__
 
 } // namespace strata::kernels
