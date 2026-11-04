@@ -1,0 +1,151 @@
+{
+ "schema_version": "strata-profile/1",
+ "name": "long-output-4060-4096",
+ "applies_to": {
+  "output_tokens_min": 128,
+  "workload": "long-form decode on the serve path: 3896-token prompt + 128 new tokens (shape L of the p1-slots rig)",
+  "not_applicable": "short JSON (max-new 16, shape S) does not benefit: measured -1.28% and -0.38% on the two 4096 runs and -1.83% at 4224; the production 3200-slot default stays in place for that shape"
+ },
+ "model": {
+  "file": "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+  "sha256": "66a3ca888ce13482b40c333db2432c0ebde3a7b13754fc29f0c6f5e89703ec66",
+  "sha256_prefix": "66a3ca88",
+  "bytes": 13676723168,
+  "quant": "UD-IQ3_S",
+  "gguf_architecture": "qwen35moe",
+  "sha_trust": "registered and fully verified previously; not re-hashed for this profile"
+ },
+ "engine": {
+  "path": "backends/qwen35_llama/build/strata.exe",
+  "exe_sha256": "6c9e297ff819b2d7d6d62e763d27fc03afd65723b9ee77f1215ea64b9d482366",
+  "source_commit": "03528a3c",
+  "build": "VS2022 17.14 + CUDA 12.8.1; p0-baseline tree, serve path"
+ },
+ "device": {
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "vram_total_mib": 8188,
+  "compute_capability": "8.9",
+  "driver": "591.74",
+  "cuda_driver_max": "13.1",
+  "mode": "hybrid (desktop on iGPU)",
+  "cpu": "AMD Ryzen 9 7945HX",
+  "os": "Windows-11-10.0.26200"
+ },
+ "argv": [
+  "--qwen35-model", "models/Qwen3.6-35B-A3B-UD-IQ3_S.gguf",
+  "--qwen35-pack", "models/pack",
+  "--serve",
+  "--max-context", "4096",
+  "--qwen35-threads", "8",
+  "--qwen35-cache-slots", "4096",
+  "--qwen35-ubatch", "4096"
+ ],
+ "env": {
+  "STRATA_QWEN35_ROUTER_WEIGHTS_DEVICE": "1",
+  "STRATA_QWEN35_PACKED_IDS": "1",
+  "STRATA_QWEN35_EXPERT_ORDER": "count_desc"
+ },
+ "gates": {
+  "compact_slots": false,
+  "mtp": false,
+  "mtp_txn": false,
+  "note": "the calibrated runs ran with every research gate off (MTP/COMPACT not set); setting any of them voids this profile"
+ },
+ "evidence": {
+  "primary": [
+   "results/multiagent-20261104/p1-slots/F/",
+   "results/multiagent-20261104/p1-slots/G/"
+  ],
+  "supporting": [
+   "results/multiagent-20261104/p1-slots/A/ (3200-slot baseline arm)",
+   "results/multiagent-20261104/p1-slots/H/ (4224-slot reference arm, not selected)",
+   "results/multiagent-20261104/p1-slots/P1_REPORT.md"
+  ],
+  "not_in_git": "evidence lives in the local research repo (D:/work/StrataUnified run tree, results/ is not published to GitHub); identity.json / raw/ / result.json per arm are the sources of the numbers below",
+  "baseline_3200": {
+   "L128_tps": 44.82,
+   "S16_tps": 52.06,
+   "held_tps": 45.1,
+   "prefill_tps": 1820.3,
+   "gpu_peak_mib": 6670.6,
+   "headroom_mib": 1517.4
+  },
+  "candidate_4096_runs": [
+   {
+    "arm": "p1-slots-F",
+    "L128_tps": 50.95,
+    "dL_pct": 13.67,
+    "S16_tps": 51.39,
+    "dS_pct": -1.28,
+    "held_tps": 49.67,
+    "dH_pct": 10.13,
+    "prefill_tps": 1807.5,
+    "dP_pct": -0.71,
+    "gpu_peak_mib": 7720.6,
+    "headroom_mib": 467.4
+   },
+   {
+    "arm": "p1-slots-G",
+    "L128_tps": 53.18,
+    "dL_pct": 18.66,
+    "S16_tps": 51.86,
+    "dS_pct": -0.38,
+    "held_tps": 47.39,
+    "dH_pct": 5.08,
+    "prefill_tps": 1818.5,
+    "dP_pct": -0.1,
+    "gpu_peak_mib": 7720.6,
+    "headroom_mib": 467.4
+   }
+  ],
+  "reference_4224": {
+   "arm": "p1-slots-H",
+   "L128_tps": 52.19,
+   "dL_pct": 16.45,
+   "S16_tps": 51.11,
+   "dS_pct": -1.83,
+   "held_tps": 48.57,
+   "dH_pct": 7.7,
+   "prefill_tps": 1796.7,
+   "dP_pct": -1.3,
+   "gpu_peak_mib": 7870.6,
+   "headroom_mib": 317.4,
+   "note": "not better than 4096 and leaves only 317.4 MiB; 4096 chosen"
+  },
+  "measurement_notes": "one cold + one hot native per arm (2 native per arm, hot sample judged), serve path, n=1 per shape per native; gpu_peak is a sampled whole-card high-water (100 ms), not the exact allocator peak; percentages are as recorded by the rig - recomputing from the 2-dp TPS columns can differ by 0.01-0.02 pp"
+ },
+ "confidence": "same-day confirmed (2 runs: +13.67%, +18.66%); next-day pending",
+ "recommendation": false,
+ "invalidators": [
+  {
+   "code": "MODEL_SHA_MISMATCH",
+   "rule": "model.sha256_prefix must prefix the target model's verified SHA256; an unknown target SHA fails closed (no profile is applied blind)"
+  },
+  {
+   "code": "QUANT_MISMATCH",
+   "rule": "quant must be exactly UD-IQ3_S; no cross-quantization conversion - slot counts and VRAM peaks are not transferable between quants"
+  },
+  {
+   "code": "DEVICE_MISMATCH",
+   "rule": "GPU name, VRAM total, driver version or compute capability changes; cross-card reuse is refused outright, with no scaling or conversion of any kind"
+  },
+  {
+   "code": "ARGV_MISMATCH",
+   "rule": "--qwen35-cache-slots 4096, --qwen35-threads 8, --qwen35-ubatch 4096 and --max-context 4096 must match the runtime configuration item by item; nothing is silently reused"
+  },
+  {
+   "code": "GATE_TOGGLED",
+   "rule": "COMPACT (STRATA_QWEN35_COMPACT_SLOTS / compact_slots) or MTP (MTP / MTP_TXN) enabled: rejected - the profile was measured with every research gate off"
+  },
+  {
+   "code": "OUTPUT_TOKENS_BELOW_MIN",
+   "rule": "requested output below applies_to.output_tokens_min (128) is out of scope: short JSON measured -0.38%..-1.28% here and -1.83% at 4224, so the 3200 default applies"
+  },
+  {
+   "code": "HEADROOM_BELOW_MIN",
+   "rule": "measured whole-card peak headroom below 300 MiB on the target host: rejected before launch (the 4224 arm leaves only 317.4 MiB and is already not selected)"
+  }
+ ],
+ "generated_at": "2026-11-04T12:57:27.615632+08:00",
+ "author": "Main Agent (multi-agent line)"
+}
