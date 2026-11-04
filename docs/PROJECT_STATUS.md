@@ -1,4 +1,24 @@
+# 主管复核：2026-10-22
+
+C2/C3已从逐请求时间戳、实际argv及12份lease原件独立复核：12native/228协议完成，exit0、子树清、fence无残留。C2主业务收益不足5%；C3首128 E2E+4.89%、256+3.24%/+3.68%，仍不足5%，只记小样本方向线索，不默认t10。单卡研究结果NO-GO for adoption；不要求长文本逐Token恒等。
+
+更正：Go observer实际134HTTP200、1HTTP429（累计17），不是worker报告的0新增/unknown；CPU7/6与harness2/1超限保留，不追认预算合规。发布可读方案表及独立重算证据见[评审包](research/deepinfer_20261021/README.md)。原始报告以下按历史保留；当前无新GPU/源码修改、main和生产默认不变。
+
+# DI04 自动长包完成 2026-10-21T10:12Z
+C2 skip-hit-overlap-probe（defaultOFF）完成真实CPU harness、单次隔离build b8684fef、6 native/114协议ABBA：结构门/EOS/JSON/STATE/hash通过；主P/S/L/L256/SCORE E2E增益在1.6–4.1%漂移内，仅17-token EOS +6.01%（n=1）超5% → NO-GO、保持OFF。C3 同binary仅threads8vs10另6 native/114协议：L0 E2E +4.89%（decode TPS +8.2%）、L2561 +3.68%、L2560 +3.24%，P/S/SCORE约0，未达≥5%门槛；t10 L1 token hash与t8不同且B1/B2彼此不同 → 不默认t10，记作后续长输出线索。包总计12 native/228协议，CPU/harness命令各超1次已如实记录；未commit/push/PR，protected文件不动；原件 results/deepinfer-20261021/di04-autonomous-long/。
+
+# 回调验收并续接 2026-10-21T08:54:29.781686+00:00
+原聊天事件66b29f7ceaf7efc824c18a35实际自动唤醒：DI03 ID/ACT cofetch实现+真实CPU harness通过，单次隔离build727秒exit0，exe6fd6168e，旧4f9311未动；41 HTTP200/0新429，0GPU。主管定点diff/顺序/host生命周期与实际SHA审核通过，仅GO测量适配，不是提速/生产PASS。新唯一writer任务 D:/work/Strata魔改/results/deepinfer-20261021/di03-cofetch-probe-adapter/manifest.json，0build/0GPU、两CPU命令，最小六臂适配（诊断ON双smoke，诊断OFF四ABBA）后外部回调主管登记GPU。模型66a3/3200/t8/u4096/c4096/MTP OFF固定，候选1/2不洗次数；主线继续。主管派发后结束本轮，不轮询陪跑；每小时兜底。
+
+# 最新完成与续接 2026-10-21T08:31:01.188276+00:00
+DI02最终三组全部COMPLETE：ONB1/ONB2/OFFA2各19协议、exit0、cleanup无fence，共57操作；每native约54/54/57秒，因此模型已正常卸载。历史累计7native/102完成操作（含之前失败/部分请求），诊断GPU预算已耗尽不重跑。ON/OFF指诊断，MTP始终OFF。P1 1702.50–1788.63TPS，L1 33.60–43.96TPS，L2561 37.56–40.75TPS；SCORE1 2.073–2.084s。OFF端点/插入间隔有明显漂移，不能宣称算法收益或精确仪器扰动PASS。实际EOS/长度/同病例tokenhash、SCORE->Continue已留原件；小样本不是业务准确率/全状态Gate。逐命名请求复核：results/deepinfer-20261021/di02-final-three/supervisor-per-case-review.json，不使用混入held/EOS的shape聚合。
+下一候选1/2登记 D:/work/Strata魔改/results/deepinfer-20261021/di03-id-act-cofetch/manifest.json：仅expert_source单token cached-tier ID+activation同流cofetch(defaultOFF)，先核旧证据/依赖与CPU，再单次独立build-deepinfer-di03；本批0GPU，旧4f9311/ea06和生产默认冻结。不是再次静态内存调查，非权重预取。主管后续另登记同binary OFF/ON实际验收。原ACTIVE20不变。
+
+DeepInfer当前真实状态：旧legacy基线19操作和新binary OFF-A1的19操作均完成，native均exit0/clean；完整OFF/ON尚0组。新OFF收尾再因可选diag_after_done_ms缺失失败，进入真实已录制数据离线finalize→postprocess→compare集成修复；不再用GPU查Python收尾bug，不重复旧/新OFF。累计4次native/45协议，余3臂ON/ON/OFF；无提速声明/生产通过。
+
 # PROJECT_STATUS — Strata Unified（持续自主开发 + 异步外部审查）
+
+2026-10-21 DeepInfer借鉴专项启动：分支 `codex/deepinfer-single-gpu-20261021`，base `0a9389d2`。DeepInfer pin `774ce244…`；先补真实Decode观测/诊断，再按实测选最多两个候选。第一批DI01为默认关诊断、CPU检查、独立build，0GPU；目前没有新性能结论。主管任务书和用户附件在研究仓 `docs/deepinfer/`，main/默认/冻结件不动。
 
 2026-10-21 方案记录提交：分支 `codex/research-scheme-records-20261021`，基于产品代码 `03528a3c`。完成[62条可读方案复盘](research/experiments_20261021/README.md)：做法/理由/条件/结果/取舍，含成功、负结果、未证实和未执行项；97份引用身份可核。**仅文档，不虚增阶段完成度、不新增功能/性能验证**。最近明显提升明确归于GPU功耗解禁/野兽模式后的运行条件变化；同GGUF/exe，8个固定热请求样本Prefill1761.32、128 Decode40.74 TPS，不是代码提速。下方旧分支/状态为原日期历史；本次不合并main、生产冻结件不变，Native兼容补丁继续独立保留。
 
