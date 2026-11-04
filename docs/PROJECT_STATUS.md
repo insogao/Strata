@@ -1,5 +1,8 @@
 # PROJECT_STATUS — Strata Unified（持续自主开发 + 异步外部审查）
 
+2026-10-21 方案记录提交：分支 `codex/research-scheme-records-20261021`，基于产品代码 `03528a3c`。完成[62条可读方案复盘](research/experiments_20261021/README.md)：做法/理由/条件/结果/取舍，含成功、负结果、未证实和未执行项；97份引用身份可核。**仅文档，不虚增阶段完成度、不新增功能/性能验证**。最近明显提升明确归于GPU功耗解禁/野兽模式后的运行条件变化；同GGUF/exe，8个固定热请求样本Prefill1761.32、128 Decode40.74 TPS，不是代码提速。下方旧分支/状态为原日期历史；本次不合并main、生产冻结件不变，Native兼容补丁继续独立保留。
+
+
 > 维护者：本仓主管线（Codex）。**每次完成里程碑即更新，不等待反馈。**
 > 各任务的逐条证据在旧研究仓 `D:/work/Strata魔改/results/opencode-execution/` 与 `docs/`；本文件只做索引与状态。
 

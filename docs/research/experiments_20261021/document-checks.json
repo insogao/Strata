@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-21",
+  "scope": "documentation-only",
+  "scheme_records": 62,
+  "evidence_files_verified": 97,
+  "evidence_sha_matches": true,
+  "package_markdown_links_and_anchors_ok": true,
+  "key_arithmetic_checked": true,
+  "raw_evidence_copied": false,
+  "private_input_records_copied": false,
+  "new_gpu_runs": 0,
+  "new_builds": 0,
+  "native_or_product_source_changes": 0,
+  "base_commit": "03528a3ca4caa401ab4396c448347ad6055f4782",
+  "models_and_frozen_items_untouched": true,
+  "main_merged": false,
+  "remote_pushed": false
+}

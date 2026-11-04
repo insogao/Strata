@@ -1,0 +1,681 @@
+[
+  {
+    "path": "D:/work/StrataUnified/strata/docs/EXTERNAL_REVIEW_FOLLOWUP_20261015.md",
+    "bytes": 13206,
+    "sha256": "b73fd16909792cf48304c788ac050373a6bb77f6b33b67bf122fab4e22b1c2ad",
+    "evidence_id": "E001",
+    "repository_path": "docs/EXTERNAL_REVIEW_FOLLOWUP_20261015.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/P4_BALANCED600_COMPARISON_20261016.md",
+    "bytes": 12105,
+    "sha256": "b1486e3bb10feffd50de57ba8c0b3c0c29b45dd49df365f8d08490e7105f9980",
+    "evidence_id": "E002",
+    "repository_path": "docs/P4_BALANCED600_COMPARISON_20261016.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/PHASE3_CANONICAL_SELECTION.md",
+    "bytes": 2925,
+    "sha256": "b4c09306376ea0cb4bbd78887d4582c3dc22c83db4aedf52483e3c9f67be2090",
+    "evidence_id": "E003",
+    "repository_path": "docs/PHASE3_CANONICAL_SELECTION.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/SESSION_CORRECTNESS_REVIEW_20261015.md",
+    "bytes": 10095,
+    "sha256": "b8a13c2734a6206aac1fb9c53d8a474cf39e2fe2eea0a2337862c28d0efdfdad",
+    "evidence_id": "E004",
+    "repository_path": "docs/SESSION_CORRECTNESS_REVIEW_20261015.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/UNIFIED_SINGLE_GPU_DELIVERY.md",
+    "bytes": 12779,
+    "sha256": "b3b223c1c2f0ea76c3c075d2ced423b31713d7ae69eba851a8bac2f04db5b33d",
+    "evidence_id": "E005",
+    "repository_path": "docs/UNIFIED_SINGLE_GPU_DELIVERY.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md",
+    "bytes": 24830,
+    "sha256": "428f6c53c8d9ac1edf95fd8603116ecc97d82c0100fb83ee81b59f2adaf21f20",
+    "evidence_id": "E006",
+    "repository_path": "docs/UPSTREAM_V0145_DECODE_FEASIBILITY_20261019.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/WORKFLOW_DECODE_DELIVERY_20261016.md",
+    "bytes": 14951,
+    "sha256": "1e4b212fa4e309575fed9b4fc679eb4a75d212b462abae6984fb107d4c288fe8",
+    "evidence_id": "E007",
+    "repository_path": "docs/WORKFLOW_DECODE_DELIVERY_20261016.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/backends/qwen35_llama_score_api_e2e.md",
+    "bytes": 40609,
+    "sha256": "6cd444d0f34e15a2456e28e7f5ab60371639a79d8dc3653ed1eba0449bd25727",
+    "evidence_id": "E008",
+    "repository_path": "docs/backends/qwen35_llama_score_api_e2e.md"
+  },
+  {
+    "path": "D:/work/StrataUnified/strata/docs/backends/qwen35_llama_session_state.md",
+    "bytes": 54415,
+    "sha256": "e6b3af99f347ec544b482d6d5456bf51a7f7941ec26a82ef534059f4f101eace",
+    "evidence_id": "E009",
+    "repository_path": "docs/backends/qwen35_llama_session_state.md"
+  },
+  {
+    "path": "D:/work/Strata魔改/FAILED_EXPERIMENTS.md",
+    "bytes": 11077,
+    "sha256": "bc9355d376bde610df11f299d97b51cbb3f208a493063cc0cf397917eec6fba9",
+    "evidence_id": "E010",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/HANDOFF_STRATA_UNIFIED_20261015.md",
+    "bytes": 15739,
+    "sha256": "9dea3b5b5ef7b2bdc6a2b023af0c12971ac93103000de702199272f920e4fa85",
+    "evidence_id": "E011",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase2_decode/DECODE_OVERNIGHT_REPORT_20261013.md",
+    "bytes": 10660,
+    "sha256": "e2e95392cf7804de26624b8754ec0f40f280182aefd05272dc9465cb99dd27db",
+    "evidence_id": "E012",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase2_decode/DECODE_STAGE_REPORT_20261012.md",
+    "bytes": 11645,
+    "sha256": "bd4223ddbc10e88f417fe52fe536d91f0707bd4241b2ed9cc1b495dc93c15e8a",
+    "evidence_id": "E013",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase2_mtp/MTP_STAGE_REPORT_FOR_EXTERNAL_REVIEW_20261013.md",
+    "bytes": 15042,
+    "sha256": "989a44a90414417024310168887625443471ec7b32bccd7c5534de74b64b889e",
+    "evidence_id": "E014",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase3_60tps/K1_COST_SPLIT_348.md",
+    "bytes": 13830,
+    "sha256": "3f1f8a0ec307c8f29c0409cbc72fce07ddf05f03bf5c7a4be00dad4a4022eff9",
+    "evidence_id": "E015",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase3_60tps/LOCAL_LONG_BASELINE_347.md",
+    "bytes": 9292,
+    "sha256": "06da115741336e7997f739c53c18f0709a8a524935f5f8cbf0345f3e3f512539",
+    "evidence_id": "E016",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/docs/phase3_60tps/T3_FA_AUDIT.md",
+    "bytes": 16014,
+    "sha256": "74d2320ed7217cda33809082daa38a03d0efdaaf339cfa65b85ccc64f5d91226",
+    "evidence_id": "E017",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-count-sorted-layout63/final-report.md",
+    "bytes": 2918,
+    "sha256": "b3ab3fce2d9efbf6c7d9aa57a6c1017ce300cd7ec18d89754955df5b6666d152",
+    "evidence_id": "E018",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-deliver114/final-report.md",
+    "bytes": 2201,
+    "sha256": "56b48ba3e666dad253fb85b6744b5da99d51431864faf3157a303272ae93bc78",
+    "evidence_id": "E019",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-direct-cold-diagnosis76/final-report.md",
+    "bytes": 1974,
+    "sha256": "c3df038187c89988a94cd8bd51079d645ffa9b8c005bdaa0a5acf79f97f49ba0",
+    "evidence_id": "E020",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-direct-cold-group74/final-report.md",
+    "bytes": 1905,
+    "sha256": "1c86d5874a8d76ab91ff455bbc3c53c2b49d76c0cd2db0376a723e33bf31cf32",
+    "evidence_id": "E021",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-packed-router-ids72/final-report.md",
+    "bytes": 2046,
+    "sha256": "ef9826dc613b55bcba76603aa1994ab0a884e063541de1069814f298fca27b73",
+    "evidence_id": "E022",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-pread-fix98/final-report.md",
+    "bytes": 2902,
+    "sha256": "ab4a208510314a68d91dd6d49914ee3e11390e590bc25e9b15c6fa3b6a79d833",
+    "evidence_id": "E023",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-prefetch-v1_102/final-report.md",
+    "bytes": 2971,
+    "sha256": "1a5c21428341b886ef345fdc4ba6ac9ac1c01e1565e5f310b61946aba8002868",
+    "evidence_id": "E024",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-prefetch-v3_104/final-report.md",
+    "bytes": 2527,
+    "sha256": "33d92fe4c9cb1e5abdfc396e42d525279914440845858d9d0b91e0da61dbbae8",
+    "evidence_id": "E025",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-producer-confirm83/final-report.md",
+    "bytes": 1874,
+    "sha256": "f14a29cb25b0f584e798ca859dc4e3879c886ab1aabd0f67f673dc9d6f3f7038",
+    "evidence_id": "E026",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-producer4-confirm87/final-report.md",
+    "bytes": 2216,
+    "sha256": "1c0e8b1a3a2258803097fd0da49b98d86e6ee3c3924e359b546be46d2fd44e8f",
+    "evidence_id": "E027",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-producer5-89/final-report.md",
+    "bytes": 1758,
+    "sha256": "24b74db09d256c964a22db06ff7a683e75388864960c876a2fd8952d9909a050",
+    "evidence_id": "E028",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-replay-error-quantification65/final-report.md",
+    "bytes": 1636,
+    "sha256": "a77a36ae6dd985745db985dbb4b13b09bb1be976f6dbd252c198e25a4be47381",
+    "evidence_id": "E029",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-ring-gate84/final-report.md",
+    "bytes": 1863,
+    "sha256": "e5b8849890c0575c93746b0c8ca77eaf0b58987fce4214f7ed6eca17e78ad9ca",
+    "evidence_id": "E030",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-router-weights-device69/final-report.md",
+    "bytes": 2040,
+    "sha256": "b94a41e9779f1c51040ba4a53da56a20415ea37e43706386861d8cd014b5205d",
+    "evidence_id": "E031",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-ubatch4096-111/final-report.md",
+    "bytes": 2138,
+    "sha256": "7d2ed41ad55d9695a8759b8341fcfa16348ab484105cfe0a8069b757584ed9d4",
+    "evidence_id": "E032",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-ubatch4096-confirm112/final-report.md",
+    "bytes": 2532,
+    "sha256": "e9584a1266ce0124c4817b3982db70dca402986cd125cd83e9aa42e27b2ea025",
+    "evidence_id": "E033",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261010-qwen35-wc-retest91/final-report.md",
+    "bytes": 1912,
+    "sha256": "3b918718405f9334df007b31589ee4f7a55ed7e961a13f4bb62422eaa75e17e2",
+    "evidence_id": "E034",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-chars-cache3-148/final-report.md",
+    "bytes": 2328,
+    "sha256": "23545d27cae8e0f510ae10b3906db3da8852663e182b33cc47c40e63e68d875d",
+    "evidence_id": "E035",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-pread-confirm130/final-report.md",
+    "bytes": 2710,
+    "sha256": "619817845595f9d545d190de307efd54e9d23ab22b7ccb0f73d3d61d97f504e7",
+    "evidence_id": "E036",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-pread129/final-report.md",
+    "bytes": 2861,
+    "sha256": "ae2ee3af36c685cca82661f66b201739721aa563be63fa8e37c86ef3e6744721",
+    "evidence_id": "E037",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-slots-margin116/final-report.md",
+    "bytes": 2094,
+    "sha256": "efece47adaf41c8df6e6e066d40025d3c57acb1631f87c587ed538af3c49fecb",
+    "evidence_id": "E038",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-steady30-144/final-report.md",
+    "bytes": 2316,
+    "sha256": "e7c0c2c53bc7cb8cc8bc59ccf01c4be074e55c09e5ac67ab7242a461a97d87a3",
+    "evidence_id": "E039",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261011-qwen35-warmstate135/final-report.md",
+    "bytes": 2706,
+    "sha256": "6c012a1e475af17049c5d0e12756f2c7b832ad28908bfd2761bec155a4564654",
+    "evidence_id": "E040",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/20261012-qwen35-gdn-baseline-149/final-report.md",
+    "bytes": 3012,
+    "sha256": "90c8cb482737d197e3da34762e04a1c46a24d1011428ecfd2c2bad81dc97c73d",
+    "evidence_id": "E041",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/build-load/final-report.md",
+    "bytes": 5010,
+    "sha256": "b2169bbdc86a198290ae8741a2d76c3b43a840b1cb2607804ead6767064b9b4f",
+    "evidence_id": "E042",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/capacity-2560/REPORT.md",
+    "bytes": 5917,
+    "sha256": "d383dbc5cac3ad7b6f8313019a4875aa5ab6d960f2616a3516826260075ae540",
+    "evidence_id": "E043",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/compat-iq3-down/REPORT.md",
+    "bytes": 4335,
+    "sha256": "54b083d8a92aa0251437069f3b422c6f4747344c2327e87f810c4158d796112b",
+    "evidence_id": "E044",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/compat-metadata/final-report.md",
+    "bytes": 4987,
+    "sha256": "bec646ceae97e4a05154abb62a277935f595815e824c9ca1178f88a9f76d1767",
+    "evidence_id": "E045",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/runtime-3200-no-packed/runs/qual-20261019-192632/raw/child_00.log",
+    "bytes": 531,
+    "sha256": "cbcf73935132c08b5a02fce457d238c4567e70ea045ab5298f86f00b648f7c8c",
+    "evidence_id": "E046",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/native-p0-20261019/runtime-3200-no-packed/runs/qual-20261019-192632/result.json",
+    "bytes": 3286,
+    "sha256": "ee993215928d5792e50b4177e11dcf1ead8442b1787c431b60f49ac3df00fd17",
+    "evidence_id": "E047",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/cold-quant-20261012-o5o6-150/final-report.md",
+    "bytes": 1798,
+    "sha256": "ffbcf3df54b1ce7097a721ac86904a3ec9123e2183b5aec5f05bb947564de31f",
+    "evidence_id": "E048",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/evidence-20261013-architecture60-wp0279/final-report.md",
+    "bytes": 19541,
+    "sha256": "beb1fc482d1baff28c915e7953d9eb7e81ca4f0ac589fc59935638f8ab911275",
+    "evidence_id": "E049",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261010-moderation-ubatch-37/final-report.md",
+    "bytes": 3319,
+    "sha256": "4a41659a3a365018e21fe4774833f65f532221c36a15e4006726159b676e83c2",
+    "evidence_id": "E050",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261010-output-reserve-42/final-report.md",
+    "bytes": 2301,
+    "sha256": "ca1f4d78f973e2efcce9c864f8230c80f9002cf4d57922cdda10505276c3075c",
+    "evidence_id": "E051",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261010-ubatch1024-candidate-45/final-report.md",
+    "bytes": 2174,
+    "sha256": "f24e78b40c712558cb324256232893dbd57b461a8d777cdb37b6aa3084cfdce9",
+    "evidence_id": "E052",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261010-ubatch2048-candidate-47/final-report.md",
+    "bytes": 2219,
+    "sha256": "b22805336e3c8a1f5760040d33be2b24dc68bbeed2ebeb3c1b734c1b19c1bd13",
+    "evidence_id": "E053",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261010-writecombined-stager-candidate-60/final-report.md",
+    "bytes": 2251,
+    "sha256": "960fbfffbec99e8e27774725aad6e7c92aab1e73c600e29328758e4d940329b2",
+    "evidence_id": "E054",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261012-gdn-first-cut-151/final-report.md",
+    "bytes": 1832,
+    "sha256": "43f656ac3b3fce9fed522b04aef0f3db35f1cedd30262ccc5c42f54356639dac",
+    "evidence_id": "E055",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261013-native-multirow284/final-report.md",
+    "bytes": 1389,
+    "sha256": "9d9f6774f09908d18b1353564f728df9f36b228a04c9d05553458184118cf023",
+    "evidence_id": "E056",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261014-draft-guard318/final-report.md",
+    "bytes": 2176,
+    "sha256": "328d15a5b196f228476db16bb2ec77035dbf8c12f724ec244c0fc4f5f13b6bc8",
+    "evidence_id": "E057",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261014-moe-prefix327/final-report.md",
+    "bytes": 1355,
+    "sha256": "f55f67706726d3222694312c56f9c1f376402365600f853018d909b217520f0a",
+    "evidence_id": "E058",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261014-q8k-reference304/final-report.md",
+    "bytes": 1560,
+    "sha256": "1000a7e69c58cd2a73f71c64bf9cb8516dfcdcfeb7579a1ad6c6fd16cc8063a0",
+    "evidence_id": "E059",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/main-20261014-t3-run322/final-report.md",
+    "bytes": 1218,
+    "sha256": "c138c18b24b552acc425e301987004904c1e12619695f79c09f3ce721aac9b14",
+    "evidence_id": "E060",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/parallel-20261010-mmq-reassociation-review-66/final-report.md",
+    "bytes": 4606,
+    "sha256": "6c5f7ebba175b3315a79856970620677eeb8194b0b6291daf668ac075a238b21",
+    "evidence_id": "E061",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/parallel-20261013-mtp-model-inventory228/final-report.md",
+    "bytes": 1690,
+    "sha256": "7a677a909672ab232e53e0b43efdba60e121c0002e4fcc791a226e9ddd325ad0",
+    "evidence_id": "E062",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/parallel-20261013-mtp-remote-header229/final-report.md",
+    "bytes": 1943,
+    "sha256": "0a2096150e6b5c5a91ac0229f78eb5bb848be07ceda3018071fab12bc6119291",
+    "evidence_id": "E063",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/parallel-20261013-quant-cache-attribution245/final-report.md",
+    "bytes": 2101,
+    "sha256": "4debab4b9fb90c38679dfe850d44689c52f88ec91659ba9672f016933772a948",
+    "evidence_id": "E064",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/phase3-60tps-p0a-longprompt-343/final-report.md",
+    "bytes": 997,
+    "sha256": "becf60d57722ecae25031b79f285611bd9c5b5c8a34bcf4005b4dc1f503393ce",
+    "evidence_id": "E065",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/phase3-60tps-p0a-official-341/final-report.md",
+    "bytes": 1349,
+    "sha256": "9a22e5b450a7c602e77c5f277a48c97f3e789d8b1637cef19e0246fc76507a3f",
+    "evidence_id": "E066",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/phase3-60tps-p0a-smoke-340/final-report.md",
+    "bytes": 1368,
+    "sha256": "6c3f093a5240f64e4ae946698d374801f132704eecc312a14f92f33dd9d2e88b",
+    "evidence_id": "E067",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/phase3-60tps-p0a-sweep-342/final-report.md",
+    "bytes": 1095,
+    "sha256": "8970992f114e0af464cc9b540f6962fc0be9ea354f6bb016b1eca8c5f43c94a3",
+    "evidence_id": "E068",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/squadM-20261013-mtp-tail-hidden251/final-report.md",
+    "bytes": 1863,
+    "sha256": "be32726eef4fe9b83365ab91dfd480dd3031f886358071f671b316b247c6aa69",
+    "evidence_id": "E069",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/squadP-20261013-compact-frozen-ab262/final-report.md",
+    "bytes": 1687,
+    "sha256": "320c60f5e34ea420c400ddb514ae8654826086c104bb30642f72589a0b1c062e",
+    "evidence_id": "E070",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/strata-unified-p3-2-offline-screen/final-report.md",
+    "bytes": 1557,
+    "sha256": "9bcc1feb23dd4d7887c3d749f8465eab6609c38713a8068c61070a5a60db4af5",
+    "evidence_id": "E071",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/opencode-execution/strata-unified-p3-3-autotune-pilot/final-report.md",
+    "bytes": 1552,
+    "sha256": "7606f647aef1f17395d569a8b033968fb154d7b09eb4587afd22e486143d1404",
+    "evidence_id": "E072",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/performance-mode-repeat-20261019/REPORT.md",
+    "bytes": 3592,
+    "sha256": "63fee70d54d0b0ef1871d6ba4a86e760c10d63889ef7d3e1f189579f754c6292",
+    "evidence_id": "E073",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/performance-mode-repeat-20261019/analysis.json",
+    "bytes": 13402,
+    "sha256": "e77a56ad9048989ada7e11d37dbbc870a7bd063f41b6d3247b5a3ac3d0379bff",
+    "evidence_id": "E074",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/cache-roi-screening-161/final-report.md",
+    "bytes": 7300,
+    "sha256": "9699f52951d70f026e1eba87f869969efa7969bb8ae50371bb63315ff050c669",
+    "evidence_id": "E075",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/p1-runtime208/final-report.md",
+    "bytes": 4178,
+    "sha256": "9e9e9465cbbdd5f5ae9823e470956196ed4cfd8f54388eb6be682a6e3b702d9f",
+    "evidence_id": "E076",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/p2-host-pin-runtime216/final-report.md",
+    "bytes": 3987,
+    "sha256": "005ee43b6a2150c893ee3328d6f83614aa133f0125899d6a5fc820c64c2cb9e0",
+    "evidence_id": "E077",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/p2-slice-simd209/final-report.md",
+    "bytes": 2703,
+    "sha256": "9fc65f6d2b81bc2317bb34465e0da13e22f7e545a5be28320d2f6699487ed4a6",
+    "evidence_id": "E078",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/p2-typed-mmvq218/final-report.md",
+    "bytes": 2940,
+    "sha256": "30c3ce295974c73d5d017dd0c25d854856af9ce70c625a0b4d68d27a3c7cf92d",
+    "evidence_id": "E079",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/pr2-correctness-177/final-report.md",
+    "bytes": 4978,
+    "sha256": "14280d32bb3a9264e32a16d06ab04af2acf3822cb87b42f0e7841b630522a15f",
+    "evidence_id": "E080",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/profile-confirmation-171/final-report.md",
+    "bytes": 6036,
+    "sha256": "1e3933a8887ab2e32348d4a5573435b032e15ca6f2a319574b9d1ff95991003d",
+    "evidence_id": "E081",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_decode/profile-screening-169/final-report.md",
+    "bytes": 6920,
+    "sha256": "7dfaade4bdac36fc8c8af22b1a6e03f473b3375214b787be6d7e1e8ec29fa317",
+    "evidence_id": "E082",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/accepted294/REPORT294.md",
+    "bytes": 3499,
+    "sha256": "9afcef4c0814d88f5ae3e09702e222d74f629bb45631721aa88384baf9880dec",
+    "evidence_id": "E083",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/attribution245/quant-diff.json",
+    "bytes": 43749,
+    "sha256": "e6da014fc9d4b6ad940b0775b7e2f9bc72706ad9b8a86f7666b67394b2ffb715",
+    "evidence_id": "E084",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/masked276/report.md",
+    "bytes": 2822,
+    "sha256": "eac06f572aca1262fe3cb9bb5a7e7573d37e70f408bbd8643a12e9cf238a6b9d",
+    "evidence_id": "E085",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/matched292/REPORT292.md",
+    "bytes": 3853,
+    "sha256": "5e90b400843d53645c50d1b7a60925d624dbf921c88fda00da3ee1012ea9bc70",
+    "evidence_id": "E086",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/multirow286/REPORT286.md",
+    "bytes": 3234,
+    "sha256": "1ab5a06c99f1c458716e994b7b8159d0a1de93712291b3cd8d94c59c332fa4c8",
+    "evidence_id": "E087",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype239/final-report.md",
+    "bytes": 3225,
+    "sha256": "fa0b8ef408cf864cf2379b377b657ba2c0096308fe8b32145adb62e05d39fa7a",
+    "evidence_id": "E088",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype241/final-report.md",
+    "bytes": 3689,
+    "sha256": "ef83b83c691e20909e8aea5cc3a30d2e091de8bcc26251b8fb60b94560c36574",
+    "evidence_id": "E089",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype243/final-report.md",
+    "bytes": 4990,
+    "sha256": "51a99557acfc4b214d691da334347d86fdf1e7a7c85fc58719e1aeb81e04b009",
+    "evidence_id": "E090",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype261/final-report.md",
+    "bytes": 5080,
+    "sha256": "b8ca183ac7c9a058ba4cb8afc1211042532ef8b2a2f2deade0f2658908ac6589",
+    "evidence_id": "E091",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype264/final-report.md",
+    "bytes": 4413,
+    "sha256": "b2f5c29d6cabb73740a9886ef88f0e5c310750f366330bfa6c4c861b1aab662d",
+    "evidence_id": "E092",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype268/final-report.md",
+    "bytes": 8561,
+    "sha256": "6330a059ef5e54a3b37f3f94de0b31843ad605fbdce1fc5d70422bfb7f4003f0",
+    "evidence_id": "E093",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/prototype272/final-report.md",
+    "bytes": 5427,
+    "sha256": "0939a9373a25b799f3df6a7533d92496ce70c1e18c406a6dba62cc39f0ecbf0a",
+    "evidence_id": "E094",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/repeat288/REPORT288.md",
+    "bytes": 5822,
+    "sha256": "85c0b5757e1a8bb13f334e3089402be4644fc993e5d1d02c7fe02d540a00096c",
+    "evidence_id": "E095",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase2_mtp/state277/STATE_ORACLE_277_REPORT.md",
+    "bytes": 7202,
+    "sha256": "8c0b3304272e480f7630d92e2b11022e4cbefaa90a065d66530fe3e38cadf01c",
+    "evidence_id": "E096",
+    "repository_path": null
+  },
+  {
+    "path": "D:/work/Strata魔改/results/phase3_baselines/GU_RETEST.md",
+    "bytes": 9306,
+    "sha256": "49bf6641593a4db4fc85ef86f40589b0ac8432fb8bc63253841adb5b5e7101dc",
+    "evidence_id": "E097",
+    "repository_path": null
+  }
+]
