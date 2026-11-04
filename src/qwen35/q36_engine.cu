@@ -947,6 +947,11 @@ bool load(const std::string& path, Model& m, std::string& err, bool want_mtp) {
                          tg ? tg->type_name() : "absent", td ? td->type_name() : "absent");
             m.has_mtp = false;
         }
+    } else if (std::getenv("STRATA_Q36_REQUIRE_MTP") != nullptr) {
+        // The caller demanded MTP and this file has no MTP block at all (no nextn_predict_layers): there is
+        // nothing to draft with, so REQUIRE_MTP must refuse instead of silently running the trunk without it.
+        err = "the model has no MTP block (nextn_predict_layers absent) and STRATA_Q36_REQUIRE_MTP is set";
+        return false;
     }
     for (int64_t l = 0; l < g.n_layers + (m.has_mtp ? 1 : 0); ++l) {
         const bool is_mtp = l == g.n_layers;
