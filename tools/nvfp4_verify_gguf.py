@@ -26,11 +26,12 @@ import numpy as np
 import torch
 from safetensors import safe_open
 
-LLAMA = pathlib.Path(__file__).resolve().parents[1] / "third_party" / "llama.cpp"
-sys.path.insert(0, str(LLAMA / "gguf-py"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))   # _paths.py and nvfp4_verify live here
+from _paths import add_llama_cpp  # noqa: E402
+
+add_llama_cpp()   # llama.cpp's tree (nvfp4_verify imports `conversion`) and its gguf-py, for gguf
 from gguf import GGUFReader, GGMLQuantizationType as Q, quants  # noqa: E402
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from nvfp4_verify import modelopt_dequant  # noqa: E402
 
 PROJ = {"gate": "gate_proj", "up": "up_proj", "down": "down_proj"}

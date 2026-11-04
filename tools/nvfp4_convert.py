@@ -2,10 +2,11 @@
 
     python tools/nvfp4_convert.py --model <ModelOpt NVFP4 dir> --outfile <model.gguf>
 
-This is llama.cpp's own converter (third_party/llama.cpp at the commit setup.py pins), run with the type policy
-Strata's engine needs. The converter already repacks ModelOpt NVFP4 experts into ggml's block_nvfp4 without loss
-(tools/nvfp4_verify.py proves it bit for bit) and writes each expert's weight_scale_2 as a separate F32 tensor
-`blk.N.ffn_{gate,up,down}_exps.scale`, one value per expert. What it does not know is Strata's layout:
+This is llama.cpp's own converter (setup.py's llama.cpp checkout, or this backend's vendor/llama.cpp - see
+tools/_paths.py), run with the type policy Strata's engine needs. The converter already repacks ModelOpt NVFP4
+experts into ggml's block_nvfp4 without loss (tools/nvfp4_verify.py proves it bit for bit) and writes each
+expert's weight_scale_2 as a separate F32 tensor `blk.N.ffn_{gate,up,down}_exps.scale`, one value per expert.
+What it does not know is Strata's layout:
 
   * the small projections the residual, router, GDN, QSA and PLE kernels read as BF16 (iq_pack.BF16_PROJECTIONS)
     must be BF16 - the converter would otherwise write routers and indexer projections as F32, which iq_pack
@@ -30,10 +31,11 @@ import subprocess
 import sys
 import time
 
-ENGINE = pathlib.Path(__file__).resolve().parents[1]
-LLAMA = ENGINE / "third_party" / "llama.cpp"
-sys.path.insert(0, str(LLAMA / "gguf-py"))
-sys.path.insert(0, str(LLAMA))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))   # _paths.py: the resolver every tool shares
+from _paths import add_llama_cpp, llama_cpp  # noqa: E402
+
+add_llama_cpp()                       # llama.cpp's tree (the `conversion` package) and its gguf-py
+LLAMA = pathlib.Path(llama_cpp())
 
 import gguf  # noqa: E402
 from conversion import qwen4exp as Q4  # noqa: E402
@@ -52,6 +54,23 @@ F16_SUFFIXES = ("ple_conv1d.weight",)
 Q8_NAMES = {"token_embd.weight", "output.weight"}
 
 dropped_ple: list[str] = []
+
+
+def llama_commit(root: pathlib.Path) -> str:
+    """The llama.cpp commit, or "". A vendored copy lives inside Strata's own work tree, where `git -C <it>
+    rev-parse HEAD` quietly answers with *Strata's* HEAD - so ask for the top level first and only trust a tree
+    that is a repository of its own. A release bundle ships the converter's files without git: its COMMIT file
+    names the commit then."""
+    try:
+        top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True).stdout.strip()
+        if top and pathlib.Path(top).resolve() == root.resolve():
+            return subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                                  capture_output=True, text=True).stdout.strip()
+    except OSError:
+        pass
+    committxt = root / "COMMIT"
+    return committxt.read_text(encoding="utf-8").strip() if committxt.exists() else ""
 
 
 def install_policy() -> None:
@@ -102,15 +121,10 @@ def main() -> int:
     rc = C.main()
     took = time.time() - t0
 
-    try:   # a release bundle ships the converter's files without git: its COMMIT file names the commit
-        commit = subprocess.run(["git", "-C", str(LLAMA), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    except OSError:
-        commit = ""
-    if not commit and (LLAMA / "COMMIT").exists():
-        commit = (LLAMA / "COMMIT").read_text(encoding="utf-8").strip()
+    commit = llama_commit(LLAMA)
     manifest = {
         "source": str(model),
-        "llama_cpp_commit": commit,
+        "llama_cpp_commit": commit or "unknown (this llama.cpp tree has no git history and no COMMIT file)",
         "policy": {"bf16": list(BF16_SUFFIXES), "f16": list(F16_SUFFIXES), "q8_0": sorted(Q8_NAMES),
                    "default_2d": "Q8_0", "experts": "NVFP4 (lossless repack) + per-expert F32 .scale"},
         "ple_table": {"written": False, "shards_dropped": len(dropped_ple),

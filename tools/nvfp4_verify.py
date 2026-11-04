@@ -23,9 +23,10 @@ import numpy as np
 import torch
 from safetensors import safe_open
 
-LLAMA = pathlib.Path(__file__).resolve().parents[1] / "third_party" / "llama.cpp"
-sys.path.insert(0, str(LLAMA / "gguf-py"))
-sys.path.insert(0, str(LLAMA))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))   # _paths.py: the resolver every tool shares
+from _paths import add_llama_cpp  # noqa: E402
+
+add_llama_cpp()   # llama.cpp's tree (the `conversion` package) and its gguf-py
 from gguf import GGMLQuantizationType as Q, quants  # noqa: E402
 from conversion.base import ModelBase  # noqa: E402
 
