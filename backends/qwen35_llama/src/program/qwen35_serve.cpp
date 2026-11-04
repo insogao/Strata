@@ -910,6 +910,25 @@ std::string qwen35_capabilities_json(const Qwen35RunOptions& o, int64_t context_
     return std::string(buf);
 }
 
+
+/// Measurement only (default OFF): with STRATA_QWEN35_PREFILL_STATS=1, print the cumulative prompt-path counters
+/// after every completed request.  The counters are cumulative, so a per-request delta is (this - previous).
+void emit_prefill_stats(long long req) {
+    const char* g = std::getenv("STRATA_QWEN35_PREFILL_STATS");
+    if (g == nullptr || g[0] != '1' || g[1] != '\0') return;
+    core::Qwen35BridgeStats st;
+    core::qwen35_bridge_stats(st);
+    std::fprintf(stderr,
+                 "serve: prefill_stats req=%lld layers_gpu=%lld resident=%lld streamed=%lld stream_mib=%.1f "
+                 "product_calls=%lld loan_slots=%lld loan_restored=%lld loan_mib=%.1f owned_mib=%.1f "
+                 "loan_refill_ms=%.1f gpu_ms=%.1f\n",
+                 req, (long long) st.prefill_layers_gpu, (long long) st.prefill_resident,
+                 (long long) st.prefill_streamed, (double) st.prefill_stream_bytes / 1048576.0,
+                 (long long) st.prefill_product_calls, (long long) st.prefill_loan_slots,
+                 (long long) st.prefill_loan_restored, (double) st.prefill_loan_bytes / 1048576.0,
+                 (double) st.prefill_owned_bytes / 1048576.0, st.prefill_loan_refill_ms, st.prefill_gpu_ms);
+}
+
 int qwen35_serve(const Qwen35RunOptions& o) {
     if (o.model.empty() || o.pack_dir.empty()) {
         std::fprintf(stderr, "strata qwen35 serve: needs --qwen35-model and --qwen35-pack\n");
@@ -1458,6 +1477,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                             0LL, (long long) total, pre.prompt_ms, 0.0, "cancel", 0LL, 0LL,
                             (long long) score_base_pos, 0LL, 0LL, 0LL, 0LL, 0.0, (long long) pre.read_n, 0LL);
                 std::fflush(stdout);
+                emit_prefill_stats(serve_reqs + 1);
                 std::fprintf(stderr, "serve: req %lld finish=cancel produced=0 prompt_ms=%.1f decode_ms=0.0 "
                                      "score%s\n",
                              ++serve_reqs, pre.prompt_ms, sreq.keep ? " keep=1" : "");
@@ -1527,11 +1547,13 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                         (long long) pre.read_n, 0LL);
             std::fflush(stdout);
             if (sreq.cand_present) {
+                emit_prefill_stats(serve_reqs + 1);
                 std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
                                      "topk=%lld cand=%lld%s\n",
                              ++serve_reqs, pre.prompt_ms, (long long) k, (long long) sreq.cand.size(),
                              sreq.keep ? " keep=1" : "");
             } else {
+                emit_prefill_stats(serve_reqs + 1);
                 std::fprintf(stderr, "serve: req %lld finish=score produced=0 prompt_ms=%.1f decode_ms=0.0 "
                                      "topk=%lld%s\n",
                              ++serve_reqs, pre.prompt_ms, (long long) k, sreq.keep ? " keep=1" : "");
@@ -1676,6 +1698,7 @@ int qwen35_serve(const Qwen35RunOptions& o) {
                         0LL /* ram blobs */, 0LL /* file blobs */, 0.0 /* file MB */, (long long) pre.read_n,
                         0LL /* offloaded */);
             std::fflush(stdout);
+            emit_prefill_stats(serve_reqs + 1);
             std::fprintf(stderr, "serve: req %lld finish=%s produced=%lld prompt_ms=%.1f decode_ms=%.1f%s\n",
                          ++serve_reqs, finish, produced, pre.prompt_ms, decode_ms, req.cont ? " cont=1" : "");
         }
