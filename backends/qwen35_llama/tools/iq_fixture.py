@@ -13,8 +13,9 @@ published quantizer in gguf-py (it dequantizes only), so each block combines san
 (written at the layout's scale offsets, see SCALE_OFFSETS below) with seeded index/sub-scale bytes - the
 dequantized reference covers real codebook values either way, which is what the parity compares.
 
-Dependencies: python3 and numpy, plus the repository's VENDORED gguf-py (third_party/llama.cpp/gguf-py -
-no pip install; it is put on sys.path relative to this file).  Q2_0 is this repository's own format
+Dependencies: python3 and numpy, plus the repository's VENDORED gguf-py (vendor/llama.cpp/gguf-py, or
+third_party/llama.cpp/gguf-py in a setup.py tree - no pip install; tools/_paths.py, the resolver every
+tool shares, puts it on sys.path).  Q2_0 is this repository's own format
 (GGML type 42, which gguf-py does not carry): its codec comes from tools/gguf_writer.py.
 
 The kernel ids in the .bin headers are the repo's i-quant dispatch table (iq_kernels.cu is_iq /
@@ -31,18 +32,24 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "third_party" / "llama.cpp" / "gguf-py"))
 sys.path.insert(0, str(ROOT / "tools"))
 
 try:
+    # one resolver for every tool (tools/_paths.py): $STRATA_GGUF_PY, then vendor/llama.cpp, then
+    # third_party/llama.cpp, then the development tree's .ref - the order the MTP packers already use
+    from _paths import add_gguf_py
+    add_gguf_py()
     import gguf
     from gguf.quants import dequantize as gguf_dequantize
     from gguf_writer import dequantize_q2_0, quantize_q2_0
-except ImportError as e:  # a missing numpy or vendored gguf-py must be explicit, not a traceback
+except (ImportError, SystemExit) as e:  # a missing numpy or vendored gguf-py must be explicit, not a traceback
+    # SystemExit: _paths has already named every path it searched; keep this tool's own missing-dependency
+    # exit code 3 (CMakeLists.txt runs it as a CTest fixture with SKIP_RETURN_CODE 3)
     sys.stderr.write(f"iq_fixture: missing dependency: {e}\n"
-                     "numpy and the repository's vendored gguf-py (third_party/llama.cpp/gguf-py) are "
-                     "required.  The vendored copy comes with setup's llama.cpp download (the pinned "
-                     "LLAMA_CPP_COMMIT zip); on a fresh checkout run setup once, or fetch that zip and "
+                     "numpy and the repository's vendored gguf-py (vendor/llama.cpp/gguf-py, or "
+                     "third_party/llama.cpp/gguf-py) are required.  The vendored copy ships with this "
+                     "backend; a setup.py tree gets it from setup's llama.cpp download (the pinned "
+                     "LLAMA_CPP_COMMIT zip) - on a fresh checkout run setup once, or fetch that zip and "
                      "unpack its gguf-py there.\n")
     sys.exit(3)
 
